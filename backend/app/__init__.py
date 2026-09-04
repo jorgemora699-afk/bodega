@@ -2,10 +2,12 @@ from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
 from config import Config
 
 db = SQLAlchemy()
 migrate = Migrate()
+jwt = JWTManager()
 
 def create_app():
     app = Flask(__name__)
@@ -13,6 +15,7 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
+    jwt.init_app(app)
     CORS(app)
 
     with app.app_context():
@@ -27,6 +30,8 @@ def create_app():
     from app.interfaces.routes.receta_routes import receta_bp
     from app.interfaces.routes.ingreso_egreso_routes import ingreso_egreso_bp
     from app.interfaces.routes.admin_routes import admin_bp
+    from app.interfaces.routes.auth_routes import auth_bp
+
     app.register_blueprint(producto_bp)
     app.register_blueprint(trabajadora_bp)
     app.register_blueprint(venta_bp)
@@ -36,5 +41,6 @@ def create_app():
     app.register_blueprint(receta_bp)
     app.register_blueprint(ingreso_egreso_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(auth_bp)
 
     return app
