@@ -1,0 +1,39 @@
+from flask import Blueprint, request, jsonify
+from datetime import datetime
+from app.application.horario_service import HorarioService
+
+horario_bp = Blueprint("horarios", __name__, url_prefix="/api/horarios")
+
+
+@horario_bp.route("", methods=["GET"])
+def listar_horarios():
+    trabajadora_id = request.args.get("trabajadora_id", type=int)
+    fecha_str = request.args.get("fecha")  # formato: YYYY-MM-DD
+    fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else None
+
+    horarios = HorarioService.listar(trabajadora_id, fecha)
+    return jsonify([h.to_dict() for h in horarios]), 200
+
+
+@horario_bp.route("/entrada", methods=["POST"])
+def marcar_entrada():
+    data = request.get_json()
+    if data.get("trabajadora_id") is None:
+        return jsonify({"error": "trabajadora_id es obligatorio"}), 400
+
+    horario, error = HorarioService.marcar_entrada(data["trabajadora_id"])
+    if error:
+        return jsonify({"error": error}), 400
+    return jsonify(horario.to_dict()), 201
+
+
+@horario_bp.route("/salida", methods=["POST"])
+def marcar_salida():
+    data = request.get_json()
+    if data.get("trabajadora_id") is None:
+        return jsonify({"error": "trabajadora_id es obligatorio"}), 400
+
+    horario, error = HorarioService.marcar_salida(data["trabajadora_id"])
+    if error:
+        return jsonify({"error": error}), 400
+    return jsonify(horario.to_dict()), 200

@@ -15,4 +15,26 @@ def create_app():
     migrate.init_app(app, db)
     CORS(app)
 
+    with app.app_context():
+        from app.infrastructure import models  # noqa: F401
+
+    from app.interfaces.routes.producto_routes import producto_bp
+    from app.interfaces.routes.trabajadora_routes import trabajadora_bp
+    from app.interfaces.routes.venta_routes import venta_bp
+    from app.interfaces.routes.inventario_routes import inventario_bp
+    from app.interfaces.routes.proveedor_routes import proveedor_bp
+    from app.interfaces.routes.horario_routes import horario_bp
+    from app.interfaces.routes.receta_routes import receta_bp
+    from app.interfaces.routes.ingreso_egreso_routes import ingreso_egreso_bp
+    from app.interfaces.routes.admin_routes import admin_bp
+    app.register_blueprint(producto_bp)
+    app.register_blueprint(trabajadora_bp)
+    app.register_blueprint(venta_bp)
+    app.register_blueprint(inventario_bp)
+    app.register_blueprint(proveedor_bp)
+    app.register_blueprint(horario_bp)
+    app.register_blueprint(receta_bp)
+    app.register_blueprint(ingreso_egreso_bp)
+    app.register_blueprint(admin_bp)
+
     return app
