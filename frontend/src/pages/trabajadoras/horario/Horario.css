@@ -1,0 +1,141 @@
+.hor-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.hor-container h1 {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+}
+
+.hor-mensaje-exito,
+.hor-mensaje-error {
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.hor-mensaje-exito {
+  background: #DCEFE9;
+  color: #1B6A5C;
+}
+
+.hor-mensaje-error {
+  background: #F6DEDA;
+  color: var(--color-danger);
+}
+
+.hor-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+.hor-container select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.hor-estado {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.hor-estado-texto {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.75rem;
+}
+
+.hor-btn-marcar {
+  width: 100%;
+  padding: 0.9rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: white;
+}
+
+.hor-btn-marcar.entrada {
+  background: #1B6A5C;
+}
+
+.hor-btn-marcar.salida {
+  background: var(--color-danger);
+}
+
+.hor-historial {
+  margin-top: 2rem;
+}
+
+.hor-historial h2 {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.75rem;
+}
+
+.hor-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.8rem;
+}
+
+.hor-fecha {
+  color: var(--color-text-secondary);
+}
+
+.hor-horas {
+  font-weight: 600;
+}
+
+.hor-confirmacion {
+  margin-top: 1.5rem;
+}
+
+.hor-confirmacion h2 {
+  font-size: 1rem;
+  margin: 0 0 1rem;
+}
+
+.hor-resumen-fila {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.hor-confirmacion-botones {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.hor-confirmacion-botones button {
+  flex: 1;
+}
+
+.hor-btn-secundario {
+  padding: 0.9rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}

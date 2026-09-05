@@ -1,0 +1,182 @@
+.prodad-container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.prodad-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.prodad-header h1 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.prodad-btn-nuevo {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.prodad-mensaje-exito,
+.prodad-mensaje-error {
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.prodad-mensaje-exito {
+  background: #DCEFE9;
+  color: #1B6A5C;
+}
+
+.prodad-mensaje-error {
+  background: #F6DEDA;
+  color: var(--color-danger);
+}
+
+.prodad-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.prodad-form label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.5rem;
+}
+
+.prodad-form input {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.prodad-nota-stock {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 0.6rem 0 0;
+}
+
+.prodad-botones {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.prodad-botones button {
+  flex: 1;
+}
+
+.prodad-btn-secundario,
+.prodad-btn-primario,
+.prodad-btn-peligro,
+.prodad-btn-peligro-outline {
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.prodad-btn-secundario {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+}
+
+.prodad-btn-primario {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+}
+
+.prodad-btn-peligro {
+  background: var(--color-danger);
+  color: white;
+  border: none;
+}
+
+.prodad-btn-peligro-outline {
+  background: transparent;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.prodad-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.prodad-tarjeta {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.prodad-fila-principal {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.prodad-nombre {
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: block;
+}
+
+.prodad-categoria {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.prodad-precio {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.prodad-stock {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.3rem;
+}
+
+.prodad-acciones {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.prodad-acciones button {
+  flex: 1;
+}
+
+.prodad-confirmar {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.prodad-sin-datos {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 2rem 0;
+}

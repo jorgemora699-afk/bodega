@@ -1,0 +1,172 @@
+.inv-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.inv-container h1 {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+}
+
+.inv-seccion {
+  margin-bottom: 2rem;
+}
+
+.inv-seccion h2 {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.75rem;
+}
+
+.inv-mensaje-exito,
+.inv-mensaje-error {
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.inv-mensaje-exito {
+  background: #DCEFE9;
+  color: #1B6A5C;
+}
+
+.inv-mensaje-error {
+  background: #F6DEDA;
+  color: var(--color-danger);
+}
+
+.inv-grid-productos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.inv-prod-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.9rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.inv-prod-btn.activo {
+  border-color: var(--color-primary);
+  background: #FBEAC6;
+}
+
+.inv-prod-nombre {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.inv-prod-stock {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.inv-form-produccion {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inv-form-produccion label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.inv-form-produccion input {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.inv-btn-primario,
+.inv-btn-secundario {
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.inv-btn-primario {
+  background: var(--color-primary);
+  color: white;
+  margin-top: 0.5rem;
+}
+
+.inv-btn-secundario {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.inv-sin-alertas {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.inv-lista-bajo-stock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.inv-bajo-stock-card {
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.inv-bajo-stock-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.inv-badge-bajo {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  background: #FBEAC6;
+  color: #A6690A;
+}
+
+.inv-proveedores-lista {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.inv-proveedor-fila {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.inv-proveedor-fila a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.inv-sin-proveedor {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}

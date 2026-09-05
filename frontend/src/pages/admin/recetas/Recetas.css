@@ -1,0 +1,99 @@
+.rec-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.rec-container h1 {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+}
+
+.rec-container label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.rec-container > select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  margin: 0.4rem 0 1rem;
+}
+
+.rec-mensaje-exito,
+.rec-mensaje-error {
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.rec-mensaje-exito {
+  background: #DCEFE9;
+  color: #1B6A5C;
+}
+
+.rec-mensaje-error {
+  background: #F6DEDA;
+  color: var(--color-danger);
+}
+
+.rec-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rec-fila {
+  display: grid;
+  grid-template-columns: 1fr 70px 80px 28px;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.rec-fila input,
+.rec-fila select {
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.rec-btn-quitar {
+  background: transparent;
+  border: none;
+  color: var(--color-danger);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.rec-btn-agregar {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  color: var(--color-primary);
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+}
+
+.rec-btn-guardar {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.75rem;
+}
+
+.rec-btn-guardar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

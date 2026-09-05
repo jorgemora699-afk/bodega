@@ -1,7 +1,16 @@
-from datetime import datetime, date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from app import db
 from app.infrastructure.models import Horario
 from app.domain.horario import validar_marcar_entrada, validar_marcar_salida, TurnoYaAbiertoError, TurnoNoAbiertoError
+
+ZONA_COLOMBIA = ZoneInfo("America/Bogota")
+
+
+def _hoy_colombia():
+    """Fecha de 'hoy' según la hora de Colombia, sin importar en qué
+    zona horaria esté corriendo el servidor (local o Railway)."""
+    return datetime.now(ZONA_COLOMBIA).date()
 
 
 class HorarioService:
@@ -17,7 +26,7 @@ class HorarioService:
 
     @staticmethod
     def marcar_entrada(trabajadora_id):
-        hoy = date.today()
+        hoy = _hoy_colombia()
 
         existente = Horario.query.filter_by(
             trabajadora_id=trabajadora_id, fecha=hoy, hora_salida=None
@@ -39,7 +48,7 @@ class HorarioService:
 
     @staticmethod
     def marcar_salida(trabajadora_id):
-        hoy = date.today()
+        hoy = _hoy_colombia()
 
         horario = Horario.query.filter_by(
             trabajadora_id=trabajadora_id, fecha=hoy, hora_salida=None

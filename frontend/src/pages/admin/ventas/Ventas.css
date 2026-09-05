@@ -1,0 +1,194 @@
+.vad-container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.vad-container h1 {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+}
+
+.vad-mensaje-exito,
+.vad-mensaje-error {
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.vad-mensaje-exito {
+  background: #DCEFE9;
+  color: #1B6A5C;
+}
+
+.vad-mensaje-error {
+  background: #F6DEDA;
+  color: var(--color-danger);
+}
+
+.vad-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vad-tarjeta {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.vad-fila-principal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vad-producto {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.vad-badge-editado {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  background: #FBEAC6;
+  color: #A6690A;
+  margin-left: 0.5rem;
+}
+
+.vad-total {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.vad-detalle {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.3rem;
+}
+
+.vad-capitalize {
+  text-transform: capitalize;
+}
+
+.vad-fecha {
+  margin-top: 0.15rem;
+}
+
+.vad-acciones {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.vad-acciones button {
+  flex: 1;
+}
+
+.vad-btn-secundario,
+.vad-btn-primario,
+.vad-btn-peligro,
+.vad-btn-peligro-outline {
+  padding: 0.55rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.vad-btn-secundario {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+}
+
+.vad-btn-primario {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+}
+
+.vad-btn-peligro {
+  background: var(--color-danger);
+  color: white;
+  border: none;
+}
+
+.vad-btn-peligro-outline {
+  background: transparent;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.vad-form-edicion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.vad-form-edicion label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.4rem;
+}
+
+.vad-form-edicion input,
+.vad-form-edicion select {
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.vad-metodos {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.vad-metodo-btn {
+  flex: 1;
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.vad-metodo-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.vad-botones-edicion {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.vad-botones-edicion button {
+  flex: 1;
+}
+
+.vad-confirmar-anular {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.vad-sin-ventas {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 2rem 0;
+}

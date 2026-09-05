@@ -1,0 +1,169 @@
+.venta-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.venta-header h1 {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+}
+
+.venta-mensaje-exito,
+.venta-mensaje-error {
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.venta-mensaje-exito {
+  background: #DCEFE9;
+  color: #1B6A5C;
+}
+
+.venta-mensaje-error {
+  background: #F6DEDA;
+  color: var(--color-danger);
+}
+
+.venta-grid-productos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.venta-prod-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.venta-prod-btn.activo {
+  border-color: var(--color-primary);
+  background: #FBEAC6;
+}
+
+.venta-prod-nombre {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.venta-prod-precio {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.venta-prod-stock {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.venta-detalle {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.venta-detalle label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.6rem;
+}
+
+.venta-detalle input,
+.venta-detalle select {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.venta-metodos {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.venta-metodo-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
+.venta-metodo-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.venta-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.venta-btn-primario,
+.venta-btn-secundario {
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  margin-top: 1rem;
+}
+
+.venta-btn-primario {
+  background: var(--color-primary);
+  color: white;
+}
+
+.venta-btn-secundario {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+}
+
+.venta-confirmacion {
+  margin-top: 1rem;
+}
+
+.venta-resumen-fila {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.venta-resumen-total {
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-bottom: none;
+  margin-top: 0.5rem;
+}
+
+.venta-confirmacion-botones {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.venta-confirmacion-botones button {
+  flex: 1;
+  margin-top: 1.25rem;
+}

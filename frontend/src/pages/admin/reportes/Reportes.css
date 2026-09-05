@@ -1,0 +1,128 @@
+.rep-container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.rep-container h1 {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+}
+
+.rep-periodos {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.rep-periodo-btn {
+  flex: 1;
+  padding: 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rep-periodo-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.rep-mensaje-error {
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  background: #F6DEDA;
+  color: var(--color-danger);
+}
+
+.rep-resumen {
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  margin-bottom: 2rem;
+}
+
+.rep-resumen-fila {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+.rep-resumen-valor {
+  font-weight: 700;
+}
+
+.rep-seccion h2 {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.9rem;
+}
+
+.rep-sin-datos {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.rep-lista-productos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.rep-producto-fila {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rep-producto-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.rep-producto-puesto {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.rep-producto-nombre {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.rep-barra-fondo {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.rep-barra-relleno {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.rep-producto-cifras {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.rep-producto-total {
+  font-weight: 600;
+  color: var(--color-primary);
+}

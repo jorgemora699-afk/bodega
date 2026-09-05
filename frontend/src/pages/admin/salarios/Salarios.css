@@ -1,0 +1,111 @@
+.sal-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.sal-container h1 {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+}
+
+.sal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sal-form label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.5rem;
+}
+
+.sal-form select,
+.sal-form input {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.sal-fechas {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.sal-fechas > div {
+  flex: 1;
+}
+
+.sal-btn-calcular {
+  margin-top: 1rem;
+  padding: 0.7rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sal-btn-calcular:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sal-mensaje-error {
+  margin-top: 1rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  background: #F6DEDA;
+  color: var(--color-danger);
+}
+
+.sal-resultado {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.sal-resultado h2 {
+  font-size: 1rem;
+  margin: 0 0 0.2rem;
+}
+
+.sal-rango {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 1rem;
+}
+
+.sal-fila {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.sal-fila-total {
+  border-bottom: none;
+  margin-top: 0.4rem;
+  font-weight: 700;
+}
+
+.sal-valor-total {
+  font-size: 1.2rem;
+}
+
+.sal-nota {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #A6690A;
+  background: #FBEAC6;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+}

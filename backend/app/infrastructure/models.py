@@ -93,7 +93,7 @@ class Venta(db.Model):
             "precio_unitario": float(self.precio_unitario),
             "total": float(self.total),
             "metodo_pago": self.metodo_pago,
-            "fecha": self.fecha.isoformat(),
+            "fecha": self.fecha.isoformat() + "Z",
             "editado": self.editado,
         }
 
@@ -126,7 +126,7 @@ class MovimientoInventario(db.Model):
             "tipo": self.tipo,
             "motivo": self.motivo,
             "cantidad": float(self.cantidad),
-            "fecha": self.fecha.isoformat(),
+            "fecha": self.fecha.isoformat() + "Z",
         }
 
     def __repr__(self):
@@ -173,8 +173,8 @@ class Horario(db.Model):
             "trabajadora_id": self.trabajadora_id,
             "trabajadora_nombre": self.trabajadora.nombre if self.trabajadora else None,
             "fecha": self.fecha.isoformat(),
-            "hora_entrada": self.hora_entrada.isoformat() if self.hora_entrada else None,
-            "hora_salida": self.hora_salida.isoformat() if self.hora_salida else None,
+            "hora_entrada": self.hora_entrada.isoformat() + "Z" if self.hora_entrada else None,
+            "hora_salida": self.hora_salida.isoformat() + "Z" if self.hora_salida else None,
             "horas_trabajadas": calcular_horas_trabajadas(self.hora_entrada, self.hora_salida),
         }
 
@@ -246,7 +246,7 @@ class IngresoEgreso(db.Model):
             "descripcion": self.descripcion,
             "proveedor_id": self.proveedor_id,
             "proveedor_nombre": self.proveedor.nombre if self.proveedor else None,
-            "fecha": self.fecha.isoformat(),
+            "fecha": self.fecha.isoformat() + "Z",
         }
 
     def __repr__(self):
