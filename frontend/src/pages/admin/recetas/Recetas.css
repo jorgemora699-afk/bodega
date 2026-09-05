@@ -1,26 +1,23 @@
 .rec-container {
-  max-width: 480px;
+  max-width: 560px;
   margin: 0 auto;
   padding: 1.5rem 1rem 3rem;
 }
 
-.rec-container h1 {
-  font-size: 1.15rem;
-  margin: 0 0 1.25rem;
+.rec-header {
+  margin-bottom: 1.25rem;
 }
 
-.rec-container label {
-  font-size: 0.8rem;
+.rec-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.2rem;
+  font-weight: 700;
+}
+
+.rec-header p {
+  margin: 0;
+  font-size: 0.88rem;
   color: var(--color-text-secondary);
-}
-
-.rec-container > select {
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  font-size: 0.9rem;
-  margin: 0.4rem 0 1rem;
 }
 
 .rec-mensaje-exito,
@@ -37,14 +34,65 @@
 }
 
 .rec-mensaje-error {
-  background: #F6DEDA;
+  background: var(--color-danger-tint);
   color: var(--color-danger);
+}
+
+.rec-buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.rec-buscador input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  background: transparent;
+}
+
+.rec-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.rec-container > select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.9rem;
+  margin: 0.4rem 0 1.25rem;
 }
 
 .rec-form {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem;
+}
+
+.rec-form-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.3rem;
 }
 
 .rec-fila {
@@ -58,31 +106,46 @@
 .rec-fila select {
   padding: 0.5rem 0.6rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   font-size: 0.85rem;
   width: 100%;
 }
 
 .rec-btn-quitar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
   color: var(--color-danger);
-  font-size: 1rem;
   cursor: pointer;
+  padding: 0.3rem;
 }
 
 .rec-btn-agregar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   background: transparent;
-  border: 1px dashed var(--color-border);
+  border: 1.5px dashed var(--color-border);
   color: var(--color-primary);
-  padding: 0.5rem;
+  padding: 0.55rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 0.85rem;
+  font-weight: 600;
   margin-top: 0.4rem;
 }
 
+.rec-botones-principales {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
 .rec-btn-guardar {
+  flex: 1;
   background: var(--color-primary);
   color: white;
   border: none;
@@ -90,10 +153,70 @@
   border-radius: var(--radius-sm);
   font-weight: 600;
   cursor: pointer;
-  margin-top: 0.75rem;
 }
 
 .rec-btn-guardar:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.rec-btn-eliminar-outline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1.5px solid var(--color-danger);
+  color: var(--color-danger);
+  padding: 0 0.9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.rec-confirmar {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.rec-confirmar-botones {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.rec-confirmar-botones button {
+  flex: 1;
+  padding: 0.55rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.rec-btn-secundario {
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-primary);
+}
+
+.rec-btn-eliminar {
+  background: var(--color-danger);
+  color: white;
+  border: none;
+}
+
+.rec-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 3rem 1rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.rec-vacio p {
+  font-size: 0.85rem;
+  margin: 0;
 }

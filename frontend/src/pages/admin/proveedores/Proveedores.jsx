@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Truck, Plus, Phone, Pencil, Trash2, X, Search, Package } from "lucide-react";
 import {
   listarProveedores,
   crearProveedor,
@@ -15,6 +16,7 @@ function formVacio() {
 export default function Proveedores() {
   const [proveedores, setProveedores] = useState([]);
   const [productos, setProductos] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
 
   const [creando, setCreando] = useState(false);
   const [form, setForm] = useState(formVacio());
@@ -125,16 +127,24 @@ export default function Proveedores() {
 
   const formularioAbierto = creando || editandoId !== null;
 
+  const proveedoresFiltrados = proveedores.filter((p) =>
+    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
   return (
     <div className="prov-container">
-      <div className="prov-header">
-        <h1>Proveedores</h1>
+      <header className="prov-header">
+        <div>
+          <h1>Proveedores</h1>
+          <p>Contactos para reabastecer el inventario</p>
+        </div>
         {!formularioAbierto && (
           <button className="prov-btn-nuevo" onClick={iniciarCreacion}>
-            + Nuevo
+            <Plus size={16} />
+            Nuevo
           </button>
         )}
-      </div>
+      </header>
 
       {mensaje && <div className="prov-mensaje-exito">{mensaje}</div>}
       {error && <div className="prov-mensaje-error">{error}</div>}
@@ -146,6 +156,7 @@ export default function Proveedores() {
             type="text"
             value={form.nombre}
             onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+            placeholder="Ej: Distribuidora Los Andes"
           />
 
           <label>Celular</label>
@@ -153,6 +164,7 @@ export default function Proveedores() {
             type="text"
             value={form.celular}
             onChange={(e) => setForm((f) => ({ ...f, celular: e.target.value }))}
+            placeholder="Ej: 3001234567"
           />
 
           <label>Notas (opcional)</label>
@@ -160,6 +172,7 @@ export default function Proveedores() {
             value={form.notas}
             onChange={(e) => setForm((f) => ({ ...f, notas: e.target.value }))}
             rows={2}
+            placeholder="Ej: entrega los martes y viernes"
           />
 
           <label>Productos que suministra</label>
@@ -174,10 +187,14 @@ export default function Proveedores() {
                 {p.nombre}
               </label>
             ))}
+            {productos.length === 0 && (
+              <p className="prov-checks-vacio">No hay productos creados todavía</p>
+            )}
           </div>
 
           <div className="prov-botones">
             <button className="prov-btn-secundario" onClick={cancelar} disabled={guardando}>
+              <X size={15} />
               Cancelar
             </button>
             <button className="prov-btn-primario" onClick={guardar} disabled={guardando}>
@@ -188,68 +205,94 @@ export default function Proveedores() {
       )}
 
       {!formularioAbierto && (
-        <div className="prov-lista">
-          {proveedores.map((prov) => (
-            <div key={prov.id} className="prov-tarjeta">
-              <div className="prov-fila-principal">
-                <span className="prov-nombre">{prov.nombre}</span>
-                <a href={`tel:${prov.celular}`} className="prov-celular">
-                  {prov.celular}
-                </a>
-              </div>
+        <>
+          {proveedores.length > 0 && (
+            <div className="prov-buscador">
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Buscar proveedor..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+          )}
 
-              {prov.notas && <p className="prov-notas">{prov.notas}</p>}
-
-              {prov.productos.length > 0 && (
-                <div className="prov-productos-tags">
-                  {prov.productos.map((p) => (
-                    <span key={p.id} className="prov-tag">
-                      {p.nombre}
-                    </span>
-                  ))}
+          <div className="prov-lista">
+            {proveedoresFiltrados.map((prov) => (
+              <div key={prov.id} className="prov-tarjeta">
+                <div className="prov-fila-principal">
+                  <div className="prov-nombre-icono">
+                    <div className="prov-icono-avatar">
+                      <Truck size={16} />
+                    </div>
+                    <span className="prov-nombre">{prov.nombre}</span>
+                  </div>
+                  <a href={`tel:${prov.celular}`} className="prov-celular">
+                    <Phone size={13} />
+                    {prov.celular}
+                  </a>
                 </div>
-              )}
 
-              {confirmandoEliminar === prov.id ? (
-                <div className="prov-confirmar">
-                  <span>¿Eliminar este proveedor?</span>
-                  <div className="prov-botones">
-                    <button
-                      className="prov-btn-secundario"
-                      onClick={() => setConfirmandoEliminar(null)}
-                      disabled={guardando}
-                    >
-                      No
+                {prov.notas && <p className="prov-notas">{prov.notas}</p>}
+
+                {prov.productos.length > 0 && (
+                  <div className="prov-productos-tags">
+                    {prov.productos.map((p) => (
+                      <span key={p.id} className="prov-tag">
+                        <Package size={11} />
+                        {p.nombre}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {confirmandoEliminar === prov.id ? (
+                  <div className="prov-confirmar">
+                    <span>¿Eliminar este proveedor?</span>
+                    <div className="prov-botones">
+                      <button
+                        className="prov-btn-secundario"
+                        onClick={() => setConfirmandoEliminar(null)}
+                        disabled={guardando}
+                      >
+                        No
+                      </button>
+                      <button
+                        className="prov-btn-peligro"
+                        onClick={() => confirmarEliminar(prov.id)}
+                        disabled={guardando}
+                      >
+                        Sí, eliminar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="prov-acciones">
+                    <button className="prov-btn-secundario" onClick={() => iniciarEdicion(prov)}>
+                      <Pencil size={13} />
+                      Editar
                     </button>
                     <button
-                      className="prov-btn-peligro"
-                      onClick={() => confirmarEliminar(prov.id)}
-                      disabled={guardando}
+                      className="prov-btn-peligro-outline"
+                      onClick={() => setConfirmandoEliminar(prov.id)}
                     >
-                      Sí, eliminar
+                      <Trash2 size={13} />
+                      Eliminar
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="prov-acciones">
-                  <button className="prov-btn-secundario" onClick={() => iniciarEdicion(prov)}>
-                    Editar
-                  </button>
-                  <button
-                    className="prov-btn-peligro-outline"
-                    onClick={() => setConfirmandoEliminar(prov.id)}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ))}
 
-          {proveedores.length === 0 && (
-            <p className="prov-sin-datos">Todavía no hay proveedores registrados</p>
-          )}
-        </div>
+            {proveedores.length === 0 && (
+              <p className="prov-sin-datos">Todavía no hay proveedores registrados</p>
+            )}
+            {proveedores.length > 0 && proveedoresFiltrados.length === 0 && (
+              <p className="prov-sin-datos">Ningún proveedor coincide con "{busqueda}"</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

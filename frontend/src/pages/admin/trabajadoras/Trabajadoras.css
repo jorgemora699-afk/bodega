@@ -1,5 +1,5 @@
 .trabad-container {
-  max-width: 560px;
+  max-width: 640px;
   margin: 0 auto;
   padding: 1.5rem 1rem 3rem;
 }
@@ -7,24 +7,35 @@
 .trabad-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
 }
 
 .trabad-header h1 {
-  font-size: 1.15rem;
+  font-size: 1.5rem;
+  margin: 0 0 0.2rem;
+  font-weight: 700;
+}
+
+.trabad-header p {
   margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
 }
 
 .trabad-btn-nuevo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   background: var(--color-primary);
   color: white;
   border: none;
-  padding: 0.5rem 0.9rem;
+  padding: 0.55rem 1rem;
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .trabad-mensaje-exito,
@@ -41,26 +52,44 @@
 }
 
 .trabad-mensaje-error {
-  background: #F6DEDA;
+  background: var(--color-danger-tint);
   color: var(--color-danger);
+}
+
+.trabad-alerta-global {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-brand);
+  color: var(--color-brand-dark);
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 1.1rem;
 }
 
 .trabad-form {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem;
 }
 
 .trabad-form label {
   font-size: 0.8rem;
   color: var(--color-text-secondary);
+  font-weight: 600;
   margin-top: 0.5rem;
 }
 
 .trabad-form input {
   padding: 0.6rem 0.75rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   font-size: 0.9rem;
 }
 
@@ -72,6 +101,10 @@
 
 .trabad-botones button {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
 }
 
 .trabad-btn-secundario,
@@ -87,7 +120,7 @@
 
 .trabad-btn-secundario {
   background: transparent;
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   color: var(--color-primary);
 }
 
@@ -104,9 +137,33 @@
 }
 
 .trabad-btn-peligro-outline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
   background: transparent;
-  border: 1px solid var(--color-danger);
+  border: 1.5px solid var(--color-danger);
   color: var(--color-danger);
+}
+
+.trabad-buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  margin-bottom: 1.1rem;
+}
+
+.trabad-buscador input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  background: transparent;
 }
 
 .trabad-lista {
@@ -116,9 +173,9 @@
 }
 
 .trabad-tarjeta {
-  padding: 0.9rem 1rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
   background: var(--color-surface);
 }
 
@@ -126,31 +183,75 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.trabad-nombre-icono {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.trabad-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  color: var(--color-brand-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .trabad-nombre {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.95rem;
 }
 
 .trabad-valor-hora {
-  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.82rem;
   color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.trabad-sin-valor {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-brand-dark);
+  background: var(--color-brand);
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
 }
 
 .trabad-acciones {
   display: flex;
   gap: 0.6rem;
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .trabad-acciones button {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
 }
 
 .trabad-confirmar {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--color-border);
   font-size: 0.85rem;
 }

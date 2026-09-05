@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { LogIn, LogOut, Clock, CheckCircle2 } from "lucide-react";
-import { listarTrabajadoras } from "../../../api/trabajadoras";
-import { marcarEntrada, marcarSalida, listarHorarios } from "../../../api/horarios";
+import { listarTrabajadoras } from "../../api/trabajadoras";
+import { marcarEntrada, marcarSalida, listarHorarios } from "../../api/horarios";
 import "./Horario.css";
 
 export default function Horario() {
   const [trabajadoras, setTrabajadoras] = useState([]);
   const [trabajadoraId, setTrabajadoraId] = useState("");
-  const [historial, setHistorial] = useState([]);
+  const [turnoAbierto, setTurnoAbierto] = useState(null);
 
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -19,9 +19,9 @@ export default function Horario() {
 
   useEffect(() => {
     if (trabajadoraId) {
-      cargarHistorial(trabajadoraId);
+      cargarEstadoTurno(trabajadoraId);
     } else {
-      setHistorial([]);
+      setTurnoAbierto(null);
     }
   }, [trabajadoraId]);
 
@@ -34,12 +34,13 @@ export default function Horario() {
     }
   }
 
-  async function cargarHistorial(id) {
+  async function cargarEstadoTurno(id) {
     try {
-      const data = await listarHorarios(Number(id));
-      setHistorial(data);
+      const historial = await listarHorarios({ trabajadora_id: Number(id) });
+      const abierto = historial.find((t) => !t.hora_salida) || null;
+      setTurnoAbierto(abierto);
     } catch (err) {
-      setError("No se pudo cargar el historial");
+      setError("No se pudo consultar el estado del turno");
     }
   }
 
@@ -54,7 +55,7 @@ export default function Horario() {
     try {
       await marcarEntrada(Number(trabajadoraId));
       setMensaje("Entrada registrada");
-      cargarHistorial(trabajadoraId);
+      cargarEstadoTurno(trabajadoraId);
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo marcar la entrada");
     } finally {
@@ -73,7 +74,7 @@ export default function Horario() {
     try {
       await marcarSalida(Number(trabajadoraId));
       setMensaje("Salida registrada");
-      cargarHistorial(trabajadoraId);
+      cargarEstadoTurno(trabajadoraId);
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo marcar la salida");
     } finally {
@@ -88,13 +89,6 @@ export default function Horario() {
       minute: "2-digit",
     });
   }
-
-  function formatearFecha(fechaString) {
-    const [año, mes, dia] = fechaString.split("-");
-    return `${dia}/${mes}`;
-  }
-
-  const turnoAbierto = historial.find((t) => !t.hora_salida);
 
   return (
     <div className="hor-container">
@@ -151,29 +145,6 @@ export default function Horario() {
           Marcar salida
         </button>
       </div>
-
-      {trabajadoraId && (
-        <section className="hor-historial">
-          <h2>Historial</h2>
-          {historial.length === 0 ? (
-            <p className="hor-sin-registros">Todavía no hay turnos registrados</p>
-          ) : (
-            <div className="hor-lista">
-              {historial.map((turno) => (
-                <div key={turno.id} className="hor-fila">
-                  <span className="hor-fecha">{formatearFecha(turno.fecha)}</span>
-                  <span className="hor-horas-rango">
-                    {formatearHora(turno.hora_entrada)} → {formatearHora(turno.hora_salida)}
-                  </span>
-                  <span className={`hor-badge ${turno.horas_trabajadas === null ? "en-curso" : ""}`}>
-                    {turno.horas_trabajadas !== null ? `${turno.horas_trabajadas}h` : "En curso"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
     </div>
   );
 }

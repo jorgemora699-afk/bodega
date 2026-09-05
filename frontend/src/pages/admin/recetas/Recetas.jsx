@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { ChefHat, Plus, Trash2, X, Search, ListChecks } from "lucide-react";
+import { obtenerReceta, guardarReceta, eliminarReceta } from "../../../api/recetas";
 import { listarProductos } from "../../../api/productos";
-import { obtenerReceta, guardarReceta } from "../../../api/recetas";
 import "./Recetas.css";
 
 const UNIDADES = ["g", "kg", "ml", "l", "unidad"];
@@ -11,8 +12,11 @@ function ingredienteVacio() {
 
 export default function Recetas() {
   const [productos, setProductos] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
   const [productoId, setProductoId] = useState("");
   const [ingredientes, setIngredientes] = useState([ingredienteVacio()]);
+  const [tieneReceta, setTieneReceta] = useState(false);
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
 
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -26,6 +30,7 @@ export default function Recetas() {
   useEffect(() => {
     if (!productoId) {
       setIngredientes([ingredienteVacio()]);
+      setTieneReceta(false);
       return;
     }
     cargarReceta(productoId);
@@ -35,6 +40,7 @@ export default function Recetas() {
     setCargando(true);
     setMensaje(null);
     setError(null);
+    setConfirmandoEliminar(false);
     try {
       const receta = await obtenerReceta(id);
       if (receta && receta.ingredientes.length > 0) {
@@ -45,8 +51,10 @@ export default function Recetas() {
             unidad: i.unidad,
           }))
         );
+        setTieneReceta(true);
       } else {
         setIngredientes([ingredienteVacio()]);
+        setTieneReceta(false);
       }
     } catch (err) {
       setError("No se pudo cargar la receta");
@@ -93,6 +101,7 @@ export default function Recetas() {
         }))
       );
       setMensaje("Receta guardada correctamente");
+      setTieneReceta(true);
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo guardar la receta");
     } finally {
@@ -100,25 +109,65 @@ export default function Recetas() {
     }
   }
 
+  async function handleEliminar() {
+    setGuardando(true);
+    setError(null);
+    try {
+      await eliminarReceta(productoId);
+      setMensaje("Receta eliminada");
+      setIngredientes([ingredienteVacio()]);
+      setTieneReceta(false);
+      setConfirmandoEliminar(false);
+    } catch (err) {
+      setError("No se pudo eliminar la receta");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  const productosFiltrados = productos.filter((p) =>
+    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
   return (
     <div className="rec-container">
-      <h1>Recetas</h1>
+      <header className="rec-header">
+        <div>
+          <h1>Recetas</h1>
+          <p>Ingredientes y cantidades por producto</p>
+        </div>
+      </header>
 
-      <label>Producto</label>
+      {mensaje && <div className="rec-mensaje-exito">{mensaje}</div>}
+      {error && <div className="rec-mensaje-error">{error}</div>}
+
+      <div className="rec-buscador">
+        <Search size={16} />
+        <input
+          type="text"
+          placeholder="Buscar producto..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
+
+      <label className="rec-label">Producto</label>
       <select value={productoId} onChange={(e) => setProductoId(e.target.value)}>
         <option value="">Selecciona un producto...</option>
-        {productos.map((p) => (
+        {productosFiltrados.map((p) => (
           <option key={p.id} value={p.id}>
             {p.nombre}
           </option>
         ))}
       </select>
 
-      {mensaje && <div className="rec-mensaje-exito">{mensaje}</div>}
-      {error && <div className="rec-mensaje-error">{error}</div>}
-
       {productoId && !cargando && (
         <div className="rec-form">
+          <div className="rec-form-titulo">
+            <ListChecks size={15} />
+            Ingredientes
+          </div>
+
           {ingredientes.map((ing, index) => (
             <div key={index} className="rec-fila">
               <input
@@ -145,19 +194,57 @@ export default function Recetas() {
               </select>
               {ingredientes.length > 1 && (
                 <button className="rec-btn-quitar" onClick={() => quitarFila(index)}>
-                  ✕
+                  <X size={14} />
                 </button>
               )}
             </div>
           ))}
 
           <button className="rec-btn-agregar" onClick={agregarFila}>
-            + Agregar ingrediente
+            <Plus size={14} />
+            Agregar ingrediente
           </button>
 
-          <button className="rec-btn-guardar" onClick={handleGuardar} disabled={guardando}>
-            {guardando ? "Guardando..." : "Guardar receta"}
-          </button>
+          <div className="rec-botones-principales">
+            <button className="rec-btn-guardar" onClick={handleGuardar} disabled={guardando}>
+              {guardando ? "Guardando..." : "Guardar receta"}
+            </button>
+
+            {tieneReceta && !confirmandoEliminar && (
+              <button
+                className="rec-btn-eliminar-outline"
+                onClick={() => setConfirmandoEliminar(true)}
+                disabled={guardando}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+
+          {confirmandoEliminar && (
+            <div className="rec-confirmar">
+              <span>¿Eliminar esta receta por completo?</span>
+              <div className="rec-confirmar-botones">
+                <button
+                  className="rec-btn-secundario"
+                  onClick={() => setConfirmandoEliminar(false)}
+                  disabled={guardando}
+                >
+                  No
+                </button>
+                <button className="rec-btn-eliminar" onClick={handleEliminar} disabled={guardando}>
+                  {guardando ? "Eliminando..." : "Sí, eliminar"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!productoId && (
+        <div className="rec-vacio">
+          <ChefHat size={28} />
+          <p>Selecciona un producto para ver o crear su receta</p>
         </div>
       )}
     </div>

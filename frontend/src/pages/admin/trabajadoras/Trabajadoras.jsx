@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { UserRound, Plus, Pencil, Trash2, X, Search, DollarSign, AlertTriangle } from "lucide-react";
 import {
   listarTrabajadoras,
   crearTrabajadora,
@@ -11,8 +12,18 @@ function formVacio() {
   return { nombre: "", valor_hora: "" };
 }
 
+function iniciales(nombre) {
+  return nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join("");
+}
+
 export default function Trabajadoras() {
   const [trabajadoras, setTrabajadoras] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
 
   const [creando, setCreando] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -109,19 +120,38 @@ export default function Trabajadoras() {
 
   const formularioAbierto = creando || editandoId !== null;
 
+  const trabajadorasFiltradas = trabajadoras.filter((t) =>
+    t.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const sinValorHora = trabajadoras.filter((t) => t.valor_hora == null).length;
+
   return (
     <div className="trabad-container">
-      <div className="trabad-header">
-        <h1>Trabajadoras</h1>
+      <header className="trabad-header">
+        <div>
+          <h1>Trabajadoras</h1>
+          <p>Equipo y valor por hora para el cálculo de salario</p>
+        </div>
         {!formularioAbierto && (
           <button className="trabad-btn-nuevo" onClick={iniciarCreacion}>
-            + Nueva
+            <Plus size={16} />
+            Nueva
           </button>
         )}
-      </div>
+      </header>
 
       {mensaje && <div className="trabad-mensaje-exito">{mensaje}</div>}
       {error && <div className="trabad-mensaje-error">{error}</div>}
+
+      {!formularioAbierto && sinValorHora > 0 && (
+        <div className="trabad-alerta-global">
+          <AlertTriangle size={15} />
+          {sinValorHora === 1
+            ? "1 trabajadora no tiene valor por hora configurado"
+            : `${sinValorHora} trabajadoras no tienen valor por hora configurado`}
+        </div>
+      )}
 
       {formularioAbierto && (
         <div className="trabad-form">
@@ -130,6 +160,7 @@ export default function Trabajadoras() {
             type="text"
             value={form.nombre}
             onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+            placeholder="Ej: María Pérez"
           />
 
           <label>Valor por hora (opcional)</label>
@@ -144,6 +175,7 @@ export default function Trabajadoras() {
 
           <div className="trabad-botones">
             <button className="trabad-btn-secundario" onClick={cancelar} disabled={guardando}>
+              <X size={15} />
               Cancelar
             </button>
             <button className="trabad-btn-primario" onClick={guardar} disabled={guardando}>
@@ -154,58 +186,87 @@ export default function Trabajadoras() {
       )}
 
       {!formularioAbierto && (
-        <div className="trabad-lista">
-          {trabajadoras.map((t) => (
-            <div key={t.id} className="trabad-tarjeta">
-              <div className="trabad-fila-principal">
-                <span className="trabad-nombre">{t.nombre}</span>
-                <span className="trabad-valor-hora">
-                  {t.valor_hora != null
-                    ? `$${Number(t.valor_hora).toLocaleString("es-CO")}/h`
-                    : "Sin valor/hora"}
-                </span>
-              </div>
+        <>
+          {trabajadoras.length > 0 && (
+            <div className="trabad-buscador">
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Buscar trabajadora..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+          )}
 
-              {confirmandoEliminar === t.id ? (
-                <div className="trabad-confirmar">
-                  <span>¿Desactivar esta trabajadora?</span>
-                  <div className="trabad-botones">
-                    <button
-                      className="trabad-btn-secundario"
-                      onClick={() => setConfirmandoEliminar(null)}
-                      disabled={guardando}
-                    >
-                      No
+          <div className="trabad-lista">
+            {trabajadorasFiltradas.map((t) => (
+              <div key={t.id} className="trabad-tarjeta">
+                <div className="trabad-fila-principal">
+                  <div className="trabad-nombre-icono">
+                    <div className="trabad-avatar">{iniciales(t.nombre)}</div>
+                    <span className="trabad-nombre">{t.nombre}</span>
+                  </div>
+
+                  {t.valor_hora != null ? (
+                    <span className="trabad-valor-hora">
+                      <DollarSign size={13} />
+                      {Number(t.valor_hora).toLocaleString("es-CO")}/h
+                    </span>
+                  ) : (
+                    <span className="trabad-sin-valor">
+                      <AlertTriangle size={12} />
+                      Sin configurar
+                    </span>
+                  )}
+                </div>
+
+                {confirmandoEliminar === t.id ? (
+                  <div className="trabad-confirmar">
+                    <span>¿Desactivar esta trabajadora?</span>
+                    <div className="trabad-botones">
+                      <button
+                        className="trabad-btn-secundario"
+                        onClick={() => setConfirmandoEliminar(null)}
+                        disabled={guardando}
+                      >
+                        No
+                      </button>
+                      <button
+                        className="trabad-btn-peligro"
+                        onClick={() => confirmarEliminar(t.id)}
+                        disabled={guardando}
+                      >
+                        Sí, desactivar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="trabad-acciones">
+                    <button className="trabad-btn-secundario" onClick={() => iniciarEdicion(t)}>
+                      <Pencil size={13} />
+                      Editar
                     </button>
                     <button
-                      className="trabad-btn-peligro"
-                      onClick={() => confirmarEliminar(t.id)}
-                      disabled={guardando}
+                      className="trabad-btn-peligro-outline"
+                      onClick={() => setConfirmandoEliminar(t.id)}
                     >
-                      Sí, desactivar
+                      <Trash2 size={13} />
+                      Desactivar
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="trabad-acciones">
-                  <button className="trabad-btn-secundario" onClick={() => iniciarEdicion(t)}>
-                    Editar
-                  </button>
-                  <button
-                    className="trabad-btn-peligro-outline"
-                    onClick={() => setConfirmandoEliminar(t.id)}
-                  >
-                    Desactivar
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ))}
 
-          {trabajadoras.length === 0 && (
-            <p className="trabad-sin-datos">Todavía no hay trabajadoras registradas</p>
-          )}
-        </div>
+            {trabajadoras.length === 0 && (
+              <p className="trabad-sin-datos">Todavía no hay trabajadoras registradas</p>
+            )}
+            {trabajadoras.length > 0 && trabajadorasFiltradas.length === 0 && (
+              <p className="trabad-sin-datos">Ninguna trabajadora coincide con "{busqueda}"</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Package, Plus, Pencil, Trash2, X, Search, Tag, AlertTriangle } from "lucide-react";
 import {
   listarProductos,
   crearProducto,
@@ -7,12 +8,16 @@ import {
 } from "../../../api/productos";
 import "./Productos.css";
 
+const UMBRAL_BAJO_STOCK = 5;
+
 function formVacio() {
   return { nombre: "", categoria: "", precio_unitario: "", stock_actual: "" };
 }
 
 export default function Productos() {
   const [productos, setProductos] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("");
 
   const [creando, setCreando] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -115,16 +120,28 @@ export default function Productos() {
 
   const formularioAbierto = creando || editandoId !== null;
 
+  const categorias = [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort();
+
+  const productosFiltrados = productos.filter((p) => {
+    const coincideBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    const coincideCategoria = !categoriaFiltro || p.categoria === categoriaFiltro;
+    return coincideBusqueda && coincideCategoria;
+  });
+
   return (
     <div className="prodad-container">
-      <div className="prodad-header">
-        <h1>Productos</h1>
+      <header className="prodad-header">
+        <div>
+          <h1>Productos</h1>
+          <p>Catálogo, precios y categorías</p>
+        </div>
         {!formularioAbierto && (
           <button className="prodad-btn-nuevo" onClick={iniciarCreacion}>
-            + Nuevo
+            <Plus size={16} />
+            Nuevo
           </button>
         )}
-      </div>
+      </header>
 
       {mensaje && <div className="prodad-mensaje-exito">{mensaje}</div>}
       {error && <div className="prodad-mensaje-error">{error}</div>}
@@ -136,6 +153,7 @@ export default function Productos() {
             type="text"
             value={form.nombre}
             onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+            placeholder="Ej: Empanada de pollo"
           />
 
           <label>Categoría (opcional)</label>
@@ -144,7 +162,13 @@ export default function Productos() {
             value={form.categoria}
             onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
             placeholder="Ej: congelados"
+            list="prodad-categorias-sugeridas"
           />
+          <datalist id="prodad-categorias-sugeridas">
+            {categorias.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
 
           <label>Precio unitario</label>
           <input
@@ -176,6 +200,7 @@ export default function Productos() {
 
           <div className="prodad-botones">
             <button className="prodad-btn-secundario" onClick={cancelar} disabled={guardando}>
+              <X size={15} />
               Cancelar
             </button>
             <button className="prodad-btn-primario" onClick={guardar} disabled={guardando}>
@@ -186,61 +211,115 @@ export default function Productos() {
       )}
 
       {!formularioAbierto && (
-        <div className="prodad-lista">
-          {productos.map((p) => (
-            <div key={p.id} className="prodad-tarjeta">
-              <div className="prodad-fila-principal">
-                <div>
-                  <span className="prodad-nombre">{p.nombre}</span>
-                  {p.categoria && <span className="prodad-categoria">{p.categoria}</span>}
-                </div>
-                <span className="prodad-precio">
-                  ${Number(p.precio_unitario).toLocaleString("es-CO")}
-                </span>
+        <>
+          {productos.length > 0 && (
+            <>
+              <div className="prodad-buscador">
+                <Search size={16} />
+                <input
+                  type="text"
+                  placeholder="Buscar producto..."
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                />
               </div>
 
-              <div className="prodad-stock">Stock actual: {p.stock_actual}</div>
-
-              {confirmandoEliminar === p.id ? (
-                <div className="prodad-confirmar">
-                  <span>¿Desactivar este producto?</span>
-                  <div className="prodad-botones">
-                    <button
-                      className="prodad-btn-secundario"
-                      onClick={() => setConfirmandoEliminar(null)}
-                      disabled={guardando}
-                    >
-                      No
-                    </button>
-                    <button
-                      className="prodad-btn-peligro"
-                      onClick={() => confirmarEliminar(p.id)}
-                      disabled={guardando}
-                    >
-                      Sí, desactivar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="prodad-acciones">
-                  <button className="prodad-btn-secundario" onClick={() => iniciarEdicion(p)}>
-                    Editar
-                  </button>
+              {categorias.length > 0 && (
+                <div className="prodad-filtros-categoria">
                   <button
-                    className="prodad-btn-peligro-outline"
-                    onClick={() => setConfirmandoEliminar(p.id)}
+                    className={`prodad-chip ${categoriaFiltro === "" ? "activo" : ""}`}
+                    onClick={() => setCategoriaFiltro("")}
                   >
-                    Desactivar
+                    Todas
                   </button>
+                  {categorias.map((c) => (
+                    <button
+                      key={c}
+                      className={`prodad-chip ${categoriaFiltro === c ? "activo" : ""}`}
+                      onClick={() => setCategoriaFiltro(c)}
+                    >
+                      {c}
+                    </button>
+                  ))}
                 </div>
               )}
-            </div>
-          ))}
-
-          {productos.length === 0 && (
-            <p className="prodad-sin-datos">Todavía no hay productos registrados</p>
+            </>
           )}
-        </div>
+
+          <div className="prodad-lista">
+            {productosFiltrados.map((p) => {
+              const stockBajo = Number(p.stock_actual) <= UMBRAL_BAJO_STOCK;
+              return (
+                <div key={p.id} className="prodad-tarjeta">
+                  <div className="prodad-fila-principal">
+                    <div className="prodad-info">
+                      <span className="prodad-nombre">{p.nombre}</span>
+                      {p.categoria && (
+                        <span className="prodad-categoria">
+                          <Tag size={11} />
+                          {p.categoria}
+                        </span>
+                      )}
+                    </div>
+                    <span className="prodad-precio">
+                      ${Number(p.precio_unitario).toLocaleString("es-CO")}
+                    </span>
+                  </div>
+
+                  <div className="prodad-stock-fila">
+                    <span className={stockBajo ? "prodad-stock-bajo" : "prodad-stock"}>
+                      {stockBajo && <AlertTriangle size={12} />}
+                      Stock: {p.stock_actual}
+                    </span>
+                  </div>
+
+                  {confirmandoEliminar === p.id ? (
+                    <div className="prodad-confirmar">
+                      <span>¿Desactivar este producto?</span>
+                      <div className="prodad-botones">
+                        <button
+                          className="prodad-btn-secundario"
+                          onClick={() => setConfirmandoEliminar(null)}
+                          disabled={guardando}
+                        >
+                          No
+                        </button>
+                        <button
+                          className="prodad-btn-peligro"
+                          onClick={() => confirmarEliminar(p.id)}
+                          disabled={guardando}
+                        >
+                          Sí, desactivar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="prodad-acciones">
+                      <button className="prodad-btn-secundario" onClick={() => iniciarEdicion(p)}>
+                        <Pencil size={13} />
+                        Editar
+                      </button>
+                      <button
+                        className="prodad-btn-peligro-outline"
+                        onClick={() => setConfirmandoEliminar(p.id)}
+                      >
+                        <Trash2 size={13} />
+                        Desactivar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {productos.length === 0 && (
+              <p className="prodad-sin-datos">Todavía no hay productos registrados</p>
+            )}
+            {productos.length > 0 && productosFiltrados.length === 0 && (
+              <p className="prodad-sin-datos">Ningún producto coincide con el filtro</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
