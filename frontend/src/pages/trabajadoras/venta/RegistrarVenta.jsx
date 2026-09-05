@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
+import { ShoppingBag, Minus, Plus, Banknote, ArrowLeftRight, CreditCard, Check } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import { crearVenta } from "../../../api/ventas";
 import "./RegistrarVenta.css";
 
-const METODOS_PAGO = ["efectivo", "transferencia", "datafono"];
+const METODOS_PAGO = [
+  { valor: "efectivo", label: "Efectivo", Icon: Banknote },
+  { valor: "transferencia", label: "Transferencia", Icon: ArrowLeftRight },
+  { valor: "datafono", label: "Datáfono", Icon: CreditCard },
+];
 
 export default function RegistrarVenta() {
   const [productos, setProductos] = useState([]);
@@ -45,6 +50,10 @@ export default function RegistrarVenta() {
     setError(null);
   }
 
+  function ajustarCantidad(delta) {
+    setCantidad((c) => Math.max(1, Number(c) + delta));
+  }
+
   function irAConfirmar() {
     if (!productoSeleccionado || !metodoPago || !trabajadoraId) {
       setError("Selecciona producto, método de pago y quién realiza la venta");
@@ -71,8 +80,6 @@ export default function RegistrarVenta() {
       setCantidad(1);
       setMetodoPago("");
       setConfirmando(false);
-
-      // refresca el stock mostrado en la grilla de productos
       cargarDatos();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo registrar la venta");
@@ -90,50 +97,79 @@ export default function RegistrarVenta() {
     <div className="venta-container">
       <header className="venta-header">
         <h1>Registrar venta</h1>
+        <p>Selecciona el producto que se vendió</p>
       </header>
 
-      {mensaje && <div className="venta-mensaje-exito">{mensaje}</div>}
+      {mensaje && (
+        <div className="venta-mensaje-exito">
+          <Check size={16} /> {mensaje}
+        </div>
+      )}
       {error && <div className="venta-mensaje-error">{error}</div>}
 
       {!confirmando && (
         <>
           <div className="venta-grid-productos">
-            {productos.map((producto) => (
-              <button
-                key={producto.id}
-                className={`venta-prod-btn ${
-                  productoSeleccionado?.id === producto.id ? "activo" : ""
-                }`}
-                onClick={() => seleccionarProducto(producto)}
-              >
-                <span className="venta-prod-nombre">{producto.nombre}</span>
-                <span className="venta-prod-precio">
-                  ${Number(producto.precio_unitario).toLocaleString("es-CO")}
-                </span>
-                <span className="venta-prod-stock">Stock: {producto.stock_actual}</span>
-              </button>
-            ))}
+            {productos.map((producto) => {
+              const activo = productoSeleccionado?.id === producto.id;
+              const bajoStock = producto.stock_actual <= 5;
+              return (
+                <button
+                  key={producto.id}
+                  className={`venta-prod-btn ${activo ? "activo" : ""}`}
+                  onClick={() => seleccionarProducto(producto)}
+                >
+                  {activo && (
+                    <span className="venta-prod-check">
+                      <Check size={13} />
+                    </span>
+                  )}
+                  <span className="venta-prod-icono">
+                    <ShoppingBag size={20} />
+                  </span>
+                  <span className="venta-prod-nombre">{producto.nombre}</span>
+                  <span className="venta-prod-precio">
+                    ${Number(producto.precio_unitario).toLocaleString("es-CO")}
+                  </span>
+                  <span className={`venta-prod-stock ${bajoStock ? "bajo" : ""}`}>
+                    Stock: {producto.stock_actual}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {productoSeleccionado && (
             <div className="venta-detalle">
               <label>Cantidad</label>
-              <input
-                type="number"
-                min="1"
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-              />
+              <div className="venta-stepper">
+                <button
+                  type="button"
+                  className="venta-stepper-btn"
+                  onClick={() => ajustarCantidad(-1)}
+                >
+                  <Minus size={16} />
+                </button>
+                <span className="venta-stepper-valor">{cantidad}</span>
+                <button
+                  type="button"
+                  className="venta-stepper-btn"
+                  onClick={() => ajustarCantidad(1)}
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
 
               <label>Método de pago</label>
               <div className="venta-metodos">
-                {METODOS_PAGO.map((metodo) => (
+                {METODOS_PAGO.map(({ valor, label, Icon }) => (
                   <button
-                    key={metodo}
-                    className={`venta-metodo-btn ${metodoPago === metodo ? "activo" : ""}`}
-                    onClick={() => setMetodoPago(metodo)}
+                    key={valor}
+                    className={`venta-metodo-btn ${metodoPago === valor ? "activo" : ""}`}
+                    onClick={() => setMetodoPago(valor)}
                   >
-                    {metodo}
+                    <Icon size={18} />
+                    <span>{label}</span>
                   </button>
                 ))}
               </div>
@@ -166,7 +202,11 @@ export default function RegistrarVenta() {
 
       {confirmando && (
         <div className="venta-confirmacion">
+          <div className="venta-confirmacion-icono">
+            <ShoppingBag size={26} />
+          </div>
           <h2>Confirmar venta</h2>
+
           <div className="venta-resumen-fila">
             <span>Producto</span>
             <span>{productoSeleccionado.nombre}</span>
@@ -177,7 +217,7 @@ export default function RegistrarVenta() {
           </div>
           <div className="venta-resumen-fila">
             <span>Método de pago</span>
-            <span>{metodoPago}</span>
+            <span className="venta-capitalize">{metodoPago}</span>
           </div>
           <div className="venta-resumen-fila">
             <span>Vendido por</span>

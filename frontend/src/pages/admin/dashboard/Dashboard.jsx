@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
-import { resumenVentas, obtenerBalance } from "../../../api/admin";
+import { DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Award } from "lucide-react";
+import { resumenVentas, obtenerBalance, productosMasVendidos } from "../../../api/admin";
 import { listarBajoStock } from "../../../api/inventario";
 import "./Dashboard.css";
 
@@ -10,12 +9,10 @@ function formatearMoneda(valor) {
 }
 
 export default function Dashboard() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
   const [ventasHoy, setVentasHoy] = useState(null);
   const [balanceMes, setBalanceMes] = useState(null);
   const [bajoStock, setBajoStock] = useState([]);
+  const [topProductos, setTopProductos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,14 +24,16 @@ export default function Dashboard() {
     setCargando(true);
     setError(null);
     try {
-      const [ventas, balance, stock] = await Promise.all([
+      const [ventas, balance, stock, top] = await Promise.all([
         resumenVentas("dia"),
         obtenerBalance("mes"),
         listarBajoStock(),
+        productosMasVendidos("semana", 3),
       ]);
       setVentasHoy(ventas);
       setBalanceMes(balance);
       setBajoStock(stock);
+      setTopProductos(top);
     } catch (err) {
       setError("No se pudieron cargar los datos del panel");
     } finally {
@@ -42,32 +41,26 @@ export default function Dashboard() {
     }
   }
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
-  }
+  const balanceNegativo = (balanceMes?.balance_neto ?? 0) < 0;
 
-  const accesos = [
-    { label: "Ventas", ruta: "/admin/ventas" },
-    { label: "Reportes", ruta: "/admin/reportes" },
-    { label: "Salarios", ruta: "/admin/salarios" },
-    { label: "Ingresos / Egresos", ruta: "/admin/ingresos-egresos" },
-    { label: "Proveedores", ruta: "/admin/proveedores" },
-    { label: "Productos", ruta: "/admin/productos" },
-    { label: "Trabajadoras", ruta: "/admin/trabajadoras" },
-    { label: "Recetas", ruta: "/admin/recetas" },
-  ];
-
-    return (
+  return (
     <div className="dash-container">
-      <h1 className="dash-titulo">Panel del negocio</h1>
+      <header className="dash-header">
+        <h1>Panel del negocio</h1>
+        <p>Resumen de hoy y del mes en curso</p>
+      </header>
 
       {error && <div className="dash-mensaje-error">{error}</div>}
 
-      {!cargando && (
+      {cargando ? (
+        <p className="dash-cargando">Cargando...</p>
+      ) : (
         <>
           <section className="dash-tarjetas">
             <div className="dash-tarjeta">
+              <div className="dash-tarjeta-icono verde">
+                <DollarSign size={18} />
+              </div>
               <span className="dash-tarjeta-label">Ventas de hoy</span>
               <span className="dash-tarjeta-valor">
                 {formatearMoneda(ventasHoy?.total_ventas ?? 0)}
@@ -78,12 +71,11 @@ export default function Dashboard() {
             </div>
 
             <div className="dash-tarjeta">
+              <div className={`dash-tarjeta-icono ${balanceNegativo ? "rojo" : "ambar"}`}>
+                <TrendingUp size={18} />
+              </div>
               <span className="dash-tarjeta-label">Balance del mes</span>
-              <span
-                className={`dash-tarjeta-valor ${
-                  (balanceMes?.balance_neto ?? 0) < 0 ? "negativo" : ""
-                }`}
-              >
+              <span className={`dash-tarjeta-valor ${balanceNegativo ? "negativo" : ""}`}>
                 {formatearMoneda(balanceMes?.balance_neto ?? 0)}
               </span>
               <span className="dash-tarjeta-sub">
@@ -93,21 +85,51 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <section className="dash-seccion">
-            <h2>Productos por acabarse</h2>
-            {bajoStock.length === 0 ? (
-              <p className="dash-sin-alertas">Todo el stock está en buen nivel</p>
-            ) : (
-              <div className="dash-lista-stock">
-                {bajoStock.map((p) => (
-                  <div key={p.id} className="dash-stock-fila">
-                    <span>{p.nombre}</span>
-                    <span className="dash-badge-bajo">Quedan {p.stock_actual}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+          <div className="dash-columnas">
+            <section className="dash-seccion">
+              <h2>
+                <AlertTriangle size={15} />
+                Productos por acabarse
+              </h2>
+
+              {bajoStock.length === 0 ? (
+                <div className="dash-sin-alertas">
+                  <CheckCircle2 size={16} />
+                  <span>Todo el stock está en buen nivel</span>
+                </div>
+              ) : (
+                <div className="dash-lista-stock">
+                  {bajoStock.map((p) => (
+                    <div key={p.id} className="dash-stock-fila">
+                      <span>{p.nombre}</span>
+                      <span className="dash-badge-bajo">Quedan {p.stock_actual}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="dash-seccion">
+              <h2>
+                <Award size={15} />
+                Más vendidos esta semana
+              </h2>
+
+              {topProductos.length === 0 ? (
+                <p className="dash-sin-datos">No hay ventas esta semana todavía</p>
+              ) : (
+                <div className="dash-lista-top">
+                  {topProductos.map((p, index) => (
+                    <div key={p.producto_id} className="dash-top-fila">
+                      <span className="dash-top-puesto">#{index + 1}</span>
+                      <span className="dash-top-nombre">{p.producto_nombre}</span>
+                      <span className="dash-top-cantidad">{p.cantidad_vendida} un.</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
         </>
       )}
     </div>

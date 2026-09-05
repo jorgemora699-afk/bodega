@@ -3,23 +3,10 @@ from sqlalchemy import func
 from app import db
 from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora
 from app.domain.salario import calcular_horas_trabajadas, calcular_salario as calcular_salario_domain
+from calendar import monthrange
+from app.domain.periodos import rango_por_periodo
 
-
-
-def _rango_por_periodo(periodo):
-    hoy = date.today()
-    if periodo == "dia":
-        inicio = hoy
-    elif periodo == "semana":
-        inicio = hoy - timedelta(days=hoy.weekday())  # lunes de esta semana
-    elif periodo == "mes":
-        inicio = hoy.replace(day=1)
-    else:
-        raise ValueError("periodo debe ser 'dia', 'semana' o 'mes'")
-
-    inicio_dt = datetime.combine(inicio, datetime.min.time())
-    fin_dt = datetime.combine(hoy, datetime.max.time())
-    return inicio_dt, fin_dt
+from app.domain.periodos import rango_por_periodo as _rango_por_periodo
 
 
 class AdminService:
@@ -102,6 +89,86 @@ class AdminService:
         }
 
     @staticmethod
+    def ventas_por_trabajadora(periodo="dia"):
+        inicio, fin = rango_por_periodo(periodo)
+
+        resultados = db.session.query(
+            Trabajadora.id,
+            Trabajadora.nombre,
+            func.sum(Venta.total).label("total_vendido"),
+            func.count(Venta.id).label("cantidad_ventas"),
+        ).join(Venta, Venta.trabajadora_id == Trabajadora.id).filter(
+            Venta.fecha.between(inicio, fin)
+        ).group_by(Trabajadora.id, Trabajadora.nombre).order_by(
+            func.sum(Venta.total).desc()
+        ).all()
+
+        return [
+            {
+                "trabajadora_id": r.id,
+                "trabajadora_nombre": r.nombre,
+                "total_vendido": float(r.total_vendido),
+                "cantidad_ventas": r.cantidad_ventas,
+            }
+            for r in resultados
+        ]
+
+    @staticmethod
+    def ventas_por_dia(periodo="semana"):
+        inicio, fin = rango_por_periodo(periodo)
+
+        resultados = db.session.query(
+            func.date(Venta.fecha).label("fecha"),
+            func.sum(Venta.total).label("total"),
+        ).filter(
+            Venta.fecha.between(inicio, fin)
+        ).group_by(func.date(Venta.fecha)).order_by(func.date(Venta.fecha)).all()
+
+        return [
+            {"fecha": r.fecha.isoformat(), "total": float(r.total)}
+            for r in resultados
+        ]
+
+    @staticmethod
+    def tendencia_mensual(meses=6):
+        hoy = date.today()
+        resultado = []
+
+        for i in range(meses - 1, -1, -1):
+            mes = hoy.month - i
+            anio = hoy.year
+            while mes <= 0:
+                mes += 12
+                anio -= 1
+
+            inicio = date(anio, mes, 1)
+            ultimo_dia = monthrange(anio, mes)[1]
+            fin = date(anio, mes, ultimo_dia)
+
+            inicio_dt = datetime.combine(inicio, datetime.min.time())
+            fin_dt = datetime.combine(fin, datetime.max.time())
+
+            total_ventas = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
+                Venta.fecha.between(inicio_dt, fin_dt)
+            ).scalar()
+
+            resultado.append({
+                "etiqueta": inicio.strftime("%b %Y"),
+                "total_ventas": float(total_ventas),
+            })
+
+        return resultado
+
+    @staticmethod
+    def calcular_salarios(desde, hasta):
+        trabajadoras = Trabajadora.query.filter_by(activa=True).order_by(Trabajadora.nombre).all()
+        resultados = []
+        for t in trabajadoras:
+            resultado, _ = AdminService.calcular_salario(t.id, desde, hasta)
+            resultados.append(resultado)
+        return resultados
+
+    @staticmethod
     def calcular_salario(trabajadora_id, desde, hasta):
         trabajadora = Trabajadora.query.get(trabajadora_id)
         if not trabajadora:
@@ -131,3 +198,4 @@ class AdminService:
             "salario_calculado": salario_calculado,
             "nota": None if valor_hora is not None else "Falta configurar el valor por hora de esta trabajadora",
         }, None
+

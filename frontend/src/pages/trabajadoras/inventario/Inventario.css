@@ -1,12 +1,23 @@
 .inv-container {
-  max-width: 480px;
+  max-width: 560px;
   margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.5rem 1.25rem 3rem;
 }
 
-.inv-container h1 {
-  font-size: 1.15rem;
-  margin: 0 0 1.25rem;
+.inv-header {
+  margin-bottom: 1.5rem;
+}
+
+.inv-header h1 {
+  font-size: 1.3rem;
+  margin: 0 0 0.15rem;
+  font-weight: 700;
+}
+
+.inv-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
 }
 
 .inv-seccion {
@@ -14,107 +25,193 @@
 }
 
 .inv-seccion h2 {
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: var(--color-text-secondary);
-  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.85rem;
 }
 
 .inv-mensaje-exito,
 .inv-mensaje-error {
-  padding: 0.65rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  font-weight: 500;
 }
 
 .inv-mensaje-exito {
-  background: #DCEFE9;
-  color: #1B6A5C;
+  background: var(--color-success-tint);
+  color: var(--color-success);
 }
 
 .inv-mensaje-error {
-  background: #F6DEDA;
+  background: var(--color-danger-tint);
   color: var(--color-danger);
 }
 
 .inv-grid-productos {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
+}
+
+@media (min-width: 560px) {
+  .inv-grid-productos {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .inv-prod-btn {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.9rem 0.75rem;
-  border-radius: var(--radius-sm);
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding: 0.9rem;
+  border-radius: var(--radius-lg);
   border: 1.5px solid var(--color-border);
   background: var(--color-surface);
   cursor: pointer;
   text-align: left;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 .inv-prod-btn.activo {
-  border-color: var(--color-primary);
-  background: #FBEAC6;
+  border-color: var(--color-brand);
+  background: var(--color-brand-tint);
+}
+
+.inv-prod-icono {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inv-prod-btn.activo .inv-prod-icono {
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .inv-prod-nombre {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.85rem;
 }
 
 .inv-prod-stock {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--color-text-secondary);
 }
 
 .inv-form-produccion {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  animation: inv-aparecer 0.2s ease;
+}
+
+@keyframes inv-aparecer {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .inv-form-produccion label {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
-.inv-form-produccion input {
-  padding: 0.6rem 0.75rem;
+.inv-stepper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  width: fit-content;
+}
+
+.inv-stepper-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.inv-stepper-btn:active {
+  background: var(--color-brand-tint);
+}
+
+.inv-stepper-valor {
+  font-size: 1.1rem;
+  font-weight: 700;
+  min-width: 2ch;
+  text-align: center;
 }
 
 .inv-btn-primario,
 .inv-btn-secundario {
-  padding: 0.6rem;
   border-radius: var(--radius-sm);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
 .inv-btn-primario {
   background: var(--color-primary);
   color: white;
-  margin-top: 0.5rem;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.inv-btn-primario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .inv-btn-secundario {
   background: transparent;
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   color: var(--color-primary);
-  font-size: 0.8rem;
-  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  padding: 0.45rem 0.8rem;
 }
 
 .inv-sin-alertas {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.85rem;
-  color: var(--color-text-secondary);
+  color: var(--color-success);
+  background: var(--color-success-tint);
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
 }
 
 .inv-lista-bajo-stock {
@@ -124,9 +221,9 @@
 }
 
 .inv-bajo-stock-card {
-  padding: 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
   background: var(--color-surface);
 }
 
@@ -134,22 +231,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.65rem;
 }
 
 .inv-badge-bajo {
   font-size: 0.7rem;
   font-weight: 700;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 20px;
-  background: #FBEAC6;
-  color: #A6690A;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
 }
 
 .inv-proveedores-lista {
-  margin-top: 0.6rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--color-border);
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--color-border);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -158,15 +255,23 @@
 .inv-proveedor-fila {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-primary);
 }
 
-.inv-proveedor-fila a {
-  color: var(--color-primary);
-  font-weight: 600;
+.inv-proveedor-numero {
+  color: var(--color-brand-dark);
+  font-weight: 700;
 }
 
 .inv-sin-proveedor {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
+  margin: 0;
 }

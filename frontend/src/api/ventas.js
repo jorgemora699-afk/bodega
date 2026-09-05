@@ -5,8 +5,8 @@ export async function crearVenta(data) {
   return response.data;
 }
 
-export async function listarVentas() {
-  const response = await apiClient.get("/ventas");
+export async function listarVentas(periodo = "todas") {
+  const response = await apiClient.get("/ventas", { params: { periodo } });
   return response.data;
 }
 

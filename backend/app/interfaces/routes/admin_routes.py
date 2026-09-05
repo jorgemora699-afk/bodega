@@ -40,6 +40,32 @@ def balance():
         return jsonify({"error": str(e)}), 400
     return jsonify(resultado), 200
 
+@admin_bp.route("/ventas-por-trabajadora", methods=["GET"])
+def ventas_por_trabajadora():
+    periodo = request.args.get("periodo", default="dia")
+    try:
+        resultado = AdminService.ventas_por_trabajadora(periodo)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(resultado), 200
+
+
+@admin_bp.route("/ventas-por-dia", methods=["GET"])
+def ventas_por_dia():
+    periodo = request.args.get("periodo", default="semana")
+    try:
+        resultado = AdminService.ventas_por_dia(periodo)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(resultado), 200
+
+
+@admin_bp.route("/tendencia-mensual", methods=["GET"])
+def tendencia_mensual():
+    meses = request.args.get("meses", default=6, type=int)
+    resultado = AdminService.tendencia_mensual(meses)
+    return jsonify(resultado), 200
+
 
 @admin_bp.route("/salario", methods=["GET"])
 def calcular_salario():

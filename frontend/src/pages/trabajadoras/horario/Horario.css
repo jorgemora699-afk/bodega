@@ -1,141 +1,177 @@
 .hor-container {
   max-width: 480px;
   margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.5rem 1.25rem 3rem;
 }
 
-.hor-container h1 {
-  font-size: 1.15rem;
-  margin: 0 0 1.25rem;
+.hor-header {
+  margin-bottom: 1.5rem;
+}
+
+.hor-header h1 {
+  font-size: 1.3rem;
+  margin: 0 0 0.15rem;
+  font-weight: 700;
+}
+
+.hor-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.hor-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.hor-select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.9rem;
+  background: var(--color-surface);
+  margin: 0.5rem 0 1.1rem;
 }
 
 .hor-mensaje-exito,
 .hor-mensaje-error {
-  padding: 0.65rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   margin-bottom: 1rem;
+  font-weight: 500;
 }
 
 .hor-mensaje-exito {
-  background: #DCEFE9;
-  color: #1B6A5C;
+  background: var(--color-success-tint);
+  color: var(--color-success);
 }
 
 .hor-mensaje-error {
-  background: #F6DEDA;
+  background: var(--color-danger-tint);
   color: var(--color-danger);
 }
 
-.hor-label {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  margin-bottom: 0.4rem;
-}
-
-.hor-container select {
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  font-size: 0.9rem;
-}
-
 .hor-estado {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  text-align: center;
-}
-
-.hor-estado-texto {
-  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--color-text-secondary);
-  margin: 0 0 0.75rem;
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.25rem;
 }
 
-.hor-btn-marcar {
-  width: 100%;
-  padding: 0.9rem;
-  border-radius: var(--radius-sm);
+.hor-estado.activo {
+  color: var(--color-success);
+  background: var(--color-success-tint);
+  border-color: transparent;
+}
+
+.hor-botones {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.hor-botones button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.1rem 0.75rem;
+  border-radius: var(--radius-lg);
   border: none;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+}
+
+.hor-botones button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.hor-btn-entrada {
+  background: var(--color-success);
   color: white;
 }
 
-.hor-btn-marcar.entrada {
-  background: #1B6A5C;
-}
-
-.hor-btn-marcar.salida {
+.hor-btn-salida {
   background: var(--color-danger);
+  color: white;
 }
 
-.hor-historial {
-  margin-top: 2rem;
+.hor-botones button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .hor-historial h2 {
-  font-size: 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: var(--color-text-secondary);
-  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.85rem;
+}
+
+.hor-sin-registros {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.hor-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .hor-fila {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.8rem;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.82rem;
 }
 
 .hor-fecha {
+  font-weight: 700;
+  min-width: 3rem;
+}
+
+.hor-horas-rango {
+  flex: 1;
   color: var(--color-text-secondary);
 }
 
-.hor-horas {
-  font-weight: 600;
+.hor-badge {
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  white-space: nowrap;
 }
 
-.hor-confirmacion {
-  margin-top: 1.5rem;
-}
-
-.hor-confirmacion h2 {
-  font-size: 1rem;
-  margin: 0 0 1rem;
-}
-
-.hor-resumen-fila {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.9rem;
-}
-
-.hor-confirmacion-botones {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-}
-
-.hor-confirmacion-botones button {
-  flex: 1;
-}
-
-.hor-btn-secundario {
-  padding: 0.9rem;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-primary);
-  font-weight: 600;
-  cursor: pointer;
+.hor-badge.en-curso {
+  background: var(--color-success-tint);
+  color: var(--color-success);
 }

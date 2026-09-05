@@ -1,66 +1,96 @@
 .dash-container {
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  max-width: 900px;
 }
 
 .dash-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .dash-header h1 {
-  font-size: 1.15rem;
-  margin: 0;
+  font-size: 1.5rem;
+  margin: 0 0 0.2rem;
+  font-weight: 700;
 }
 
-.dash-btn-salir {
-  background: transparent;
-  border: 1px solid var(--color-border);
+.dash-header p {
+  margin: 0;
+  font-size: 0.88rem;
   color: var(--color-text-secondary);
-  padding: 0.4rem 0.9rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8rem;
-  cursor: pointer;
 }
 
 .dash-mensaje-error {
-  padding: 0.65rem 0.9rem;
+  padding: 0.7rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   margin-bottom: 1rem;
-  background: #F6DEDA;
+  background: var(--color-danger-tint);
   color: var(--color-danger);
+}
+
+.dash-cargando {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
 }
 
 .dash-tarjetas {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+@media (max-width: 560px) {
+  .dash-tarjetas {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dash-tarjeta {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.35rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 1rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  gap: 0.25rem;
   box-shadow: var(--shadow-md);
 }
 
+.dash-tarjeta-icono {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.dash-tarjeta-icono.verde {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+
+.dash-tarjeta-icono.ambar {
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.dash-tarjeta-icono.rojo {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
 .dash-tarjeta-label {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
+  font-weight: 600;
 }
 
 .dash-tarjeta-valor {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .dash-tarjeta-valor.negativo {
@@ -68,26 +98,60 @@
 }
 
 .dash-tarjeta-sub {
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
+}
+
+.dash-columnas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 720px) {
+  .dash-columnas {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dash-seccion {
-  margin-bottom: 2rem;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
 }
 
 .dash-seccion h2 {
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: var(--color-text-secondary);
-  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0 0 1rem;
 }
 
 .dash-sin-alertas {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.85rem;
-  color: var(--color-text-secondary);
+  color: var(--color-success);
+  background: var(--color-success-tint);
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
 }
 
-.dash-lista-stock {
+.dash-sin-datos {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.dash-lista-stock,
+.dash-lista-top {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -97,11 +161,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--color-bg);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
   font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .dash-badge-bajo {
@@ -109,27 +173,33 @@
   font-weight: 700;
   padding: 0.2rem 0.6rem;
   border-radius: 20px;
-  background: #FBEAC6;
-  color: #A6690A;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
 }
 
-.dash-grid-accesos {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.dash-top-fila {
+  display: flex;
+  align-items: center;
   gap: 0.6rem;
-}
-
-.dash-btn-acceso {
-  padding: 0.9rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
-}
-
-.dash-btn-acceso:active {
+  padding: 0.6rem 0.8rem;
   background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.dash-top-puesto {
+  font-weight: 800;
+  color: var(--color-brand-dark);
+  width: 1.6rem;
+}
+
+.dash-top-nombre {
+  flex: 1;
+  font-weight: 600;
+}
+
+.dash-top-cantidad {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
 }

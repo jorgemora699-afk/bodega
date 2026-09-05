@@ -1,111 +1,263 @@
 .sal-container {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  max-width: 640px;
 }
 
-.sal-container h1 {
-  font-size: 1.15rem;
-  margin: 0 0 1.25rem;
+.sal-header {
+  margin-bottom: 1.5rem;
 }
 
-.sal-form {
+.sal-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.2rem;
+  font-weight: 700;
+}
+
+.sal-header p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.sal-periodos {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+}
+
+.sal-periodo-btn {
+  padding: 0.5rem 0.9rem;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.sal-periodo-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.sal-fechas {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+
+.sal-fechas > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sal-fechas label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.sal-fechas input {
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.sal-mensaje-error {
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.sal-cargando,
+.sal-sin-datos {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.sal-total-general {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-sidebar-bg);
+  color: white;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.sal-total-general-valor {
+  margin-left: auto;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-brand);
+}
+
+.sal-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sal-tarjeta {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.sal-tarjeta-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sal-tarjeta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sal-nombre {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.sal-horas {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.sal-tarjeta-derecha {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--color-text-secondary);
+}
+
+.sal-monto {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.sal-monto.sin-configurar {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-brand-dark);
+}
+
+.sal-detalle {
+  padding: 0 1.1rem 1.1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.sal-valor-hora-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 0 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sal-valor-hora-label {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.sal-btn-editar-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.sal-valor-hora-input {
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.82rem;
+  width: 130px;
+}
+
+.sal-btn-guardar-mini,
+.sal-btn-cancelar-mini {
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+
+.sal-btn-guardar-mini {
+  background: var(--color-primary);
+  color: white;
+}
+
+.sal-btn-cancelar-mini {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.sal-detalle-titulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0.5rem 0 0.6rem;
+}
+
+.sal-sin-turnos {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.sal-dias-lista {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.sal-form label {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  margin-top: 0.5rem;
-}
-
-.sal-form select,
-.sal-form input {
-  padding: 0.6rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  font-size: 0.9rem;
-  width: 100%;
-}
-
-.sal-fechas {
-  display: flex;
-  gap: 0.6rem;
-}
-
-.sal-fechas > div {
-  flex: 1;
-}
-
-.sal-btn-calcular {
-  margin-top: 1rem;
-  padding: 0.7rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: var(--color-primary);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.sal-btn-calcular:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.sal-mensaje-error {
-  margin-top: 1rem;
-  padding: 0.65rem 0.9rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-  background: #F6DEDA;
-  color: var(--color-danger);
-}
-
-.sal-resultado {
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.sal-resultado h2 {
-  font-size: 1rem;
-  margin: 0 0 0.2rem;
-}
-
-.sal-rango {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  margin: 0 0 1rem;
-}
-
-.sal-fila {
+.sal-dia-fila {
   display: flex;
   justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.9rem;
-}
-
-.sal-fila-total {
-  border-bottom: none;
-  margin-top: 0.4rem;
-  font-weight: 700;
-}
-
-.sal-valor-total {
-  font-size: 1.2rem;
-}
-
-.sal-nota {
-  margin-top: 0.75rem;
-  font-size: 0.8rem;
-  color: #A6690A;
-  background: #FBEAC6;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--color-bg);
   border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+
+.sal-dia-horas {
+  font-weight: 700;
+  color: var(--color-brand-dark);
 }

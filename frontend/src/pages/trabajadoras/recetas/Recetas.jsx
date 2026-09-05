@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChefHat, Scale } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { obtenerReceta } from "../../../api/recetas";
 import "./Recetas.css";
@@ -38,10 +39,13 @@ export default function Recetas() {
 
   return (
     <div className="rec-container">
-      <h1>Recetas</h1>
+      <header className="rec-header">
+        <h1>Recetas</h1>
+        <p>Consulta los ingredientes de cada producto</p>
+      </header>
 
-      <label>Producto</label>
-      <select value={productoId} onChange={(e) => setProductoId(e.target.value)}>
+      <label className="rec-label">Producto</label>
+      <select className="rec-select" value={productoId} onChange={(e) => setProductoId(e.target.value)}>
         <option value="">Selecciona un producto...</option>
         {productos.map((p) => (
           <option key={p.id} value={p.id}>
@@ -55,11 +59,17 @@ export default function Recetas() {
       {productoId && !cargando && (
         <div className="rec-vista">
           {receta === null || receta.ingredientes.length === 0 ? (
-            <p className="rec-sin-receta">Este producto todavía no tiene receta registrada</p>
+            <div className="rec-sin-receta">
+              <ChefHat size={28} />
+              <p>Este producto todavía no tiene receta registrada</p>
+            </div>
           ) : (
             <ul className="rec-lista">
               {receta.ingredientes.map((ing) => (
                 <li key={ing.id} className="rec-fila-vista">
+                  <span className="rec-ing-icono">
+                    <Scale size={15} />
+                  </span>
                   <span className="rec-ing-nombre">{ing.nombre_ingrediente}</span>
                   <span className="rec-ing-cantidad">
                     {ing.cantidad} {ing.unidad}

@@ -1,24 +1,22 @@
 import { useEffect, useState } from "react";
+import { Package, PackagePlus, Phone, AlertTriangle, CheckCircle2, Minus, Plus } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { registrarEntrada, listarBajoStock } from "../../../api/inventario";
 import { listarProveedoresDeProducto } from "../../../api/proveedores";
-import { listarTrabajadoras } from "../../../api/trabajadoras";
 import "./Inventario.css";
 
 export default function Inventario() {
   const [productos, setProductos] = useState([]);
   const [bajoStock, setBajoStock] = useState([]);
-  const [trabajadoras, setTrabajadoras] = useState([]);
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [cantidad, setCantidad] = useState("");
-  const [trabajadoraId, setTrabajadoraId] = useState("");
+  const [cantidad, setCantidad] = useState(1);
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
 
   const [proveedoresPorProducto, setProveedoresPorProducto] = useState({});
-  const [cargandoProveedores, setCargandoProveedores] = useState(null);
+  const [expandido, setExpandido] = useState(null);
 
   useEffect(() => {
     cargarDatos();
@@ -26,14 +24,12 @@ export default function Inventario() {
 
   async function cargarDatos() {
     try {
-      const [productosData, bajoStockData, trabajadorasData] = await Promise.all([
+      const [productosData, bajoStockData] = await Promise.all([
         listarProductos(),
         listarBajoStock(),
-        listarTrabajadoras(),
       ]);
       setProductos(productosData);
       setBajoStock(bajoStockData);
-      setTrabajadoras(trabajadorasData);
     } catch (err) {
       setError("No se pudieron cargar los datos");
     }
@@ -41,15 +37,18 @@ export default function Inventario() {
 
   function seleccionarProducto(producto) {
     setProductoSeleccionado(producto);
-    setCantidad("");
-    setTrabajadoraId("");
+    setCantidad(1);
     setMensaje(null);
     setError(null);
   }
 
+  function ajustarCantidad(delta) {
+    setCantidad((c) => Math.max(1, Number(c) + delta));
+  }
+
   async function registrarProduccion() {
-    if (!productoSeleccionado || !cantidad || !trabajadoraId) {
-      setError("Selecciona un producto, ingresa la cantidad y quién la registra");
+    if (!productoSeleccionado) {
+      setError("Selecciona un producto");
       return;
     }
 
@@ -59,15 +58,13 @@ export default function Inventario() {
     try {
       await registrarEntrada({
         producto_id: productoSeleccionado.id,
-        trabajadora_id: Number(trabajadoraId),
         cantidad: Number(cantidad),
         motivo: "produccion",
       });
 
       setMensaje(`Se agregaron ${cantidad} unidades de ${productoSeleccionado.nombre}`);
       setProductoSeleccionado(null);
-      setCantidad("");
-      setTrabajadoraId("");
+      setCantidad(1);
       cargarDatos();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo registrar la producción");
@@ -77,29 +74,43 @@ export default function Inventario() {
   }
 
   async function verProveedores(productoId) {
-    if (proveedoresPorProducto[productoId]) {
-      setCargandoProveedores(cargandoProveedores === productoId ? null : productoId);
+    if (expandido === productoId) {
+      setExpandido(null);
       return;
     }
 
-    setCargandoProveedores(productoId);
-    try {
-      const proveedores = await listarProveedoresDeProducto(productoId);
-      setProveedoresPorProducto((prev) => ({ ...prev, [productoId]: proveedores }));
-    } catch (err) {
-      setError("No se pudieron cargar los proveedores");
+    setExpandido(productoId);
+
+    if (!proveedoresPorProducto[productoId]) {
+      try {
+        const proveedores = await listarProveedoresDeProducto(productoId);
+        setProveedoresPorProducto((prev) => ({ ...prev, [productoId]: proveedores }));
+      } catch (err) {
+        setError("No se pudieron cargar los proveedores");
+      }
     }
   }
 
   return (
     <div className="inv-container">
-      <h1>Inventario</h1>
+      <header className="inv-header">
+        <h1>Inventario</h1>
+        <p>Registra producción y revisa qué se está acabando</p>
+      </header>
 
-      {mensaje && <div className="inv-mensaje-exito">{mensaje}</div>}
+      {mensaje && (
+        <div className="inv-mensaje-exito">
+          <CheckCircle2 size={16} /> {mensaje}
+        </div>
+      )}
       {error && <div className="inv-mensaje-error">{error}</div>}
 
       <section className="inv-seccion">
-        <h2>Registrar producción</h2>
+        <h2>
+          <PackagePlus size={16} />
+          Registrar producción
+        </h2>
+
         <div className="inv-grid-productos">
           {productos.map((producto) => (
             <button
@@ -109,6 +120,9 @@ export default function Inventario() {
               }`}
               onClick={() => seleccionarProducto(producto)}
             >
+              <span className="inv-prod-icono">
+                <Package size={18} />
+              </span>
               <span className="inv-prod-nombre">{producto.nombre}</span>
               <span className="inv-prod-stock">Stock: {producto.stock_actual}</span>
             </button>
@@ -118,27 +132,15 @@ export default function Inventario() {
         {productoSeleccionado && (
           <div className="inv-form-produccion">
             <label>¿Cuántas unidades se hicieron de {productoSeleccionado.nombre}?</label>
-            <input
-              type="number"
-              min="1"
-              value={cantidad}
-              onChange={(e) => setCantidad(e.target.value)}
-              placeholder="Ej: 100"
-            />
-
-            <label>¿Quién la registra?</label>
-            <select
-              value={trabajadoraId}
-              onChange={(e) => setTrabajadoraId(e.target.value)}
-            >
-              <option value="">Selecciona...</option>
-              {trabajadoras.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nombre}
-                </option>
-              ))}
-            </select>
-
+            <div className="inv-stepper">
+              <button type="button" className="inv-stepper-btn" onClick={() => ajustarCantidad(-1)}>
+                <Minus size={16} />
+              </button>
+              <span className="inv-stepper-valor">{cantidad}</span>
+              <button type="button" className="inv-stepper-btn" onClick={() => ajustarCantidad(1)}>
+                <Plus size={16} />
+              </button>
+            </div>
             <button
               className="inv-btn-primario"
               onClick={registrarProduccion}
@@ -151,43 +153,52 @@ export default function Inventario() {
       </section>
 
       <section className="inv-seccion">
-        <h2>Productos por acabarse</h2>
-        {bajoStock.length === 0 && (
-          <p className="inv-sin-alertas">Todo el stock está en buen nivel</p>
-        )}
-        <div className="inv-lista-bajo-stock">
-          {bajoStock.map((producto) => (
-            <div key={producto.id} className="inv-bajo-stock-card">
-              <div className="inv-bajo-stock-info">
-                <span className="inv-prod-nombre">{producto.nombre}</span>
-                <span className="inv-badge-bajo">Quedan {producto.stock_actual}</span>
-              </div>
-              <button
-                className="inv-btn-secundario"
-                onClick={() => verProveedores(producto.id)}
-              >
-                Ver proveedor
-              </button>
+        <h2>
+          <AlertTriangle size={16} />
+          Productos por acabarse
+        </h2>
 
-              {cargandoProveedores === producto.id && (
-                <div className="inv-proveedores-lista">
-                  {(proveedoresPorProducto[producto.id] || []).length === 0 ? (
-                    <p className="inv-sin-proveedor">
-                      No hay proveedores registrados para este producto
-                    </p>
-                  ) : (
-                    proveedoresPorProducto[producto.id].map((prov) => (
-                      <div key={prov.id} className="inv-proveedor-fila">
-                        <span>{prov.nombre}</span>
-                        <a href={`tel:${prov.celular}`}>{prov.celular}</a>
-                      </div>
-                    ))
-                  )}
+        {bajoStock.length === 0 ? (
+          <div className="inv-sin-alertas">
+            <CheckCircle2 size={18} />
+            <span>Todo el stock está en buen nivel</span>
+          </div>
+        ) : (
+          <div className="inv-lista-bajo-stock">
+            {bajoStock.map((producto) => (
+              <div key={producto.id} className="inv-bajo-stock-card">
+                <div className="inv-bajo-stock-info">
+                  <span className="inv-prod-nombre">{producto.nombre}</span>
+                  <span className="inv-badge-bajo">Quedan {producto.stock_actual}</span>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+                <button
+                  className="inv-btn-secundario"
+                  onClick={() => verProveedores(producto.id)}
+                >
+                  <Phone size={14} />
+                  Ver proveedor
+                </button>
+
+                {expandido === producto.id && (
+                  <div className="inv-proveedores-lista">
+                    {(proveedoresPorProducto[producto.id] || []).length === 0 ? (
+                      <p className="inv-sin-proveedor">
+                        No hay proveedores registrados para este producto
+                      </p>
+                    ) : (
+                      proveedoresPorProducto[producto.id].map((prov) => (
+                        <a key={prov.id} href={`tel:${prov.celular}`} className="inv-proveedor-fila">
+                          <span>{prov.nombre}</span>
+                          <span className="inv-proveedor-numero">{prov.celular}</span>
+                        </a>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

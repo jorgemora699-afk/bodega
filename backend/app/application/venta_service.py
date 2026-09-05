@@ -2,13 +2,19 @@ from datetime import datetime
 from app import db
 from app.infrastructure.models import Venta, Producto, MovimientoInventario
 from app.domain.inventario import hay_stock_suficiente
+from app.domain.periodos import rango_por_periodo
+from sqlalchemy.orm import joinedload
 
 
 class VentaService:
 
     @staticmethod
-    def listar_todas():
-        return Venta.query.order_by(Venta.fecha.desc()).all()
+    def listar_todas(periodo="todas"):
+        query = Venta.query.options(joinedload(Venta.producto), joinedload(Venta.trabajadora))
+        if periodo and periodo != "todas":
+            inicio, fin = rango_por_periodo(periodo)
+            query = query.filter(Venta.fecha.between(inicio, fin))
+        return query.order_by(Venta.fecha.desc()).all()
 
     @staticmethod
     def obtener_por_id(venta_id):

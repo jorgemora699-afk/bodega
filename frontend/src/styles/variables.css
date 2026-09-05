@@ -43,3 +43,12 @@ body {
   margin: 0;
   color: var(--color-primary);
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #F6F4EF;
+    --color-surface: #FFFFFF;
+    --color-primary: #21262B;
+    --color-text-secondary: #6E6459;
+  }
+}

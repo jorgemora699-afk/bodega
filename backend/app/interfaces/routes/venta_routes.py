@@ -11,7 +11,8 @@ def _proteger_ventas():
 
 @venta_bp.route("", methods=["GET"])
 def listar_ventas():
-    ventas = VentaService.listar_todas()
+    periodo = request.args.get("periodo", default="todas")
+    ventas = VentaService.listar_todas(periodo)
     return jsonify([v.to_dict() for v in ventas]), 200
 
 

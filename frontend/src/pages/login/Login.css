@@ -64,16 +64,18 @@
 
 .login-password-wrapper {
   position: relative;
+  width: 100%;
 }
 
 .login-password-wrapper input {
   width: 100%;
-  padding-right: 2.5rem;
+  padding-right: 2.75rem;
+  box-sizing: border-box;
 }
 
 .login-toggle-password {
   position: absolute;
-  right: 0.6rem;
+  right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
@@ -83,4 +85,5 @@
   display: flex;
   align-items: center;
   padding: 0;
+  line-height: 0;
 }
