@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Blueprint, request, jsonify
 from app.application.admin_service import AdminService
 from app.interfaces.auth_helpers import exigir_rol
@@ -64,6 +66,20 @@ def ventas_por_dia():
 def tendencia_mensual():
     meses = request.args.get("meses", default=6, type=int)
     resultado = AdminService.tendencia_mensual(meses)
+    return jsonify(resultado), 200
+
+@admin_bp.route("/salarios", methods=["GET"])
+def calcular_salarios():
+    desde_str = request.args.get("desde")
+    hasta_str = request.args.get("hasta")
+
+    if not desde_str or not hasta_str:
+        return jsonify({"error": "desde y hasta son obligatorios"}), 400
+
+    desde = datetime.strptime(desde_str, "%Y-%m-%d").date()
+    hasta = datetime.strptime(hasta_str, "%Y-%m-%d").date()
+
+    resultado = AdminService.calcular_salarios(desde, hasta)
     return jsonify(resultado), 200
 
 
