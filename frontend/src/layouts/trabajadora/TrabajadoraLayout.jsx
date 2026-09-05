@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ShoppingCart, Package, Clock, ChefHat, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -13,6 +14,7 @@ const TABS = [
 export default function TrabajadoraLayout() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false);
 
   if (!usuario) return <Navigate to="/login" replace />;
   if (usuario.rol !== "trabajadora") return <Navigate to="/admin" replace />;
@@ -26,10 +28,29 @@ export default function TrabajadoraLayout() {
     <div className="trab-shell">
       <header className="trab-topbar">
         <span className="trab-topbar-title">Bodega línea amarilla</span>
-        <button className="trab-topbar-salir" onClick={handleLogout}>
-          <LogOut size={16} />
-          Salir
-        </button>
+
+        {confirmandoSalida ? (
+          <div className="trab-logout-confirm">
+            <span>¿Salir?</span>
+            <button
+              className="trab-logout-confirm-no"
+              onClick={() => setConfirmandoSalida(false)}
+            >
+              No
+            </button>
+            <button className="trab-logout-confirm-si" onClick={handleLogout}>
+              Sí
+            </button>
+          </div>
+        ) : (
+          <button
+            className="trab-topbar-salir"
+            onClick={() => setConfirmandoSalida(true)}
+          >
+            <LogOut size={16} />
+            Salir
+          </button>
+        )}
       </header>
 
       <main className="trab-content">

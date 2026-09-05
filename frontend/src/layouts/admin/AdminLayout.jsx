@@ -33,6 +33,7 @@ export default function AdminLayout() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false);
 
   if (!usuario) return <Navigate to="/login" replace />;
   if (usuario.rol !== "jefe") return <Navigate to="/venta" replace />;
@@ -79,16 +80,46 @@ export default function AdminLayout() {
             </NavLink>
           ))}
 
-          <button className="admin-logout admin-logout-movil" onClick={handleLogout}>
+          {confirmandoSalida ? (
+            <div className="admin-logout-confirm admin-logout-confirm-movil">
+              <span>¿Cerrar sesión?</span>
+              <div className="admin-logout-confirm-botones">
+                <button onClick={() => setConfirmandoSalida(false)}>No</button>
+                <button className="admin-logout-confirm-si" onClick={handleLogout}>
+                  Sí
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="admin-logout admin-logout-movil"
+              onClick={() => setConfirmandoSalida(true)}
+            >
+              <LogOut size={16} />
+              Cerrar sesión
+            </button>
+          )}
+        </nav>
+
+        {confirmandoSalida ? (
+          <div className="admin-logout-confirm admin-logout-confirm-escritorio">
+            <span>¿Cerrar sesión?</span>
+            <div className="admin-logout-confirm-botones">
+              <button onClick={() => setConfirmandoSalida(false)}>No</button>
+              <button className="admin-logout-confirm-si" onClick={handleLogout}>
+                Sí
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="admin-logout admin-logout-escritorio"
+            onClick={() => setConfirmandoSalida(true)}
+          >
             <LogOut size={16} />
             Cerrar sesión
           </button>
-        </nav>
-
-        <button className="admin-logout admin-logout-escritorio" onClick={handleLogout}>
-          <LogOut size={16} />
-          Cerrar sesión
-        </button>
+        )}
       </aside>
 
       <main className="admin-content" onClick={() => menuAbierto && setMenuAbierto(false)}>
