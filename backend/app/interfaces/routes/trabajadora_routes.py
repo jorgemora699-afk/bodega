@@ -5,7 +5,9 @@ from app.interfaces.auth_helpers import exigir_rol
 trabajadora_bp = Blueprint("trabajadoras", __name__, url_prefix="/api/trabajadoras")
 
 @trabajadora_bp.before_request
-def _proteger_trabajadora():
+def _proteger_trabajadoras():
+    if request.method == "GET":
+        return exigir_rol("jefe", "trabajadora")
     return exigir_rol("jefe")
 
 
