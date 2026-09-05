@@ -1,8 +1,13 @@
 from flask import Blueprint, request, jsonify
 from app.application.horario_service import HorarioService
 from app.interfaces.date_helpers import parsear_fecha
+from app.interfaces.auth_helpers import exigir_rol
 
 horario_bp = Blueprint("horarios", __name__, url_prefix="/api/horarios")
+
+@horario_bp.before_request
+def _proteger_horarios():
+    return exigir_rol("jefe", "trabajadora")
 
 
 @horario_bp.route("", methods=["GET"])
