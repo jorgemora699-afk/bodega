@@ -6,7 +6,10 @@ import { listarHorarios } from "../../../api/horarios";
 import "./Salarios.css";
 
 function toISODate(date) {
-  return date.toISOString().slice(0, 10);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function calcularSemana() {
@@ -102,8 +105,10 @@ export default function Salarios() {
 
     if (!detallePorId[trabajadoraId]) {
       try {
-        const historial = await listarHorarios(trabajadoraId);
-        const enRango = historial.filter((h) => h.fecha >= desde && h.fecha <= hasta);
+        const historial = await listarHorarios({ trabajadora_id: trabajadoraId });
+        const enRango = historial.filter(
+          (h) => h.trabajadora_id === trabajadoraId && h.fecha >= desde && h.fecha <= hasta
+        );
         setDetallePorId((prev) => ({ ...prev, [trabajadoraId]: enRango }));
       } catch (err) {
         setError("No se pudo cargar el detalle de horario");
