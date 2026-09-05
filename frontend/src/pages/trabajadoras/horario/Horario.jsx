@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { LogIn, LogOut, Clock, CheckCircle2 } from "lucide-react";
-import { listarTrabajadoras } from "../../api/trabajadoras";
-import { marcarEntrada, marcarSalida, listarHorarios } from "../../api/horarios";
+import { listarTrabajadoras } from "../../../api/trabajadoras";
+import { marcarEntrada, marcarSalida, listarHorarios } from "../../../api/horarios";
 import "./Horario.css";
 
 export default function Horario() {
