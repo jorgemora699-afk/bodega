@@ -9,3 +9,12 @@ def parsear_fecha(fecha_str, campo="fecha"):
         return datetime.strptime(fecha_str, "%Y-%m-%d").date()
     except ValueError:
         raise ValueError(f"El campo '{campo}' debe tener formato YYYY-MM-DD, recibido: '{fecha_str}'")
+
+
+def parsear_datetime(fecha_str, campo="fecha"):
+    """Igual que parsear_fecha, pero devuelve un datetime completo
+    (para columnas DateTime como IngresoEgreso.fecha)."""
+    try:
+        return datetime.strptime(fecha_str, "%Y-%m-%d")
+    except ValueError:
+        raise ValueError(f"El campo '{campo}' debe tener formato YYYY-MM-DD, recibido: '{fecha_str}'")
