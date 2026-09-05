@@ -1,7 +1,12 @@
 from flask import Blueprint, request, jsonify
 from app.application.trabajadora_service import TrabajadoraService
+from app.interfaces.auth_helpers import exigir_rol
 
 trabajadora_bp = Blueprint("trabajadoras", __name__, url_prefix="/api/trabajadoras")
+
+@trabajadora_bp.before_request
+def _proteger_trabajadora():
+    return exigir_rol("jefe")
 
 
 @trabajadora_bp.route("", methods=["GET"])

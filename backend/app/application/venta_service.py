@@ -1,6 +1,7 @@
 from datetime import datetime
 from app import db
 from app.infrastructure.models import Venta, Producto, MovimientoInventario
+from app.domain.inventario import hay_stock_suficiente
 
 
 class VentaService:
@@ -19,7 +20,11 @@ class VentaService:
         if not producto:
             return None, "Producto no encontrado"
 
-        cantidad = data["cantidad"]
+        cantidad = float(data["cantidad"])
+
+        if not hay_stock_suficiente(float(producto.stock_actual), cantidad):
+            return None, f"Stock insuficiente: quedan {float(producto.stock_actual)} de {producto.nombre}"
+
         total = float(producto.precio_unitario) * cantidad
 
         venta = Venta(
@@ -31,9 +36,9 @@ class VentaService:
             metodo_pago=data["metodo_pago"],
         )
         db.session.add(venta)
-        db.session.flush()  # para tener venta.id antes del commit
+        db.session.flush()
 
-        producto.stock_actual -= cantidad
+        producto.stock_actual = float(producto.stock_actual) - cantidad
 
         movimiento = MovimientoInventario(
             producto_id=producto.id,
@@ -54,20 +59,30 @@ class VentaService:
             return None, "Venta no encontrada"
 
         producto_anterior = Producto.query.get(venta.producto_id)
-        cantidad_anterior = venta.cantidad
-
-        # revertir el efecto anterior en el inventario
-        producto_anterior.stock_actual += cantidad_anterior
+        cantidad_anterior = float(venta.cantidad)
 
         nuevo_producto_id = data.get("producto_id", venta.producto_id)
-        nueva_cantidad = data.get("cantidad", cantidad_anterior)
+        nueva_cantidad = float(data.get("cantidad", cantidad_anterior))
 
         producto_nuevo = Producto.query.get(nuevo_producto_id)
         if not producto_nuevo:
             return None, "Producto no encontrado"
 
-        # aplicar el nuevo efecto
-        producto_nuevo.stock_actual -= nueva_cantidad
+        # stock "disponible" como si ya se hubiera revertido la venta original,
+        # calculado antes de tocar la BD, para validar antes de aplicar nada
+        if nuevo_producto_id == venta.producto_id:
+            stock_disponible = float(producto_anterior.stock_actual) + cantidad_anterior
+        else:
+            stock_disponible = float(producto_nuevo.stock_actual)
+
+        if not hay_stock_suficiente(stock_disponible, nueva_cantidad):
+            return None, f"Stock insuficiente: quedan {stock_disponible} de {producto_nuevo.nombre}"
+
+        # revertir el efecto anterior y aplicar el nuevo — si es el mismo producto,
+        # producto_anterior y producto_nuevo son el mismo objeto, así que las dos
+        # líneas se acumulan correctamente sobre la misma fila
+        producto_anterior.stock_actual = float(producto_anterior.stock_actual) + cantidad_anterior
+        producto_nuevo.stock_actual = float(producto_nuevo.stock_actual) - nueva_cantidad
 
         venta.producto_id = nuevo_producto_id
         venta.trabajadora_id = data.get("trabajadora_id", venta.trabajadora_id)
@@ -93,7 +108,7 @@ class VentaService:
             return False, "Venta no encontrada"
 
         producto = Producto.query.get(venta.producto_id)
-        producto.stock_actual += venta.cantidad  # revertir el descuento de stock
+        producto.stock_actual = float(producto.stock_actual) + float(venta.cantidad)
 
         if venta.movimiento:
             db.session.delete(venta.movimiento)

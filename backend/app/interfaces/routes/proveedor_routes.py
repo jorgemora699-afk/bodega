@@ -1,7 +1,14 @@
 from flask import Blueprint, request, jsonify
 from app.application.proveedor_service import ProveedorService
+from app.interfaces.auth_helpers import exigir_rol
 
 proveedor_bp = Blueprint("proveedores", __name__, url_prefix="/api/proveedores")
+
+@proveedor_bp.before_request
+def _proteger_proveedores():
+    if request.method == "GET":
+        return exigir_rol("jefe", "trabajadora")
+    return exigir_rol("jefe")
 
 
 @proveedor_bp.route("", methods=["GET"])

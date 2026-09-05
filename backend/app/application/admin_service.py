@@ -63,7 +63,7 @@ class AdminService:
             {
                 "producto_id": r.id,
                 "producto_nombre": r.nombre,
-                "cantidad_vendida": int(r.cantidad_vendida),
+                "cantidad_vendida": float(r.cantidad_vendida),
                 "total_generado": float(r.total_generado),
             }
             for r in resultados

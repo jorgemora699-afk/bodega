@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
 from app.application.horario_service import HorarioService
+from app.interfaces.date_helpers import parsear_fecha
 
 horario_bp = Blueprint("horarios", __name__, url_prefix="/api/horarios")
 
@@ -8,8 +8,14 @@ horario_bp = Blueprint("horarios", __name__, url_prefix="/api/horarios")
 @horario_bp.route("", methods=["GET"])
 def listar_horarios():
     trabajadora_id = request.args.get("trabajadora_id", type=int)
-    fecha_str = request.args.get("fecha")  # formato: YYYY-MM-DD
-    fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else None
+    fecha_str = request.args.get("fecha")
+
+    fecha = None
+    if fecha_str:
+        try:
+            fecha = parsear_fecha(fecha_str, "fecha")
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
 
     horarios = HorarioService.listar(trabajadora_id, fecha)
     return jsonify([h.to_dict() for h in horarios]), 200

@@ -1,7 +1,14 @@
 from flask import Blueprint, request, jsonify
 from app.application.producto_service import ProductoService
+from app.interfaces.auth_helpers import exigir_rol
 
 producto_bp = Blueprint("productos", __name__, url_prefix="/api/productos")
+
+@producto_bp.before_request
+def _proteger_productos():
+    if request.method == "GET":
+        return exigir_rol("jefe", "trabajadora")
+    return exigir_rol("jefe")
 
 
 @producto_bp.route("", methods=["GET"])

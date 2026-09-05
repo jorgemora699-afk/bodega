@@ -1,18 +1,27 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from app.application.ingreso_egreso_service import IngresoEgresoService
+from app.interfaces.auth_helpers import exigir_rol
+from app.interfaces.date_helpers import parsear_datetime
 
 ingreso_egreso_bp = Blueprint("ingresos_egresos", __name__, url_prefix="/api/ingresos-egresos")
+
+@ingreso_egreso_bp.before_request
+def _proteger_ingreso_egreso():
+    return exigir_rol("jefe")
 
 
 @ingreso_egreso_bp.route("", methods=["GET"])
 def listar():
-    tipo = request.args.get("tipo")  # "ingreso" o "egreso"
-    desde_str = request.args.get("desde")  # YYYY-MM-DD
+    tipo = request.args.get("tipo")
+    desde_str = request.args.get("desde")
     hasta_str = request.args.get("hasta")
 
-    desde = datetime.strptime(desde_str, "%Y-%m-%d") if desde_str else None
-    hasta = datetime.strptime(hasta_str, "%Y-%m-%d") if hasta_str else None
+    try:
+        desde = parsear_datetime(desde_str, "desde") if desde_str else None
+        hasta = parsear_datetime(hasta_str, "hasta") if hasta_str else None
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
     registros = IngresoEgresoService.listar(tipo, desde, hasta)
     return jsonify([r.to_dict() for r in registros]), 200

@@ -16,7 +16,7 @@ class Producto(db.Model):
     nombre = db.Column(db.String(100), nullable=False)
     categoria = db.Column(db.String(50), nullable=True)
     precio_unitario = db.Column(db.Numeric(10, 2), nullable=False)
-    stock_actual = db.Column(db.Integer, nullable=False, default=0)
+    stock_actual = db.Column(db.Numeric(10, 3), nullable=False, default=0)
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -31,7 +31,7 @@ class Producto(db.Model):
                 "nombre": self.nombre,
                 "categoria": self.categoria,
                 "precio_unitario": float(self.precio_unitario),
-                "stock_actual": self.stock_actual,
+                "stock_actual": float(self.stock_actual),
                 "activo": self.activo,
         }
 
@@ -71,7 +71,7 @@ class Venta(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
     trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=False)
-    cantidad = db.Column(db.Integer, nullable=False)
+    cantidad = db.Column(db.Numeric(10, 3), nullable=False)
     precio_unitario = db.Column(db.Numeric(10, 2), nullable=False)
     total = db.Column(db.Numeric(10, 2), nullable=False)
     metodo_pago = db.Column(db.String(30), nullable=False)
@@ -89,7 +89,7 @@ class Venta(db.Model):
             "producto_nombre": self.producto.nombre if self.producto else None,
             "trabajadora_id": self.trabajadora_id,
             "trabajadora_nombre": self.trabajadora.nombre if self.trabajadora else None,
-            "cantidad": self.cantidad,
+            "cantidad": float(self.cantidad),
             "precio_unitario": float(self.precio_unitario),
             "total": float(self.total),
             "metodo_pago": self.metodo_pago,
@@ -110,7 +110,7 @@ class MovimientoInventario(db.Model):
     venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id"), nullable=True)
     tipo = db.Column(db.String(20), nullable=False)
     motivo = db.Column(db.String(50), nullable=False)
-    cantidad = db.Column(db.Integer, nullable=False)
+    cantidad = db.Column(db.Numeric(10, 3), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
     producto = db.relationship("Producto", back_populates="movimientos")
@@ -125,7 +125,7 @@ class MovimientoInventario(db.Model):
             "venta_id": self.venta_id,
             "tipo": self.tipo,
             "motivo": self.motivo,
-            "cantidad": self.cantidad,
+            "cantidad": float(self.cantidad),
             "fecha": self.fecha.isoformat(),
         }
 

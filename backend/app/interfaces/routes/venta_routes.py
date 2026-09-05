@@ -1,7 +1,12 @@
 from flask import Blueprint, request, jsonify
 from app.application.venta_service import VentaService
+from app.interfaces.auth_helpers import exigir_rol
 
 venta_bp = Blueprint("ventas", __name__, url_prefix="/api/ventas")
+
+@venta_bp.before_request
+def _proteger_ventas():
+    return exigir_rol("jefe", "trabajadora")
 
 
 @venta_bp.route("", methods=["GET"])

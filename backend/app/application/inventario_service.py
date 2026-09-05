@@ -19,8 +19,8 @@ class InventarioService:
         if not producto:
             return None, "Producto no encontrado"
 
-        cantidad = data["cantidad"]
-        producto.stock_actual += cantidad
+        cantidad = float(data["cantidad"])
+        producto.stock_actual = float(producto.stock_actual) + cantidad
 
         movimiento = MovimientoInventario(
             producto_id=producto.id,
@@ -39,11 +39,11 @@ class InventarioService:
         if not producto:
             return None, "Producto no encontrado"
 
-        cantidad = data["cantidad"]
-        if not hay_stock_suficiente(producto.stock_actual, cantidad):
+        cantidad = float(data["cantidad"])
+        if not hay_stock_suficiente(float(producto.stock_actual), cantidad):
             return None, "La cantidad supera el stock actual"
 
-        producto.stock_actual -= cantidad
+        producto.stock_actual = float(producto.stock_actual) - cantidad
 
         movimiento = MovimientoInventario(
             producto_id=producto.id,
@@ -59,4 +59,4 @@ class InventarioService:
     @staticmethod
     def productos_bajo_stock(umbral=UMBRAL_BAJO_STOCK_DEFAULT):
         productos = Producto.query.filter(Producto.activo == True).all()
-        return [p for p in productos if esta_bajo_stock(p.stock_actual, umbral)]
+        return [p for p in productos if esta_bajo_stock(float(p.stock_actual), umbral)]

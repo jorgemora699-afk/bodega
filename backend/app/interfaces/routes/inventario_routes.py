@@ -1,7 +1,12 @@
 from flask import Blueprint, request, jsonify
 from app.application.inventario_service import InventarioService
+from app.interfaces.auth_helpers import exigir_rol
 
 inventario_bp = Blueprint("inventario", __name__, url_prefix="/api/inventario")
+
+@inventario_bp.before_request
+def _proteger_inventario():
+    return exigir_rol("jefe", "trabajadora")
 
 
 @inventario_bp.route("/movimientos", methods=["GET"])

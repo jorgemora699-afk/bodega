@@ -1,8 +1,13 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
 from app.application.admin_service import AdminService
+from app.interfaces.auth_helpers import exigir_rol
+from app.interfaces.date_helpers import parsear_fecha
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
+
+@admin_bp.before_request
+def _proteger_admin():
+    return exigir_rol("jefe")
 
 
 @admin_bp.route("/resumen-ventas", methods=["GET"])
@@ -45,8 +50,11 @@ def calcular_salario():
     if not trabajadora_id or not desde_str or not hasta_str:
         return jsonify({"error": "trabajadora_id, desde y hasta son obligatorios"}), 400
 
-    desde = datetime.strptime(desde_str, "%Y-%m-%d").date()
-    hasta = datetime.strptime(hasta_str, "%Y-%m-%d").date()
+    try:
+        desde = parsear_fecha(desde_str, "desde")
+        hasta = parsear_fecha(hasta_str, "hasta")
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
     resultado, error = AdminService.calcular_salario(trabajadora_id, desde, hasta)
     if error:
