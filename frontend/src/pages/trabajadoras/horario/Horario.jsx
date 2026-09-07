@@ -90,6 +90,16 @@ export default function Horario() {
     });
   }
 
+  function hoyISO() {
+    const ahora = new Date();
+    const yyyy = ahora.getFullYear();
+    const mm = String(ahora.getMonth() + 1).padStart(2, "0");
+    const dd = String(ahora.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  const turnoAbiertoHoy = turnoAbierto && turnoAbierto.fecha === hoyISO();
+
   return (
     <div className="hor-container">
       <header className="hor-header">
@@ -131,7 +141,7 @@ export default function Horario() {
         <button
           className="hor-btn-entrada"
           onClick={handleEntrada}
-          disabled={enviando || !!turnoAbierto}
+          disabled={enviando || !!turnoAbiertoHoy}
         >
           <LogIn size={20} />
           Marcar entrada

@@ -48,11 +48,12 @@ class HorarioService:
 
     @staticmethod
     def marcar_salida(trabajadora_id):
-        hoy = _hoy_colombia()
-
+        """Cierra el turno abierto más reciente, sin importar si se abrió
+        hoy o en un día anterior — cubre el caso de un turno que quedó
+        abierto por olvido y se cierra al día siguiente."""
         horario = Horario.query.filter_by(
-            trabajadora_id=trabajadora_id, fecha=hoy, hora_salida=None
-        ).first()
+            trabajadora_id=trabajadora_id, hora_salida=None
+        ).order_by(Horario.fecha.desc()).first()
 
         try:
             validar_marcar_salida(horario)
