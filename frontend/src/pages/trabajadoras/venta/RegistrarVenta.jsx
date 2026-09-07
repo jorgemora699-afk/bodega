@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShoppingBag, Minus, Plus, Banknote, ArrowLeftRight, CreditCard, Check, Search } from "lucide-react";
+import { ShoppingBag, Minus, Plus, Banknote, ArrowLeftRight, CreditCard, Check, Search, ChevronLeft } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import { crearVenta } from "../../../api/ventas";
@@ -47,8 +47,16 @@ export default function RegistrarVenta() {
   function seleccionarProducto(producto) {
     setProductoSeleccionado(producto);
     setCantidad(1);
+    setMetodoPago("");
+    setTrabajadoraId("");
     setConfirmando(false);
     setMensaje(null);
+    setError(null);
+  }
+
+  function cambiarProducto() {
+    setProductoSeleccionado(null);
+    setConfirmando(false);
     setError(null);
   }
 
@@ -57,8 +65,8 @@ export default function RegistrarVenta() {
   }
 
   function irAConfirmar() {
-    if (!productoSeleccionado || !metodoPago || !trabajadoraId) {
-      setError("Selecciona producto, método de pago y quién realiza la venta");
+    if (!metodoPago || !trabajadoraId) {
+      setError("Selecciona método de pago y quién realiza la venta");
       return;
     }
     setError(null);
@@ -81,6 +89,7 @@ export default function RegistrarVenta() {
       setProductoSeleccionado(null);
       setCantidad(1);
       setMetodoPago("");
+      setTrabajadoraId("");
       setConfirmando(false);
       cargarDatos();
     } catch (err) {
@@ -107,7 +116,11 @@ export default function RegistrarVenta() {
     <div className="venta-container">
       <header className="venta-header">
         <h1>Registrar venta</h1>
-        <p>Selecciona el producto que se vendió</p>
+        <p>
+          {!productoSeleccionado
+            ? "Selecciona el producto que se vendió"
+            : "Completa los datos de la venta"}
+        </p>
       </header>
 
       {mensaje && (
@@ -117,7 +130,7 @@ export default function RegistrarVenta() {
       )}
       {error && <div className="venta-mensaje-error">{error}</div>}
 
-      {!confirmando && (
+      {!productoSeleccionado && (
         <>
           {productos.length > 0 && (
             <>
@@ -155,19 +168,13 @@ export default function RegistrarVenta() {
 
           <div className="venta-grid-productos">
             {productosFiltrados.map((producto) => {
-              const activo = productoSeleccionado?.id === producto.id;
               const bajoStock = producto.stock_actual <= 5;
               return (
                 <button
                   key={producto.id}
-                  className={`venta-prod-btn ${activo ? "activo" : ""}`}
+                  className="venta-prod-btn"
                   onClick={() => seleccionarProducto(producto)}
                 >
-                  {activo && (
-                    <span className="venta-prod-check">
-                      <Check size={13} />
-                    </span>
-                  )}
                   <span className="venta-prod-icono">
                     <ShoppingBag size={20} />
                   </span>
@@ -186,66 +193,80 @@ export default function RegistrarVenta() {
               <p className="venta-sin-resultados">Ningún producto coincide con el filtro</p>
             )}
           </div>
-
-          {productoSeleccionado && (
-            <div className="venta-detalle">
-              <label>Cantidad</label>
-              <div className="venta-stepper">
-                <button
-                  type="button"
-                  className="venta-stepper-btn"
-                  onClick={() => ajustarCantidad(-1)}
-                >
-                  <Minus size={16} />
-                </button>
-                <span className="venta-stepper-valor">{cantidad}</span>
-                <button
-                  type="button"
-                  className="venta-stepper-btn"
-                  onClick={() => ajustarCantidad(1)}
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              <label>Método de pago</label>
-              <div className="venta-metodos">
-                {METODOS_PAGO.map(({ valor, label, Icon }) => (
-                  <button
-                    key={valor}
-                    className={`venta-metodo-btn ${metodoPago === valor ? "activo" : ""}`}
-                    onClick={() => setMetodoPago(valor)}
-                  >
-                    <Icon size={18} />
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <label>¿Quién realiza la venta?</label>
-              <select
-                value={trabajadoraId}
-                onChange={(e) => setTrabajadoraId(e.target.value)}
-              >
-                <option value="">Selecciona...</option>
-                {trabajadoras.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nombre}
-                  </option>
-                ))}
-              </select>
-
-              <div className="venta-total">
-                <span>Total</span>
-                <span>${total.toLocaleString("es-CO")}</span>
-              </div>
-
-              <button className="venta-btn-primario" onClick={irAConfirmar}>
-                Continuar
-              </button>
-            </div>
-          )}
         </>
+      )}
+
+      {productoSeleccionado && !confirmando && (
+        <div className="venta-detalle">
+          <button className="venta-producto-elegido" onClick={cambiarProducto}>
+            <ChevronLeft size={16} />
+            <span className="venta-prod-icono">
+              <ShoppingBag size={18} />
+            </span>
+            <span className="venta-producto-elegido-info">
+              <span className="venta-producto-elegido-nombre">{productoSeleccionado.nombre}</span>
+              <span className="venta-producto-elegido-precio">
+                ${Number(productoSeleccionado.precio_unitario).toLocaleString("es-CO")}
+              </span>
+            </span>
+            <span className="venta-producto-elegido-cambiar">Cambiar</span>
+          </button>
+
+          <label>Cantidad</label>
+          <div className="venta-stepper">
+            <button
+              type="button"
+              className="venta-stepper-btn"
+              onClick={() => ajustarCantidad(-1)}
+            >
+              <Minus size={16} />
+            </button>
+            <span className="venta-stepper-valor">{cantidad}</span>
+            <button
+              type="button"
+              className="venta-stepper-btn"
+              onClick={() => ajustarCantidad(1)}
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+
+          <label>Método de pago</label>
+          <div className="venta-metodos">
+            {METODOS_PAGO.map(({ valor, label, Icon }) => (
+              <button
+                key={valor}
+                className={`venta-metodo-btn ${metodoPago === valor ? "activo" : ""}`}
+                onClick={() => setMetodoPago(valor)}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+
+          <label>¿Quién realiza la venta?</label>
+          <select
+            value={trabajadoraId}
+            onChange={(e) => setTrabajadoraId(e.target.value)}
+          >
+            <option value="">Selecciona...</option>
+            {trabajadoras.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
+              </option>
+            ))}
+          </select>
+
+          <div className="venta-total">
+            <span>Total</span>
+            <span>${total.toLocaleString("es-CO")}</span>
+          </div>
+
+          <button className="venta-btn-primario" onClick={irAConfirmar}>
+            Continuar
+          </button>
+        </div>
       )}
 
       {confirmando && (
