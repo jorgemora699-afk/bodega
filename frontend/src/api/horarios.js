@@ -18,3 +18,8 @@ export async function marcarSalida(trabajadoraId) {
   });
   return response.data;
 }
+
+export async function actualizarHorario(horarioId, data) {
+  const response = await apiClient.put(`/horarios/${horarioId}`, data);
+  return response.data;
+}

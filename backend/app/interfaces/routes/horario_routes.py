@@ -7,6 +7,8 @@ horario_bp = Blueprint("horarios", __name__, url_prefix="/api/horarios")
 
 @horario_bp.before_request
 def _proteger_horarios():
+    if request.method == "PUT":
+        return exigir_rol("jefe")
     return exigir_rol("jefe", "trabajadora")
 
 
@@ -47,4 +49,14 @@ def marcar_salida():
     horario, error = HorarioService.marcar_salida(data["trabajadora_id"])
     if error:
         return jsonify({"error": error}), 400
+    return jsonify(horario.to_dict()), 200
+
+
+@horario_bp.route("/<int:horario_id>", methods=["PUT"])
+def actualizar_horario(horario_id):
+    data = request.get_json()
+    horario, error = HorarioService.actualizar(horario_id, data)
+    if error:
+        status = 404 if error == "Turno no encontrado" else 400
+        return jsonify({"error": error}), status
     return jsonify(horario.to_dict()), 200

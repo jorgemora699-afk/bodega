@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Wallet, Pencil, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { Wallet, Pencil, ChevronDown, ChevronUp, Clock, Check, X } from "lucide-react";
 import { calcularSalarios } from "../../../api/admin";
 import { actualizarTrabajadora } from "../../../api/trabajadoras";
-import { listarHorarios } from "../../../api/horarios";
+import { listarHorarios, actualizarHorario } from "../../../api/horarios";
 import "./Salarios.css";
 
 function toISODate(date) {
@@ -60,6 +60,14 @@ function formatearHora(isoString) {
   });
 }
 
+function isoAHoraInput(isoString) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
 export default function Salarios() {
   const [periodoTipo, setPeriodoTipo] = useState("semana");
   const [desde, setDesde] = useState(() => calcularSemana()[0]);
@@ -74,6 +82,10 @@ export default function Salarios() {
 
   const [editandoId, setEditandoId] = useState(null);
   const [valorHoraForm, setValorHoraForm] = useState("");
+
+  const [editandoTurnoId, setEditandoTurnoId] = useState(null);
+  const [formTurno, setFormTurno] = useState({ hora_entrada: "", hora_salida: "" });
+
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
@@ -110,17 +122,22 @@ export default function Salarios() {
       return;
     }
     setExpandidoId(trabajadoraId);
+    setEditandoTurnoId(null);
 
     if (!detallePorId[trabajadoraId]) {
-      try {
-        const historial = await listarHorarios({ trabajadora_id: trabajadoraId });
-        const enRango = historial.filter(
-          (h) => h.trabajadora_id === trabajadoraId && h.fecha >= desde && h.fecha <= hasta
-        );
-        setDetallePorId((prev) => ({ ...prev, [trabajadoraId]: enRango }));
-      } catch (err) {
-        setError("No se pudo cargar el detalle de horario");
-      }
+      await recargarDetalle(trabajadoraId);
+    }
+  }
+
+  async function recargarDetalle(trabajadoraId) {
+    try {
+      const historial = await listarHorarios({ trabajadora_id: trabajadoraId });
+      const enRango = historial.filter(
+        (h) => h.trabajadora_id === trabajadoraId && h.fecha >= desde && h.fecha <= hasta
+      );
+      setDetallePorId((prev) => ({ ...prev, [trabajadoraId]: enRango }));
+    } catch (err) {
+      setError("No se pudo cargar el detalle de horario");
     }
   }
 
@@ -145,6 +162,40 @@ export default function Salarios() {
       cargarSalarios();
     } catch (err) {
       setError("No se pudo actualizar el valor por hora");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  function iniciarEdicionTurno(turno) {
+    setEditandoTurnoId(turno.id);
+    setFormTurno({
+      hora_entrada: isoAHoraInput(turno.hora_entrada),
+      hora_salida: isoAHoraInput(turno.hora_salida),
+    });
+    setError(null);
+  }
+
+  function cancelarEdicionTurno() {
+    setEditandoTurnoId(null);
+    setFormTurno({ hora_entrada: "", hora_salida: "" });
+  }
+
+  async function guardarTurno(turnoId, trabajadoraId) {
+    setGuardando(true);
+    setError(null);
+
+    const payload = {};
+    if (formTurno.hora_entrada) payload.hora_entrada = formTurno.hora_entrada;
+    if (formTurno.hora_salida) payload.hora_salida = formTurno.hora_salida;
+
+    try {
+      await actualizarHorario(turnoId, payload);
+      await recargarDetalle(trabajadoraId);
+      setEditandoTurnoId(null);
+      cargarSalarios();
+    } catch (err) {
+      setError(err.response?.data?.error || "No se pudo actualizar el turno");
     } finally {
       setGuardando(false);
     }
@@ -268,17 +319,62 @@ export default function Salarios() {
                     <p className="sal-sin-turnos">No hay turnos registrados en este período</p>
                   ) : (
                     <div className="sal-dias-lista">
-                      {(detallePorId[s.trabajadora_id] || []).map((turno) => (
-                        <div key={turno.id} className="sal-dia-fila">
-                          <span className="sal-dia-fecha">{formatearFechaCorta(turno.fecha)}</span>
-                          <span className="sal-dia-rango">
-                            {formatearHora(turno.hora_entrada)} - {formatearHora(turno.hora_salida)}
-                          </span>
-                          <span className="sal-dia-horas">
-                            {turno.horas_trabajadas != null ? `${turno.horas_trabajadas}h` : "en curso"}
-                          </span>
-                        </div>
-                      ))}
+                      {(detallePorId[s.trabajadora_id] || []).map((turno) =>
+                        editandoTurnoId === turno.id ? (
+                          <div key={turno.id} className="sal-dia-fila-edit">
+                            <span className="sal-dia-fecha">{formatearFechaCorta(turno.fecha)}</span>
+                            <div className="sal-dia-edit-inputs">
+                              <input
+                                type="time"
+                                value={formTurno.hora_entrada}
+                                onChange={(e) =>
+                                  setFormTurno((f) => ({ ...f, hora_entrada: e.target.value }))
+                                }
+                              />
+                              <span>-</span>
+                              <input
+                                type="time"
+                                value={formTurno.hora_salida}
+                                onChange={(e) =>
+                                  setFormTurno((f) => ({ ...f, hora_salida: e.target.value }))
+                                }
+                              />
+                            </div>
+                            <div className="sal-dia-edit-botones">
+                              <button
+                                className="sal-dia-edit-cancelar"
+                                onClick={cancelarEdicionTurno}
+                                disabled={guardando}
+                              >
+                                <X size={13} />
+                              </button>
+                              <button
+                                className="sal-dia-edit-guardar"
+                                onClick={() => guardarTurno(turno.id, s.trabajadora_id)}
+                                disabled={guardando}
+                              >
+                                <Check size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div key={turno.id} className="sal-dia-fila">
+                            <span className="sal-dia-fecha">{formatearFechaCorta(turno.fecha)}</span>
+                            <span className="sal-dia-rango">
+                              {formatearHora(turno.hora_entrada)} - {formatearHora(turno.hora_salida)}
+                            </span>
+                            <span className="sal-dia-horas">
+                              {turno.horas_trabajadas != null ? `${turno.horas_trabajadas}h` : "en curso"}
+                            </span>
+                            <button
+                              className="sal-dia-editar-btn"
+                              onClick={() => iniciarEdicionTurno(turno)}
+                            >
+                              <Pencil size={12} />
+                            </button>
+                          </div>
+                        )
+                      )}
                     </div>
                   )}
                 </div>

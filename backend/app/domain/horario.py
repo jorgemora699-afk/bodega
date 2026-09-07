@@ -6,13 +6,20 @@ class TurnoNoAbiertoError(Exception):
     pass
 
 
+class RangoHorarioInvalidoError(Exception):
+    pass
+
+
 def validar_marcar_entrada(turno_abierto_existente):
-    """Recibe el turno de hoy sin salida marcada (o None) y valida si se puede abrir uno nuevo."""
     if turno_abierto_existente is not None:
         raise TurnoYaAbiertoError("Ya hay una entrada registrada hoy sin salida marcada")
 
 
 def validar_marcar_salida(turno_abierto):
-    """Recibe el turno abierto de hoy (o None) y valida si se puede cerrar."""
     if turno_abierto is None:
         raise TurnoNoAbiertoError("No hay una entrada abierta hoy para marcar salida")
+
+
+def validar_rango_horario(hora_entrada, hora_salida):
+    if hora_entrada and hora_salida and hora_salida <= hora_entrada:
+        raise RangoHorarioInvalidoError("La hora de salida debe ser posterior a la hora de entrada")

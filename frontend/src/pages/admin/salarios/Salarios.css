@@ -250,7 +250,7 @@
 
 .sal-dia-fila {
   display: grid;
-  grid-template-columns: 50px 1fr auto;
+  grid-template-columns: 45px 1fr auto auto;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.7rem;
@@ -267,6 +267,70 @@
 .sal-dia-rango {
   color: var(--color-text-secondary);
   font-size: 0.78rem;
+}
+
+.sal-dia-editar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.2rem;
+}
+
+.sal-dia-fila-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-primary);
+}
+
+.sal-dia-edit-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sal-dia-edit-inputs input {
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.8rem;
+}
+
+.sal-dia-edit-botones {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.sal-dia-edit-guardar,
+.sal-dia-edit-cancelar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+}
+
+.sal-dia-edit-guardar {
+  background: var(--color-primary);
+  color: white;
+}
+
+.sal-dia-edit-cancelar {
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-secondary);
 }
 
 .sal-dia-horas {
