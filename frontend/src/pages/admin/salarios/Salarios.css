@@ -249,12 +249,24 @@
 }
 
 .sal-dia-fila {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 50px 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 0.7rem;
   background: var(--color-bg);
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
+}
+
+.sal-dia-fecha {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.sal-dia-rango {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
 }
 
 .sal-dia-horas {

@@ -52,6 +52,14 @@ function formatearFechaCorta(fechaString) {
   return `${dia}/${mes}`;
 }
 
+function formatearHora(isoString) {
+  if (!isoString) return "—";
+  return new Date(isoString).toLocaleTimeString("es-CO", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function Salarios() {
   const [periodoTipo, setPeriodoTipo] = useState("semana");
   const [desde, setDesde] = useState(() => calcularSemana()[0]);
@@ -262,7 +270,10 @@ export default function Salarios() {
                     <div className="sal-dias-lista">
                       {(detallePorId[s.trabajadora_id] || []).map((turno) => (
                         <div key={turno.id} className="sal-dia-fila">
-                          <span>{formatearFechaCorta(turno.fecha)}</span>
+                          <span className="sal-dia-fecha">{formatearFechaCorta(turno.fecha)}</span>
+                          <span className="sal-dia-rango">
+                            {formatearHora(turno.hora_entrada)} - {formatearHora(turno.hora_salida)}
+                          </span>
                           <span className="sal-dia-horas">
                             {turno.horas_trabajadas != null ? `${turno.horas_trabajadas}h` : "en curso"}
                           </span>
