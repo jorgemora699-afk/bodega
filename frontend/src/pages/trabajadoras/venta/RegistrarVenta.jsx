@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShoppingBag, Minus, Plus, Banknote, ArrowLeftRight, CreditCard, Check } from "lucide-react";
+import { ShoppingBag, Minus, Plus, Banknote, ArrowLeftRight, CreditCard, Check, Search } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import { crearVenta } from "../../../api/ventas";
@@ -14,6 +14,8 @@ const METODOS_PAGO = [
 export default function RegistrarVenta() {
   const [productos, setProductos] = useState([]);
   const [trabajadoras, setTrabajadoras] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("");
 
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [cantidad, setCantidad] = useState(1);
@@ -93,6 +95,14 @@ export default function RegistrarVenta() {
     ? Number(productoSeleccionado.precio_unitario) * Number(cantidad || 0)
     : 0;
 
+  const categorias = [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort();
+
+  const productosFiltrados = productos.filter((p) => {
+    const coincideBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    const coincideCategoria = !categoriaFiltro || p.categoria === categoriaFiltro;
+    return coincideBusqueda && coincideCategoria;
+  });
+
   return (
     <div className="venta-container">
       <header className="venta-header">
@@ -109,8 +119,42 @@ export default function RegistrarVenta() {
 
       {!confirmando && (
         <>
+          {productos.length > 0 && (
+            <>
+              <div className="venta-buscador">
+                <Search size={16} />
+                <input
+                  type="text"
+                  placeholder="Buscar producto..."
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                />
+              </div>
+
+              {categorias.length > 0 && (
+                <div className="venta-filtros-categoria">
+                  <button
+                    className={`venta-chip ${categoriaFiltro === "" ? "activo" : ""}`}
+                    onClick={() => setCategoriaFiltro("")}
+                  >
+                    Todas
+                  </button>
+                  {categorias.map((c) => (
+                    <button
+                      key={c}
+                      className={`venta-chip ${categoriaFiltro === c ? "activo" : ""}`}
+                      onClick={() => setCategoriaFiltro(c)}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
           <div className="venta-grid-productos">
-            {productos.map((producto) => {
+            {productosFiltrados.map((producto) => {
               const activo = productoSeleccionado?.id === producto.id;
               const bajoStock = producto.stock_actual <= 5;
               return (
@@ -137,6 +181,10 @@ export default function RegistrarVenta() {
                 </button>
               );
             })}
+
+            {productos.length > 0 && productosFiltrados.length === 0 && (
+              <p className="venta-sin-resultados">Ningún producto coincide con el filtro</p>
+            )}
           </div>
 
           {productoSeleccionado && (
