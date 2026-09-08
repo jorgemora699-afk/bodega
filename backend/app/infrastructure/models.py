@@ -63,7 +63,33 @@ class Trabajadora(db.Model):
     def __repr__(self):
         return f"<Trabajadora {self.nombre}>"
 
+class Orden(db.Model):
+    __tablename__ = "ordenes"
 
+    id = db.Column(db.Integer, primary_key=True)
+    trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=False)
+    metodo_pago = db.Column(db.String(30), nullable=False)
+    total = db.Column(db.Numeric(10, 2), nullable=False)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    editado = db.Column(db.Boolean, nullable=False, default=False)
+
+    trabajadora = db.relationship("Trabajadora")
+    ventas = db.relationship("Venta", back_populates="orden", order_by="Venta.id")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "trabajadora_id": self.trabajadora_id,
+            "trabajadora_nombre": self.trabajadora.nombre if self.trabajadora else None,
+            "metodo_pago": self.metodo_pago,
+            "total": float(self.total),
+            "fecha": self.fecha.isoformat() + "Z",
+            "editado": self.editado,
+            "ventas": [v.to_dict() for v in self.ventas],
+        }
+
+    def __repr__(self):
+        return f"<Orden {self.id} - {self.trabajadora_id}>"
 
 class Venta(db.Model):
     __tablename__ = "ventas"
@@ -77,10 +103,12 @@ class Venta(db.Model):
     metodo_pago = db.Column(db.String(30), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     editado = db.Column(db.Boolean, nullable=False, default=False)
+    orden_id = db.Column(db.Integer, db.ForeignKey("ordenes.id"), nullable=True)
 
     producto = db.relationship("Producto", back_populates="ventas")
     trabajadora = db.relationship("Trabajadora", back_populates="ventas")
     movimiento = db.relationship("MovimientoInventario", back_populates="venta", uselist=False)
+    orden = db.relationship("Orden", back_populates="ventas")
 
     def to_dict(self):
         return {
@@ -95,6 +123,7 @@ class Venta(db.Model):
             "metodo_pago": self.metodo_pago,
             "fecha": self.fecha.isoformat() + "Z",
             "editado": self.editado,
+            "orden_id": self.orden_id,
         }
 
     def __repr__(self):
