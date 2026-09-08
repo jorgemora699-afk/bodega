@@ -1,8 +1,20 @@
 import { useEffect, useState } from "react";
-import { ShoppingBag, Minus, Plus, Banknote, ArrowLeftRight, CreditCard, Check, Search, ChevronLeft } from "lucide-react";
+import {
+  ShoppingBag,
+  ShoppingCart,
+  Minus,
+  Plus,
+  Trash2,
+  Banknote,
+  ArrowLeftRight,
+  CreditCard,
+  Check,
+  Search,
+  ChevronLeft,
+} from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
-import { crearVenta } from "../../../api/ventas";
+import { crearOrden } from "../../../api/ordenes";
 import "./RegistrarVenta.css";
 
 const METODOS_PAGO = [
@@ -17,12 +29,12 @@ export default function RegistrarVenta() {
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
 
-  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [cantidad, setCantidad] = useState(1);
+  const [carrito, setCarrito] = useState([]); // [{ producto_id, nombre, precio_unitario, cantidad }]
+  const [vista, setVista] = useState("catalogo"); // "catalogo" | "carrito" | "confirmando"
+
   const [metodoPago, setMetodoPago] = useState("");
   const [trabajadoraId, setTrabajadoraId] = useState("");
 
-  const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
@@ -44,24 +56,52 @@ export default function RegistrarVenta() {
     }
   }
 
-  function seleccionarProducto(producto) {
-    setProductoSeleccionado(producto);
-    setCantidad(1);
-    setMetodoPago("");
-    setTrabajadoraId("");
-    setConfirmando(false);
+  function cantidadEnCarrito(productoId) {
+    return carrito.find((i) => i.producto_id === productoId)?.cantidad || 0;
+  }
+
+  function agregarAlCarrito(producto) {
     setMensaje(null);
     setError(null);
+    setCarrito((prev) => {
+      const existente = prev.find((i) => i.producto_id === producto.id);
+      if (existente) {
+        return prev.map((i) =>
+          i.producto_id === producto.id ? { ...i, cantidad: i.cantidad + 1 } : i
+        );
+      }
+      return [
+        ...prev,
+        {
+          producto_id: producto.id,
+          nombre: producto.nombre,
+          precio_unitario: producto.precio_unitario,
+          cantidad: 1,
+        },
+      ];
+    });
   }
 
-  function cambiarProducto() {
-    setProductoSeleccionado(null);
-    setConfirmando(false);
-    setError(null);
+  function ajustarCantidadCarrito(productoId, delta) {
+    setCarrito((prev) =>
+      prev
+        .map((i) =>
+          i.producto_id === productoId ? { ...i, cantidad: i.cantidad + delta } : i
+        )
+        .filter((i) => i.cantidad > 0)
+    );
   }
 
-  function ajustarCantidad(delta) {
-    setCantidad((c) => Math.max(1, Number(c) + delta));
+  function quitarDelCarrito(productoId) {
+    setCarrito((prev) => prev.filter((i) => i.producto_id !== productoId));
+  }
+
+  function irAlCarrito() {
+    setVista("carrito");
+  }
+
+  function volverAlCatalogo() {
+    setVista("catalogo");
   }
 
   function irAConfirmar() {
@@ -70,39 +110,36 @@ export default function RegistrarVenta() {
       return;
     }
     setError(null);
-    setConfirmando(true);
+    setVista("confirmando");
   }
 
-  async function confirmarVenta() {
+  async function confirmarOrden() {
     setEnviando(true);
     setError(null);
 
     try {
-      await crearVenta({
-        producto_id: productoSeleccionado.id,
+      await crearOrden({
         trabajadora_id: Number(trabajadoraId),
-        cantidad: Number(cantidad),
         metodo_pago: metodoPago,
+        items: carrito.map((i) => ({
+          producto_id: i.producto_id,
+          cantidad: i.cantidad,
+        })),
       });
 
       setMensaje("Venta registrada correctamente");
-      setProductoSeleccionado(null);
-      setCantidad(1);
+      setCarrito([]);
       setMetodoPago("");
       setTrabajadoraId("");
-      setConfirmando(false);
+      setVista("catalogo");
       cargarDatos();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo registrar la venta");
-      setConfirmando(false);
+      setVista("carrito");
     } finally {
       setEnviando(false);
     }
   }
-
-  const total = productoSeleccionado
-    ? Number(productoSeleccionado.precio_unitario) * Number(cantidad || 0)
-    : 0;
 
   const categorias = [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort();
 
@@ -112,16 +149,24 @@ export default function RegistrarVenta() {
     return coincideBusqueda && coincideCategoria;
   });
 
+  const totalCarrito = carrito.reduce(
+    (sum, i) => sum + Number(i.precio_unitario) * i.cantidad,
+    0
+  );
+  const cantidadTotalCarrito = carrito.reduce((sum, i) => sum + i.cantidad, 0);
+
   return (
     <div className="venta-container">
-      <header className="venta-header">
-        <h1>Registrar venta</h1>
-        <p>
-          {!productoSeleccionado
-            ? "Selecciona el producto que se vendió"
-            : "Completa los datos de la venta"}
-        </p>
-      </header>
+      {vista !== "confirmando" && (
+        <header className="venta-header">
+          <h1>Registrar venta</h1>
+          <p>
+            {vista === "catalogo"
+              ? "Toca los productos para agregarlos al carrito"
+              : "Revisa el pedido antes de confirmar"}
+          </p>
+        </header>
+      )}
 
       {mensaje && (
         <div className="venta-mensaje-exito">
@@ -130,7 +175,7 @@ export default function RegistrarVenta() {
       )}
       {error && <div className="venta-mensaje-error">{error}</div>}
 
-      {!productoSeleccionado && (
+      {vista === "catalogo" && (
         <>
           {productos.length > 0 && (
             <>
@@ -169,12 +214,16 @@ export default function RegistrarVenta() {
           <div className="venta-grid-productos">
             {productosFiltrados.map((producto) => {
               const bajoStock = producto.stock_actual <= 5;
+              const enCarrito = cantidadEnCarrito(producto.id);
               return (
                 <button
                   key={producto.id}
-                  className="venta-prod-btn"
-                  onClick={() => seleccionarProducto(producto)}
+                  className={`venta-prod-btn ${enCarrito > 0 ? "en-carrito" : ""}`}
+                  onClick={() => agregarAlCarrito(producto)}
                 >
+                  {enCarrito > 0 && (
+                    <span className="venta-prod-badge-carrito">{enCarrito}</span>
+                  )}
                   <span className="venta-prod-icono">
                     <ShoppingBag size={20} />
                   </span>
@@ -193,42 +242,68 @@ export default function RegistrarVenta() {
               <p className="venta-sin-resultados">Ningún producto coincide con el filtro</p>
             )}
           </div>
+
+          {carrito.length > 0 && (
+            <button className="venta-carrito-fab" onClick={irAlCarrito}>
+              <span className="venta-carrito-fab-info">
+                <ShoppingCart size={18} />
+                {cantidadTotalCarrito} producto{cantidadTotalCarrito !== 1 ? "s" : ""}
+              </span>
+              <span className="venta-carrito-fab-total">
+                ${totalCarrito.toLocaleString("es-CO")}
+              </span>
+            </button>
+          )}
         </>
       )}
 
-      {productoSeleccionado && !confirmando && (
+      {vista === "carrito" && (
         <div className="venta-detalle">
-          <button className="venta-producto-elegido" onClick={cambiarProducto}>
+          <button className="venta-volver-catalogo" onClick={volverAlCatalogo}>
             <ChevronLeft size={16} />
-            <span className="venta-prod-icono">
-              <ShoppingBag size={18} />
-            </span>
-            <span className="venta-producto-elegido-info">
-              <span className="venta-producto-elegido-nombre">{productoSeleccionado.nombre}</span>
-              <span className="venta-producto-elegido-precio">
-                ${Number(productoSeleccionado.precio_unitario).toLocaleString("es-CO")}
-              </span>
-            </span>
-            <span className="venta-producto-elegido-cambiar">Cambiar</span>
+            Seguir agregando productos
           </button>
 
-          <label>Cantidad</label>
-          <div className="venta-stepper">
-            <button
-              type="button"
-              className="venta-stepper-btn"
-              onClick={() => ajustarCantidad(-1)}
-            >
-              <Minus size={16} />
-            </button>
-            <span className="venta-stepper-valor">{cantidad}</span>
-            <button
-              type="button"
-              className="venta-stepper-btn"
-              onClick={() => ajustarCantidad(1)}
-            >
-              <Plus size={16} />
-            </button>
+          <div className="venta-carrito-lista">
+            {carrito.map((item) => (
+              <div key={item.producto_id} className="venta-carrito-item">
+                <div className="venta-carrito-item-info">
+                  <span className="venta-carrito-item-nombre">{item.nombre}</span>
+                  <span className="venta-carrito-item-precio">
+                    ${Number(item.precio_unitario).toLocaleString("es-CO")} c/u
+                  </span>
+                </div>
+
+                <div className="venta-stepper venta-stepper-chico">
+                  <button
+                    type="button"
+                    className="venta-stepper-btn"
+                    onClick={() => ajustarCantidadCarrito(item.producto_id, -1)}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span className="venta-stepper-valor">{item.cantidad}</span>
+                  <button
+                    type="button"
+                    className="venta-stepper-btn"
+                    onClick={() => ajustarCantidadCarrito(item.producto_id, 1)}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                <span className="venta-carrito-item-subtotal">
+                  ${(Number(item.precio_unitario) * item.cantidad).toLocaleString("es-CO")}
+                </span>
+
+                <button
+                  className="venta-carrito-item-quitar"
+                  onClick={() => quitarDelCarrito(item.producto_id)}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
           </div>
 
           <label>Método de pago</label>
@@ -246,10 +321,7 @@ export default function RegistrarVenta() {
           </div>
 
           <label>¿Quién realiza la venta?</label>
-          <select
-            value={trabajadoraId}
-            onChange={(e) => setTrabajadoraId(e.target.value)}
-          >
+          <select value={trabajadoraId} onChange={(e) => setTrabajadoraId(e.target.value)}>
             <option value="">Selecciona...</option>
             {trabajadoras.map((t) => (
               <option key={t.id} value={t.id}>
@@ -260,7 +332,7 @@ export default function RegistrarVenta() {
 
           <div className="venta-total">
             <span>Total</span>
-            <span>${total.toLocaleString("es-CO")}</span>
+            <span>${totalCarrito.toLocaleString("es-CO")}</span>
           </div>
 
           <button className="venta-btn-primario" onClick={irAConfirmar}>
@@ -269,21 +341,26 @@ export default function RegistrarVenta() {
         </div>
       )}
 
-      {confirmando && (
+      {vista === "confirmando" && (
         <div className="venta-confirmacion">
           <div className="venta-confirmacion-icono">
             <ShoppingBag size={26} />
           </div>
           <h2>Confirmar venta</h2>
 
-          <div className="venta-resumen-fila">
-            <span>Producto</span>
-            <span>{productoSeleccionado.nombre}</span>
+          <div className="venta-confirmacion-items">
+            {carrito.map((item) => (
+              <div key={item.producto_id} className="venta-resumen-fila">
+                <span>
+                  {item.cantidad} × {item.nombre}
+                </span>
+                <span>
+                  ${(Number(item.precio_unitario) * item.cantidad).toLocaleString("es-CO")}
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="venta-resumen-fila">
-            <span>Cantidad</span>
-            <span>{cantidad}</span>
-          </div>
+
           <div className="venta-resumen-fila">
             <span>Método de pago</span>
             <span className="venta-capitalize">{metodoPago}</span>
@@ -294,20 +371,20 @@ export default function RegistrarVenta() {
           </div>
           <div className="venta-resumen-fila venta-resumen-total">
             <span>Total</span>
-            <span>${total.toLocaleString("es-CO")}</span>
+            <span>${totalCarrito.toLocaleString("es-CO")}</span>
           </div>
 
           <div className="venta-confirmacion-botones">
             <button
               className="venta-btn-secundario"
-              onClick={() => setConfirmando(false)}
+              onClick={() => setVista("carrito")}
               disabled={enviando}
             >
               Volver
             </button>
             <button
               className="venta-btn-primario"
-              onClick={confirmarVenta}
+              onClick={confirmarOrden}
               disabled={enviando}
             >
               {enviando ? "Registrando..." : "Confirmar venta"}

@@ -314,3 +314,45 @@
   font-size: 0.85rem;
   padding: 2.5rem 0;
 }
+
+.vad-header {
+  margin-bottom: 1.25rem;
+}
+
+.vad-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.2rem;
+  font-weight: 700;
+}
+
+.vad-header p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.vad-orden-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+}
+
+.vad-orden-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.6rem 0;
+  padding: 0.6rem 0.7rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+}
+
+.vad-orden-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}

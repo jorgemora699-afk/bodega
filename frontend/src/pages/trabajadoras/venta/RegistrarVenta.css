@@ -411,3 +411,139 @@
   color: var(--color-primary);
   text-decoration: underline;
 }
+
+.venta-prod-btn.en-carrito {
+  border-color: var(--color-primary);
+}
+
+.venta-prod-badge-carrito {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.venta-prod-btn {
+  position: relative;
+}
+
+.venta-carrito-fab {
+  position: fixed;
+  bottom: 78px;
+  left: 1rem;
+  right: 1rem;
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1.1rem;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  z-index: 15;
+}
+
+.venta-carrito-fab-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.venta-carrito-fab-total {
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.venta-volver-catalogo {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.venta-carrito-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.venta-carrito-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.venta-carrito-item-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.venta-carrito-item-nombre {
+  font-weight: 600;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.venta-carrito-item-precio {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+}
+
+.venta-stepper-chico {
+  transform: scale(0.9);
+}
+
+.venta-carrito-item-subtotal {
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.venta-carrito-item-quitar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-danger);
+  cursor: pointer;
+  padding: 0.2rem;
+}
+
+.venta-confirmacion-items {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.4rem;
+}
