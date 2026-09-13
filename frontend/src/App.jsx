@@ -5,7 +5,7 @@ import AdminLayout from "./layouts/admin/AdminLayout";
 
 import Login from "./pages/login/Login";
 import RegistrarVenta from "./pages/trabajadoras/venta/RegistrarVenta";
-import Inventario from "./pages/trabajadoras/inventario/Inventario";
+import Inventariotrabajadora from "./pages/trabajadoras/inventario/Inventario";
 import Horario from "./pages/trabajadoras/horario/Horario";
 import RecetasTrabajadora from "./pages/trabajadoras/recetas/Recetas";
 
@@ -29,7 +29,7 @@ export default function App() {
 
           <Route element={<TrabajadoraLayout />}>
             <Route path="/venta" element={<RegistrarVenta />} />
-            <Route path="/inventario" element={<Inventario />} />
+            <Route path="/inventario" element={<Inventariotrabajadora />} />
             <Route path="/horario" element={<Horario />} />
             <Route path="/recetas" element={<RecetasTrabajadora />} />
           </Route>
