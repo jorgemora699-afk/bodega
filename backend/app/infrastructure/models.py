@@ -44,8 +44,11 @@ class Trabajadora(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
+    tipo_pago = db.Column(db.String(10), nullable=False, default="hora")  # "hora" o "mensual"
     valor_hora = db.Column(db.Numeric(10, 2), nullable=True)
+    salario_mensual = db.Column(db.Numeric(10, 2), nullable=True)
     activa = db.Column(db.Boolean, nullable=False, default=True)
+    incluye_nomina = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     ventas = db.relationship("Venta", back_populates="trabajadora")
@@ -56,8 +59,11 @@ class Trabajadora(db.Model):
         return {
                 "id": self.id,
                 "nombre": self.nombre,
+                "tipo_pago": self.tipo_pago,
                 "valor_hora": float(self.valor_hora) if self.valor_hora is not None else None,
+                "salario_mensual": float(self.salario_mensual) if self.salario_mensual is not None else None,
                 "activa": self.activa,
+                "incluye_nomina": self.incluye_nomina,
         }
 
     def __repr__(self):

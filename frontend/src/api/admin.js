@@ -43,3 +43,19 @@ export async function calcularSalario(trabajadoraId, desde, hasta) {
   });
   return response.data;
 }
+
+export async function generarPdfTrabajadora(trabajadoraId, desde, hasta) {
+  const response = await apiClient.get(`/admin/trabajadoras/${trabajadoraId}/pdf`, {
+    params: { desde, hasta },
+    responseType: "blob",
+  });
+  return response.data;
+}
+
+export async function generarReporteGeneralPdf(desde, hasta) {
+  const response = await apiClient.get("/admin/reporte-general/pdf", {
+    params: { desde, hasta },
+    responseType: "blob",
+  });
+  return response.data;
+}

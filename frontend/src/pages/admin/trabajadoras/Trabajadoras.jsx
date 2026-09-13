@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { UserRound, Plus, Pencil, Trash2, X, Search, DollarSign, AlertTriangle } from "lucide-react";
+import { UserRound, Plus, Pencil, Trash2, X, Search, DollarSign, AlertTriangle, Clock, Wallet } from "lucide-react";
 import {
   listarTrabajadoras,
   crearTrabajadora,
@@ -9,7 +9,13 @@ import {
 import "./Trabajadoras.css";
 
 function formVacio() {
-  return { nombre: "", valor_hora: "" };
+  return {
+    nombre: "",
+    tipo_pago: "hora",
+    valor_hora: "",
+    salario_mensual: "",
+    incluye_nomina: true,
+  };
 }
 
 function iniciales(nombre) {
@@ -19,6 +25,10 @@ function iniciales(nombre) {
     .slice(0, 2)
     .map((p) => p[0].toUpperCase())
     .join("");
+}
+
+function formatearMoneda(valor) {
+  return `$${Number(valor).toLocaleString("es-CO")}`;
 }
 
 export default function Trabajadoras() {
@@ -62,7 +72,10 @@ export default function Trabajadoras() {
     setError(null);
     setForm({
       nombre: trabajadora.nombre,
+      tipo_pago: trabajadora.tipo_pago || "hora",
       valor_hora: trabajadora.valor_hora ?? "",
+      salario_mensual: trabajadora.salario_mensual ?? "",
+      incluye_nomina: trabajadora.incluye_nomina,
     });
   }
 
@@ -84,7 +97,11 @@ export default function Trabajadoras() {
     try {
       const payload = {
         nombre: form.nombre,
-        valor_hora: form.valor_hora ? Number(form.valor_hora) : null,
+        tipo_pago: form.tipo_pago,
+        valor_hora: form.tipo_pago === "hora" && form.valor_hora ? Number(form.valor_hora) : null,
+        salario_mensual:
+          form.tipo_pago === "mensual" && form.salario_mensual ? Number(form.salario_mensual) : null,
+        incluye_nomina: form.incluye_nomina,
       };
 
       if (editandoId) {
@@ -124,14 +141,17 @@ export default function Trabajadoras() {
     t.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const sinValorHora = trabajadoras.filter((t) => t.valor_hora == null).length;
+  const sinConfigurar = trabajadoras.filter((t) => {
+    if (t.tipo_pago === "mensual") return t.salario_mensual == null;
+    return t.valor_hora == null;
+  }).length;
 
   return (
     <div className="trabad-container">
       <header className="trabad-header">
         <div>
           <h1>Trabajadoras</h1>
-          <p>Equipo y valor por hora para el cálculo de salario</p>
+          <p>Equipo y pago para el cálculo de salario</p>
         </div>
         {!formularioAbierto && (
           <button className="trabad-btn-nuevo" onClick={iniciarCreacion}>
@@ -144,12 +164,12 @@ export default function Trabajadoras() {
       {mensaje && <div className="trabad-mensaje-exito">{mensaje}</div>}
       {error && <div className="trabad-mensaje-error">{error}</div>}
 
-      {!formularioAbierto && sinValorHora > 0 && (
+      {!formularioAbierto && sinConfigurar > 0 && (
         <div className="trabad-alerta-global">
           <AlertTriangle size={15} />
-          {sinValorHora === 1
-            ? "1 trabajadora no tiene valor por hora configurado"
-            : `${sinValorHora} trabajadoras no tienen valor por hora configurado`}
+          {sinConfigurar === 1
+            ? "1 trabajadora no tiene su pago configurado"
+            : `${sinConfigurar} trabajadoras no tienen su pago configurado`}
         </div>
       )}
 
@@ -163,15 +183,64 @@ export default function Trabajadoras() {
             placeholder="Ej: María Pérez"
           />
 
-          <label>Valor por hora (opcional)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.valor_hora}
-            onChange={(e) => setForm((f) => ({ ...f, valor_hora: e.target.value }))}
-            placeholder="Necesario para calcular el salario"
-          />
+          <label>Tipo de pago</label>
+          <div className="trabad-tipo-pago">
+            <button
+              type="button"
+              className={`trabad-tipo-btn ${form.tipo_pago === "hora" ? "activo" : ""}`}
+              onClick={() => setForm((f) => ({ ...f, tipo_pago: "hora" }))}
+            >
+              <Clock size={15} />
+              Por hora
+            </button>
+            <button
+              type="button"
+              className={`trabad-tipo-btn ${form.tipo_pago === "mensual" ? "activo" : ""}`}
+              onClick={() => setForm((f) => ({ ...f, tipo_pago: "mensual" }))}
+            >
+              <Wallet size={15} />
+              Sueldo fijo mensual
+            </button>
+          </div>
+
+          {form.tipo_pago === "hora" ? (
+            <>
+              <label>Valor por hora</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.valor_hora}
+                onChange={(e) => setForm((f) => ({ ...f, valor_hora: e.target.value }))}
+                placeholder="Ej: 13000"
+              />
+            </>
+          ) : (
+            <>
+              <label>Salario mensual</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.salario_mensual}
+                onChange={(e) => setForm((f) => ({ ...f, salario_mensual: e.target.value }))}
+                placeholder="Ej: 2000000"
+              />
+              <p className="trabad-nota-prorrateo">
+                Para periodos más cortos que un mes (esta semana, quincena) se calcula
+                proporcional a los días del rango.
+              </p>
+            </>
+          )}
+
+          <label className="trabad-check-label">
+            <input
+              type="checkbox"
+              checked={form.incluye_nomina}
+              onChange={(e) => setForm((f) => ({ ...f, incluye_nomina: e.target.checked }))}
+            />
+            Incluir en horarios y nómina
+          </label>
 
           <div className="trabad-botones">
             <button className="trabad-btn-secundario" onClick={cancelar} disabled={guardando}>
@@ -200,64 +269,81 @@ export default function Trabajadoras() {
           )}
 
           <div className="trabad-lista">
-            {trabajadorasFiltradas.map((t) => (
-              <div key={t.id} className="trabad-tarjeta">
-                <div className="trabad-fila-principal">
-                  <div className="trabad-nombre-icono">
-                    <div className="trabad-avatar">{iniciales(t.nombre)}</div>
-                    <span className="trabad-nombre">{t.nombre}</span>
+            {trabajadorasFiltradas.map((t) => {
+              const esMensual = t.tipo_pago === "mensual";
+              const configurado = esMensual ? t.salario_mensual != null : t.valor_hora != null;
+
+              return (
+                <div key={t.id} className="trabad-tarjeta">
+                  <div className="trabad-fila-principal">
+                    <div className="trabad-nombre-icono">
+                      <div className="trabad-avatar">{iniciales(t.nombre)}</div>
+                      <div className="trabad-nombre-info">
+                        <span className="trabad-nombre">{t.nombre}</span>
+                        <span className="trabad-tipo-badge">
+                          {esMensual ? <Wallet size={11} /> : <Clock size={11} />}
+                          {esMensual ? "Sueldo fijo" : "Por hora"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {configurado ? (
+                      <span className="trabad-valor-hora">
+                        {esMensual ? (
+                          <>{formatearMoneda(t.salario_mensual)}/mes</>
+                        ) : (
+                          <>
+                            <DollarSign size={13} />
+                            {Number(t.valor_hora).toLocaleString("es-CO")}/h
+                          </>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="trabad-sin-valor">
+                        <AlertTriangle size={12} />
+                        Sin configurar
+                      </span>
+                    )}
                   </div>
 
-                  {t.valor_hora != null ? (
-                    <span className="trabad-valor-hora">
-                      <DollarSign size={13} />
-                      {Number(t.valor_hora).toLocaleString("es-CO")}/h
-                    </span>
+                  {confirmandoEliminar === t.id ? (
+                    <div className="trabad-confirmar">
+                      <span>¿Desactivar esta trabajadora?</span>
+                      <div className="trabad-botones">
+                        <button
+                          className="trabad-btn-secundario"
+                          onClick={() => setConfirmandoEliminar(null)}
+                          disabled={guardando}
+                        >
+                          No
+                        </button>
+                        <button
+                          className="trabad-btn-peligro"
+                          onClick={() => confirmarEliminar(t.id)}
+                          disabled={guardando}
+                        >
+                          Sí, desactivar
+                        </button>
+                      </div>
+                    </div>
                   ) : (
-                    <span className="trabad-sin-valor">
-                      <AlertTriangle size={12} />
-                      Sin configurar
-                    </span>
-                  )}
-                </div>
-
-                {confirmandoEliminar === t.id ? (
-                  <div className="trabad-confirmar">
-                    <span>¿Desactivar esta trabajadora?</span>
-                    <div className="trabad-botones">
-                      <button
-                        className="trabad-btn-secundario"
-                        onClick={() => setConfirmandoEliminar(null)}
-                        disabled={guardando}
-                      >
-                        No
+                    <div className="trabad-acciones">
+                      <button className="trabad-btn-secundario" onClick={() => iniciarEdicion(t)}>
+                        <Pencil size={13} />
+                        Editar
                       </button>
                       <button
-                        className="trabad-btn-peligro"
-                        onClick={() => confirmarEliminar(t.id)}
-                        disabled={guardando}
+                        className="trabad-btn-peligro-outline"
+                        onClick={() => setConfirmandoEliminar(t.id)}
                       >
-                        Sí, desactivar
+                        <Trash2 size={13} />
+                        Desactivar
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="trabad-acciones">
-                    <button className="trabad-btn-secundario" onClick={() => iniciarEdicion(t)}>
-                      <Pencil size={13} />
-                      Editar
-                    </button>
-                    <button
-                      className="trabad-btn-peligro-outline"
-                      onClick={() => setConfirmandoEliminar(t.id)}
-                    >
-                      <Trash2 size={13} />
-                      Desactivar
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
 
             {trabajadoras.length === 0 && (
               <p className="trabad-sin-datos">Todavía no hay trabajadoras registradas</p>

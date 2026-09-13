@@ -1,11 +1,14 @@
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from sqlalchemy import func
 from app import db
 from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora
-from app.domain.salario import calcular_horas_trabajadas, calcular_salario as calcular_salario_domain
+from app.domain.salario import (
+    calcular_horas_trabajadas,
+    calcular_salario as calcular_salario_domain,
+    calcular_salario_mensual_prorrateado,
+)
 from calendar import monthrange
 from app.domain.periodos import rango_por_periodo
-
 from app.domain.periodos import rango_por_periodo as _rango_por_periodo
 
 
@@ -161,7 +164,7 @@ class AdminService:
 
     @staticmethod
     def calcular_salarios(desde, hasta):
-        trabajadoras = Trabajadora.query.filter_by(activa=True).order_by(Trabajadora.nombre).all()
+        trabajadoras = Trabajadora.query.filter_by(activa=True, incluye_nomina=True).order_by(Trabajadora.nombre).all()
         resultados = []
         for t in trabajadoras:
             resultado, _ = AdminService.calcular_salario(t.id, desde, hasta)
@@ -185,17 +188,30 @@ class AdminService:
         )
         total_horas = round(total_horas, 2)
 
-        valor_hora = float(trabajadora.valor_hora) if trabajadora.valor_hora is not None else None
-        salario_calculado = calcular_salario_domain(total_horas, valor_hora)
+        dias_periodo = (hasta - desde).days + 1
+
+        if trabajadora.tipo_pago == "mensual":
+            salario_mensual = (
+                float(trabajadora.salario_mensual) if trabajadora.salario_mensual is not None else None
+            )
+            salario_calculado = calcular_salario_mensual_prorrateado(salario_mensual, dias_periodo)
+            valor_hora = None
+            nota = None if salario_mensual is not None else "Falta configurar el salario mensual de esta trabajadora"
+        else:
+            valor_hora = float(trabajadora.valor_hora) if trabajadora.valor_hora is not None else None
+            salario_calculado = calcular_salario_domain(total_horas, valor_hora)
+            salario_mensual = None
+            nota = None if valor_hora is not None else "Falta configurar el valor por hora de esta trabajadora"
 
         return {
             "trabajadora_id": trabajadora.id,
             "trabajadora_nombre": trabajadora.nombre,
+            "tipo_pago": trabajadora.tipo_pago,
             "desde": desde.isoformat(),
             "hasta": hasta.isoformat(),
             "total_horas": total_horas,
             "valor_hora": valor_hora,
+            "salario_mensual": salario_mensual,
             "salario_calculado": salario_calculado,
-            "nota": None if valor_hora is not None else "Falta configurar el valor por hora de esta trabajadora",
+            "nota": nota,
         }, None
-

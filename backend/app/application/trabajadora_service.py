@@ -19,7 +19,10 @@ class TrabajadoraService:
     def crear(data):
         trabajadora = Trabajadora(
             nombre=data["nombre"],
+            tipo_pago=data.get("tipo_pago", "hora"),
             valor_hora=data.get("valor_hora"),
+            salario_mensual=data.get("salario_mensual"),
+            incluye_nomina=data.get("incluye_nomina", True),
         )
         db.session.add(trabajadora)
         db.session.commit()
@@ -33,10 +36,16 @@ class TrabajadoraService:
 
         if "nombre" in data:
             trabajadora.nombre = data["nombre"]
+        if "tipo_pago" in data:
+            trabajadora.tipo_pago = data["tipo_pago"]
         if "valor_hora" in data:
             trabajadora.valor_hora = data["valor_hora"]
+        if "salario_mensual" in data:
+            trabajadora.salario_mensual = data["salario_mensual"]
         if "activa" in data:
             trabajadora.activa = data["activa"]
+        if "incluye_nomina" in data:
+            trabajadora.incluye_nomina = data["incluye_nomina"]
 
         db.session.commit()
         return trabajadora

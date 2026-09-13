@@ -262,3 +262,52 @@
   text-align: center;
   padding: 2rem 0;
 }
+
+.trabad-tipo-pago {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trabad-tipo-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.trabad-tipo-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.trabad-nota-prorrateo {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 0.3rem 0 0;
+}
+
+.trabad-nombre-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.trabad-tipo-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}

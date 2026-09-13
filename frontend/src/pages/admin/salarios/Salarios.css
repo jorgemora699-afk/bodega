@@ -337,3 +337,52 @@
   font-weight: 700;
   color: var(--color-brand-dark);
 }
+
+.sal-nota-prorrateo {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 0.4rem 0 0.8rem;
+}
+
+.sal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sal-btn-reporte {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sal-detalle-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.5rem 0 0.6rem;
+}
+
+.sal-btn-pdf-individual {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}

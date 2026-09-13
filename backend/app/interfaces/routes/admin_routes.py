@@ -102,3 +102,70 @@ def calcular_salario():
     if error:
         return jsonify({"error": error}), 404
     return jsonify(resultado), 200
+
+from flask import send_file
+from app.application.horario_service import HorarioService
+from app.application.trabajadora_service import TrabajadoraService
+from app.application.pdf_service import generar_pdf_salario, generar_pdf_reporte_general
+
+@admin_bp.route("/trabajadoras/<int:trabajadora_id>/pdf", methods=["GET"])
+def generar_pdf_trabajadora(trabajadora_id):
+    desde_str = request.args.get("desde")
+    hasta_str = request.args.get("hasta")
+
+    if not desde_str or not hasta_str:
+        return jsonify({"error": "desde y hasta son obligatorios"}), 400
+
+    try:
+        desde = parsear_fecha(desde_str, "desde")
+        hasta = parsear_fecha(hasta_str, "hasta")
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    trabajadora = TrabajadoraService.obtener_por_id(trabajadora_id)
+    if not trabajadora:
+        return jsonify({"error": "Trabajadora no encontrada"}), 404
+
+    resultado, error = AdminService.calcular_salario(trabajadora_id, desde, hasta)
+    if error:
+        return jsonify({"error": error}), 404
+
+    turnos = [h for h in HorarioService.listar(trabajadora_id) if desde <= h.fecha <= hasta]
+    turnos.sort(key=lambda h: h.fecha)
+
+    pdf_buffer = generar_pdf_salario(
+        trabajadora_nombre=trabajadora.nombre,
+        tipo_pago=trabajadora.tipo_pago,
+        desde=desde,
+        hasta=hasta,
+        turnos=turnos,
+        total_horas=resultado["total_horas"],
+        salario_calculado=resultado["salario_calculado"] or 0,
+        valor_hora=resultado["valor_hora"],
+        salario_mensual=resultado["salario_mensual"],
+    )
+
+    nombre_archivo = f"salario_{trabajadora.nombre.replace(' ', '_')}_{desde.isoformat()}_{hasta.isoformat()}.pdf"
+    return send_file(pdf_buffer, mimetype="application/pdf", as_attachment=True, download_name=nombre_archivo)
+
+
+@admin_bp.route("/reporte-general/pdf", methods=["GET"])
+def generar_pdf_reporte_general_endpoint():
+    desde_str = request.args.get("desde")
+    hasta_str = request.args.get("hasta")
+
+    if not desde_str or not hasta_str:
+        return jsonify({"error": "desde y hasta son obligatorios"}), 400
+
+    try:
+        desde = parsear_fecha(desde_str, "desde")
+        hasta = parsear_fecha(hasta_str, "hasta")
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    resultados = AdminService.calcular_salarios(desde, hasta)
+    total_general = round(sum(r["salario_calculado"] or 0 for r in resultados), 2)
+
+    pdf_buffer = generar_pdf_reporte_general(desde, hasta, resultados, total_general)
+    nombre_archivo = f"reporte_nomina_{desde.isoformat()}_{hasta.isoformat()}.pdf"
+    return send_file(pdf_buffer, mimetype="application/pdf", as_attachment=True, download_name=nombre_archivo)
