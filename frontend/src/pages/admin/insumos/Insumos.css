@@ -85,8 +85,9 @@
   gap: 0.5rem;
   padding: 0.5rem 0.7rem;
   border-radius: var(--radius-sm);
-  background: var(--color-brand);
-  color: var(--color-brand-dark);
+  background: #FFF4E5;
+  color: #9A5B0C;
+  border: 1px solid #F5D9A8;
   font-size: 0.82rem;
   font-weight: 600;
 }
@@ -185,8 +186,9 @@
   gap: 0.3rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--color-brand-dark);
-  background: var(--color-brand);
+  color: #9A5B0C;
+  background: #FFF4E5;
+  border: 1px solid #F5D9A8;
   padding: 0.2rem 0.55rem;
   border-radius: 20px;
   white-space: nowrap;
@@ -411,4 +413,19 @@
 .ins-btn-guardar-sheet {
   width: 100%;
   margin-top: 1rem;
+}
+
+.ins-grupo {
+  margin-bottom: 1.4rem;
+}
+
+.ins-grupo-titulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--color-border);
 }
