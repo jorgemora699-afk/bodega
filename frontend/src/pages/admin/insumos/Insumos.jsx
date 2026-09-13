@@ -82,6 +82,10 @@ export default function Insumos() {
   const [sheetCatalogoAbierto, setSheetCatalogoAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [formCatalogo, setFormCatalogo] = useState(formCatalogoVacio());
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState({
+    cocina: true,
+    empaques_aseo: false,
+    });
 
   const [sheetMovimientoAbierto, setSheetMovimientoAbierto] = useState(false);
   const [formMovimiento, setFormMovimiento] = useState(
@@ -362,6 +366,13 @@ export default function Insumos() {
     );
   }
 
+  function toggleCategoria(categoria) {
+    setCategoriasAbiertas((prev) => ({
+        ...prev,
+        [categoria]: !prev[categoria],
+    }));
+  }
+
   return (
     <div className="ins-container">
       <header className="ins-header">
@@ -491,31 +502,49 @@ export default function Insumos() {
           )}
 
         {categoriaFiltro === "" ? (
-          CATEGORIAS.map((cat) => {
-            const items = insumosFiltrados.filter(
-              (i) => i.categoria === cat.valor
-            );
+            CATEGORIAS.map((cat) => {
+                const items = insumosFiltrados.filter(
+                (i) => i.categoria === cat.valor
+                );
 
-            if (items.length === 0) {
-              return null;
-            }
+                if (items.length === 0) {
+                return null;
+                }
 
-            return (
-              <div
-                key={cat.valor}
-                className="ins-grupo"
-              >
-                <h2 className="ins-grupo-titulo">
-                  {cat.label}
-                </h2>
+                const abierta = categoriasAbiertas[cat.valor];
 
-                <div className="ins-lista">
-                  {items.map(renderTarjeta)}
+                return (
+                <div key={cat.valor} className="ins-grupo">
+                    <button
+                    type="button"
+                    className="ins-grupo-header"
+                    onClick={() => toggleCategoria(cat.valor)}
+                    >
+                    <div className="ins-grupo-info">
+                        <span className="ins-grupo-titulo">
+                        {cat.label}
+                        </span>
+
+                        <span className="ins-grupo-cantidad">
+                        {items.length}{" "}
+                        {items.length === 1 ? "insumo" : "insumos"}
+                        </span>
+                    </div>
+
+                    <span className="ins-grupo-flecha">
+                        {abierta ? "⌃" : "⌄"}
+                    </span>
+                    </button>
+
+                    {abierta && (
+                    <div className="ins-lista">
+                        {items.map(renderTarjeta)}
+                    </div>
+                    )}
                 </div>
-              </div>
-            );
-          })
-        ) : (
+                );
+            })
+          ) : (
           <div className="ins-lista">
             {insumosFiltrados.map(renderTarjeta)}
           </div>
