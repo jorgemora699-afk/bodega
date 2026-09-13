@@ -287,6 +287,65 @@ class IngresoEgreso(db.Model):
     def __repr__(self):
         return f"<IngresoEgreso {self.tipo} - {self.monto}>"
 
+class Insumo(db.Model):
+    __tablename__ = "insumos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    categoria = db.Column(db.String(20), nullable=False, default="cocina")  # "cocina" o "empaques_aseo"
+    unidad_medida = db.Column(db.String(20), nullable=False, default="unidad")  # g, kg, ml, l, unidad, paquete...
+    stock_actual = db.Column(db.Numeric(10, 3), nullable=False, default=0)
+    stock_minimo = db.Column(db.Numeric(10, 3), nullable=False, default=5)
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    movimientos = db.relationship("MovimientoInsumo", back_populates="insumo")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "nombre": self.nombre,
+            "categoria": self.categoria,
+            "unidad_medida": self.unidad_medida,
+            "stock_actual": float(self.stock_actual),
+            "stock_minimo": float(self.stock_minimo),
+            "activo": self.activo,
+        }
+
+    def __repr__(self):
+        return f"<Insumo {self.nombre}>"
+
+
+class MovimientoInsumo(db.Model):
+    __tablename__ = "movimientos_insumo"
+
+    id = db.Column(db.Integer, primary_key=True)
+    insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=False)
+    trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=True)
+    tipo = db.Column(db.String(20), nullable=False)  # "entrada" o "salida"
+    motivo = db.Column(db.String(50), nullable=False)  # "compra", "uso", "merma", "ajuste"
+    cantidad = db.Column(db.Numeric(10, 3), nullable=False)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+
+    insumo = db.relationship("Insumo", back_populates="movimientos")
+    trabajadora = db.relationship("Trabajadora")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "insumo_id": self.insumo_id,
+            "insumo_nombre": self.insumo.nombre if self.insumo else None,
+            "trabajadora_id": self.trabajadora_id,
+            "trabajadora_nombre": self.trabajadora.nombre if self.trabajadora else None,
+            "tipo": self.tipo,
+            "motivo": self.motivo,
+            "cantidad": float(self.cantidad),
+            "fecha": self.fecha.isoformat() + "Z",
+        }
+
+    def __repr__(self):
+        return f"<MovimientoInsumo {self.tipo} - {self.insumo_id}>"
+
 class Usuario(db.Model):
     __tablename__ = "usuarios"
 
