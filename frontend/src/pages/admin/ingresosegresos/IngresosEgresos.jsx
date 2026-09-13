@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import {
   listarIngresosEgresos,
   crearIngresoEgreso,
@@ -6,6 +7,7 @@ import {
   eliminarIngresoEgreso,
 } from "../../../api/ingresosEgresos";
 import { listarProveedores } from "../../../api/proveedores";
+import Sheet from "../../../components/Sheet";
 import "./IngresosEgresos.css";
 
 function formVacio() {
@@ -29,7 +31,7 @@ export default function IngresosEgresos() {
   const [proveedores, setProveedores] = useState([]);
   const [filtroTipo, setFiltroTipo] = useState("");
 
-  const [creando, setCreando] = useState(false);
+  const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(formVacio());
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(null);
@@ -65,16 +67,15 @@ export default function IngresosEgresos() {
   }
 
   function iniciarCreacion() {
-    setCreando(true);
     setEditandoId(null);
     setForm(formVacio());
     setMensaje(null);
     setError(null);
+    setSheetAbierto(true);
   }
 
   function iniciarEdicion(registro) {
     setEditandoId(registro.id);
-    setCreando(false);
     setMensaje(null);
     setError(null);
     setForm({
@@ -83,12 +84,15 @@ export default function IngresosEgresos() {
       descripcion: registro.descripcion,
       proveedor_id: registro.proveedor_id || "",
     });
+    setSheetAbierto(true);
   }
 
-  function cancelar() {
-    setCreando(false);
-    setEditandoId(null);
-    setForm(formVacio());
+  function cerrarSheet(abierto) {
+    setSheetAbierto(abierto);
+    if (!abierto) {
+      setEditandoId(null);
+      setForm(formVacio());
+    }
   }
 
   async function guardar() {
@@ -115,7 +119,7 @@ export default function IngresosEgresos() {
         await crearIngresoEgreso(payload);
         setMensaje(form.tipo === "ingreso" ? "Ingreso registrado" : "Egreso registrado");
       }
-      cancelar();
+      cerrarSheet(false);
       cargarRegistros();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo guardar el registro");
@@ -139,8 +143,6 @@ export default function IngresosEgresos() {
     }
   }
 
-  const formularioAbierto = creando || editandoId !== null;
-
   const totalIngresos = registros
     .filter((r) => r.tipo === "ingreso")
     .reduce((sum, r) => sum + Number(r.monto), 0);
@@ -152,18 +154,119 @@ export default function IngresosEgresos() {
     <div className="ie-container">
       <div className="ie-header">
         <h1>Ingresos / Egresos</h1>
-        {!formularioAbierto && (
-          <button className="ie-btn-nuevo" onClick={iniciarCreacion}>
-            + Nuevo
-          </button>
-        )}
+        <button className="ie-btn-nuevo" onClick={iniciarCreacion}>
+          <Plus size={16} />
+          Nuevo
+        </button>
       </div>
 
       {mensaje && <div className="ie-mensaje-exito">{mensaje}</div>}
-      {error && <div className="ie-mensaje-error">{error}</div>}
+      {error && !sheetAbierto && <div className="ie-mensaje-error">{error}</div>}
 
-      {formularioAbierto && (
+      <div className="ie-filtros">
+        {[
+          { valor: "", label: "Todos" },
+          { valor: "ingreso", label: "Ingresos" },
+          { valor: "egreso", label: "Egresos" },
+        ].map((f) => (
+          <button
+            key={f.valor}
+            className={`ie-filtro-btn ${filtroTipo === f.valor ? "activo" : ""}`}
+            onClick={() => setFiltroTipo(f.valor)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="ie-resumen">
+        <div className="ie-resumen-item">
+          <span>Ingresos</span>
+          <span className="ie-resumen-valor positivo">{formatearMoneda(totalIngresos)}</span>
+        </div>
+        <div className="ie-resumen-item">
+          <span>Egresos</span>
+          <span className="ie-resumen-valor negativo">{formatearMoneda(totalEgresos)}</span>
+        </div>
+      </div>
+
+      <div className="ie-lista">
+        {registros.map((r) => (
+          <div key={r.id} className="ie-tarjeta">
+            <div className="ie-fila-principal">
+              <div>
+                <span className={`ie-badge-tipo ${r.tipo}`}>
+                  {r.tipo === "ingreso" ? "Ingreso" : "Egreso"}
+                </span>
+                <span className="ie-descripcion">{r.descripcion}</span>
+              </div>
+              <span className={`ie-monto ${r.tipo === "ingreso" ? "positivo" : "negativo"}`}>
+                {r.tipo === "ingreso" ? "+" : "-"}
+                {formatearMoneda(r.monto)}
+              </span>
+            </div>
+
+            <div className="ie-detalle">
+              <span>{formatearFecha(r.fecha)}</span>
+              {r.proveedor_nombre && (
+                <>
+                  <span>·</span>
+                  <span>{r.proveedor_nombre}</span>
+                </>
+              )}
+            </div>
+
+            {confirmandoEliminar === r.id ? (
+              <div className="ie-confirmar">
+                <span>¿Eliminar este registro?</span>
+                <div className="ie-botones">
+                  <button
+                    className="ie-btn-secundario"
+                    onClick={() => setConfirmandoEliminar(null)}
+                    disabled={guardando}
+                  >
+                    No
+                  </button>
+                  <button
+                    className="ie-btn-peligro"
+                    onClick={() => confirmarEliminar(r.id)}
+                    disabled={guardando}
+                  >
+                    Sí, eliminar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="ie-acciones">
+                <button className="ie-btn-secundario" onClick={() => iniciarEdicion(r)}>
+                  <Pencil size={13} />
+                  Editar
+                </button>
+                <button
+                  className="ie-btn-peligro-outline"
+                  onClick={() => setConfirmandoEliminar(r.id)}
+                >
+                  <Trash2 size={13} />
+                  Eliminar
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {registros.length === 0 && (
+          <p className="ie-sin-datos">No hay registros para este filtro</p>
+        )}
+      </div>
+
+      <Sheet
+        open={sheetAbierto}
+        onOpenChange={cerrarSheet}
+        title={editandoId ? "Editar registro" : "Nuevo registro"}
+      >
         <div className="ie-form">
+          {error && <div className="ie-mensaje-error">{error}</div>}
+
           <label>Tipo</label>
           <div className="ie-tipos">
             <button
@@ -214,114 +317,11 @@ export default function IngresosEgresos() {
             </>
           )}
 
-          <div className="ie-botones">
-            <button className="ie-btn-secundario" onClick={cancelar} disabled={guardando}>
-              Cancelar
-            </button>
-            <button className="ie-btn-primario" onClick={guardar} disabled={guardando}>
-              {guardando ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
+          <button className="ie-btn-primario ie-btn-guardar-sheet" onClick={guardar} disabled={guardando}>
+            {guardando ? "Guardando..." : "Guardar"}
+          </button>
         </div>
-      )}
-
-      {!formularioAbierto && (
-        <>
-          <div className="ie-filtros">
-            {[
-              { valor: "", label: "Todos" },
-              { valor: "ingreso", label: "Ingresos" },
-              { valor: "egreso", label: "Egresos" },
-            ].map((f) => (
-              <button
-                key={f.valor}
-                className={`ie-filtro-btn ${filtroTipo === f.valor ? "activo" : ""}`}
-                onClick={() => setFiltroTipo(f.valor)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="ie-resumen">
-            <div className="ie-resumen-item">
-              <span>Ingresos</span>
-              <span className="ie-resumen-valor positivo">{formatearMoneda(totalIngresos)}</span>
-            </div>
-            <div className="ie-resumen-item">
-              <span>Egresos</span>
-              <span className="ie-resumen-valor negativo">{formatearMoneda(totalEgresos)}</span>
-            </div>
-          </div>
-
-          <div className="ie-lista">
-            {registros.map((r) => (
-              <div key={r.id} className="ie-tarjeta">
-                <div className="ie-fila-principal">
-                  <div>
-                    <span className={`ie-badge-tipo ${r.tipo}`}>
-                      {r.tipo === "ingreso" ? "Ingreso" : "Egreso"}
-                    </span>
-                    <span className="ie-descripcion">{r.descripcion}</span>
-                  </div>
-                  <span className={`ie-monto ${r.tipo === "ingreso" ? "positivo" : "negativo"}`}>
-                    {r.tipo === "ingreso" ? "+" : "-"}
-                    {formatearMoneda(r.monto)}
-                  </span>
-                </div>
-
-                <div className="ie-detalle">
-                  <span>{formatearFecha(r.fecha)}</span>
-                  {r.proveedor_nombre && (
-                    <>
-                      <span>·</span>
-                      <span>{r.proveedor_nombre}</span>
-                    </>
-                  )}
-                </div>
-
-                {confirmandoEliminar === r.id ? (
-                  <div className="ie-confirmar">
-                    <span>¿Eliminar este registro?</span>
-                    <div className="ie-botones">
-                      <button
-                        className="ie-btn-secundario"
-                        onClick={() => setConfirmandoEliminar(null)}
-                        disabled={guardando}
-                      >
-                        No
-                      </button>
-                      <button
-                        className="ie-btn-peligro"
-                        onClick={() => confirmarEliminar(r.id)}
-                        disabled={guardando}
-                      >
-                        Sí, eliminar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="ie-acciones">
-                    <button className="ie-btn-secundario" onClick={() => iniciarEdicion(r)}>
-                      Editar
-                    </button>
-                    <button
-                      className="ie-btn-peligro-outline"
-                      onClick={() => setConfirmandoEliminar(r.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {registros.length === 0 && (
-              <p className="ie-sin-datos">No hay registros para este filtro</p>
-            )}
-          </div>
-        </>
-      )}
+      </Sheet>
     </div>
   );
 }
