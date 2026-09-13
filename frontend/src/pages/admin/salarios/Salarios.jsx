@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { calcularSalarios } from "../../../api/admin";
 import { actualizarTrabajadora } from "../../../api/trabajadoras";
 import { listarHorarios, actualizarHorario } from "../../../api/horarios";
 import "./Salarios.css";
