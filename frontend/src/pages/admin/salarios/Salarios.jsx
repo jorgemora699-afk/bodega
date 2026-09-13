@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Wallet, Pencil, ChevronDown, ChevronUp, Clock, Check, X } from "lucide-react";
 import { calcularSalarios } from "../../../api/admin";
 import { actualizarTrabajadora } from "../../../api/trabajadoras";
 import { listarHorarios, actualizarHorario } from "../../../api/horarios";
