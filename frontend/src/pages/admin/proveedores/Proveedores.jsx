@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Truck, Plus, Phone, Pencil, Trash2, X, Search, Package } from "lucide-react";
+import { Truck, Plus, Phone, Pencil, Trash2, Search, Package } from "lucide-react";
 import {
   listarProveedores,
   crearProveedor,
@@ -7,6 +7,7 @@ import {
   eliminarProveedor,
 } from "../../../api/proveedores";
 import { listarProductos } from "../../../api/productos";
+import Sheet from "../../../components/Sheet";
 import "./Proveedores.css";
 
 function formVacio() {
@@ -18,7 +19,7 @@ export default function Proveedores() {
   const [productos, setProductos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
 
-  const [creando, setCreando] = useState(false);
+  const [sheetAbierto, setSheetAbierto] = useState(false);
   const [form, setForm] = useState(formVacio());
   const [editandoId, setEditandoId] = useState(null);
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(null);
@@ -58,16 +59,15 @@ export default function Proveedores() {
   }
 
   function iniciarCreacion() {
-    setCreando(true);
     setEditandoId(null);
     setForm(formVacio());
     setMensaje(null);
     setError(null);
+    setSheetAbierto(true);
   }
 
   function iniciarEdicion(proveedor) {
     setEditandoId(proveedor.id);
-    setCreando(false);
     setMensaje(null);
     setError(null);
     setForm({
@@ -76,12 +76,15 @@ export default function Proveedores() {
       notas: proveedor.notas || "",
       producto_ids: proveedor.productos.map((p) => p.id),
     });
+    setSheetAbierto(true);
   }
 
-  function cancelar() {
-    setCreando(false);
-    setEditandoId(null);
-    setForm(formVacio());
+  function cerrarSheet(abierto) {
+    setSheetAbierto(abierto);
+    if (!abierto) {
+      setEditandoId(null);
+      setForm(formVacio());
+    }
   }
 
   async function guardar() {
@@ -101,7 +104,7 @@ export default function Proveedores() {
         await crearProveedor(form);
         setMensaje("Proveedor creado");
       }
-      cancelar();
+      cerrarSheet(false);
       cargarDatos();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo guardar el proveedor");
@@ -125,8 +128,6 @@ export default function Proveedores() {
     }
   }
 
-  const formularioAbierto = creando || editandoId !== null;
-
   const proveedoresFiltrados = proveedores.filter((p) =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -138,19 +139,110 @@ export default function Proveedores() {
           <h1>Proveedores</h1>
           <p>Contactos para reabastecer el inventario</p>
         </div>
-        {!formularioAbierto && (
-          <button className="prov-btn-nuevo" onClick={iniciarCreacion}>
-            <Plus size={16} />
-            Nuevo
-          </button>
-        )}
+        <button className="prov-btn-nuevo" onClick={iniciarCreacion}>
+          <Plus size={16} />
+          Nuevo
+        </button>
       </header>
 
       {mensaje && <div className="prov-mensaje-exito">{mensaje}</div>}
-      {error && <div className="prov-mensaje-error">{error}</div>}
+      {error && !sheetAbierto && <div className="prov-mensaje-error">{error}</div>}
 
-      {formularioAbierto && (
+      {proveedores.length > 0 && (
+        <div className="prov-buscador">
+          <Search size={16} />
+          <input
+            type="text"
+            placeholder="Buscar proveedor..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
+      )}
+
+      <div className="prov-lista">
+        {proveedoresFiltrados.map((prov) => (
+          <div key={prov.id} className="prov-tarjeta">
+            <div className="prov-fila-principal">
+              <div className="prov-nombre-icono">
+                <div className="prov-icono-avatar">
+                  <Truck size={16} />
+                </div>
+                <span className="prov-nombre">{prov.nombre}</span>
+              </div>
+              <a href={`tel:${prov.celular}`} className="prov-celular">
+                <Phone size={13} />
+                {prov.celular}
+              </a>
+            </div>
+
+            {prov.notas && <p className="prov-notas">{prov.notas}</p>}
+
+            {prov.productos.length > 0 && (
+              <div className="prov-productos-tags">
+                {prov.productos.map((p) => (
+                  <span key={p.id} className="prov-tag">
+                    <Package size={11} />
+                    {p.nombre}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {confirmandoEliminar === prov.id ? (
+              <div className="prov-confirmar">
+                <span>¿Eliminar este proveedor?</span>
+                <div className="prov-botones">
+                  <button
+                    className="prov-btn-secundario"
+                    onClick={() => setConfirmandoEliminar(null)}
+                    disabled={guardando}
+                  >
+                    No
+                  </button>
+                  <button
+                    className="prov-btn-peligro"
+                    onClick={() => confirmarEliminar(prov.id)}
+                    disabled={guardando}
+                  >
+                    Sí, eliminar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="prov-acciones">
+                <button className="prov-btn-secundario" onClick={() => iniciarEdicion(prov)}>
+                  <Pencil size={13} />
+                  Editar
+                </button>
+                <button
+                  className="prov-btn-peligro-outline"
+                  onClick={() => setConfirmandoEliminar(prov.id)}
+                >
+                  <Trash2 size={13} />
+                  Eliminar
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {proveedores.length === 0 && (
+          <p className="prov-sin-datos">Todavía no hay proveedores registrados</p>
+        )}
+        {proveedores.length > 0 && proveedoresFiltrados.length === 0 && (
+          <p className="prov-sin-datos">Ningún proveedor coincide con "{busqueda}"</p>
+        )}
+      </div>
+
+      <Sheet
+        open={sheetAbierto}
+        onOpenChange={cerrarSheet}
+        title={editandoId ? "Editar proveedor" : "Nuevo proveedor"}
+      >
         <div className="prov-form">
+          {error && <div className="prov-mensaje-error">{error}</div>}
+
           <label>Nombre</label>
           <input
             type="text"
@@ -192,108 +284,11 @@ export default function Proveedores() {
             )}
           </div>
 
-          <div className="prov-botones">
-            <button className="prov-btn-secundario" onClick={cancelar} disabled={guardando}>
-              <X size={15} />
-              Cancelar
-            </button>
-            <button className="prov-btn-primario" onClick={guardar} disabled={guardando}>
-              {guardando ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
+          <button className="prov-btn-primario prov-btn-guardar-sheet" onClick={guardar} disabled={guardando}>
+            {guardando ? "Guardando..." : "Guardar"}
+          </button>
         </div>
-      )}
-
-      {!formularioAbierto && (
-        <>
-          {proveedores.length > 0 && (
-            <div className="prov-buscador">
-              <Search size={16} />
-              <input
-                type="text"
-                placeholder="Buscar proveedor..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
-            </div>
-          )}
-
-          <div className="prov-lista">
-            {proveedoresFiltrados.map((prov) => (
-              <div key={prov.id} className="prov-tarjeta">
-                <div className="prov-fila-principal">
-                  <div className="prov-nombre-icono">
-                    <div className="prov-icono-avatar">
-                      <Truck size={16} />
-                    </div>
-                    <span className="prov-nombre">{prov.nombre}</span>
-                  </div>
-                  <a href={`tel:${prov.celular}`} className="prov-celular">
-                    <Phone size={13} />
-                    {prov.celular}
-                  </a>
-                </div>
-
-                {prov.notas && <p className="prov-notas">{prov.notas}</p>}
-
-                {prov.productos.length > 0 && (
-                  <div className="prov-productos-tags">
-                    {prov.productos.map((p) => (
-                      <span key={p.id} className="prov-tag">
-                        <Package size={11} />
-                        {p.nombre}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {confirmandoEliminar === prov.id ? (
-                  <div className="prov-confirmar">
-                    <span>¿Eliminar este proveedor?</span>
-                    <div className="prov-botones">
-                      <button
-                        className="prov-btn-secundario"
-                        onClick={() => setConfirmandoEliminar(null)}
-                        disabled={guardando}
-                      >
-                        No
-                      </button>
-                      <button
-                        className="prov-btn-peligro"
-                        onClick={() => confirmarEliminar(prov.id)}
-                        disabled={guardando}
-                      >
-                        Sí, eliminar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="prov-acciones">
-                    <button className="prov-btn-secundario" onClick={() => iniciarEdicion(prov)}>
-                      <Pencil size={13} />
-                      Editar
-                    </button>
-                    <button
-                      className="prov-btn-peligro-outline"
-                      onClick={() => setConfirmandoEliminar(prov.id)}
-                    >
-                      <Trash2 size={13} />
-                      Eliminar
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {proveedores.length === 0 && (
-              <p className="prov-sin-datos">Todavía no hay proveedores registrados</p>
-            )}
-            {proveedores.length > 0 && proveedoresFiltrados.length === 0 && (
-              <p className="prov-sin-datos">Ningún proveedor coincide con "{busqueda}"</p>
-            )}
-          </div>
-        </>
-      )}
+      </Sheet>
     </div>
   );
 }
