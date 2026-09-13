@@ -19,7 +19,7 @@ import Proveedores from "./pages/admin/proveedores/Proveedores";
 import Productos from "./pages/admin/productos/Productos";
 import Trabajadoras from "./pages/admin/trabajadoras/Trabajadoras";
 import RecetasAdmin from "./pages/admin/recetas/Recetas";
-import Insumos from "./pages/admin/.../Insumos";
+import Insumos from "./pages/admin/insumos/Insumos";
 
 export default function App() {
   return (
