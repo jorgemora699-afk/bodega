@@ -13,6 +13,7 @@ import Dashboard from "./pages/admin/dashboard/Dashboard";
 import Ventas from "./pages/admin/ventas/Ventas";
 import Reportes from "./pages/admin/reportes/Reportes";
 import Salarios from "./pages/admin/salarios/Salarios";
+import Inventario from "./pages/admin/inventario/Inventario";
 import IngresosEgresos from "./pages/admin/ingresosegresos/IngresosEgresos";
 import Proveedores from "./pages/admin/proveedores/Proveedores";
 import Productos from "./pages/admin/productos/Productos";
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/admin/ingresos-egresos" element={<IngresosEgresos />} />
             <Route path="/admin/proveedores" element={<Proveedores />} />
             <Route path="/admin/productos" element={<Productos />} />
+            <Route path="/admin/inventario" element={<Inventario/>}/>
             <Route path="/admin/trabajadoras" element={<Trabajadoras />} />
             <Route path="/admin/recetas" element={<RecetasAdmin />} />
           </Route>
