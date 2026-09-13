@@ -311,3 +311,8 @@
   color: var(--color-text-secondary);
   font-weight: 500;
 }
+
+.trabad-btn-guardar-sheet {
+  width: 100%;
+  margin-top: 1rem;
+}

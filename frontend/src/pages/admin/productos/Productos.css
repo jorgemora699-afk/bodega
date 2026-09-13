@@ -279,3 +279,8 @@
   text-align: center;
   padding: 2rem 0;
 }
+
+.prodad-btn-guardar-sheet {
+  width: 100%;
+  margin-top: 1rem;
+}

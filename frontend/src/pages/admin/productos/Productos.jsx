@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Package, Plus, Pencil, Trash2, X, Search, Tag, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Tag, AlertTriangle } from "lucide-react";
 import {
   listarProductos,
   crearProducto,
   actualizarProducto,
   eliminarProducto,
 } from "../../../api/productos";
+import Sheet from "../../../components/Sheet";
 import "./Productos.css";
 
 const UMBRAL_BAJO_STOCK = 5;
@@ -19,7 +20,7 @@ export default function Productos() {
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
 
-  const [creando, setCreando] = useState(false);
+  const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(formVacio());
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(null);
@@ -42,16 +43,15 @@ export default function Productos() {
   }
 
   function iniciarCreacion() {
-    setCreando(true);
     setEditandoId(null);
     setForm(formVacio());
     setMensaje(null);
     setError(null);
+    setSheetAbierto(true);
   }
 
   function iniciarEdicion(producto) {
     setEditandoId(producto.id);
-    setCreando(false);
     setMensaje(null);
     setError(null);
     setForm({
@@ -60,12 +60,15 @@ export default function Productos() {
       precio_unitario: producto.precio_unitario,
       // stock_actual no se edita aquí — los cambios de stock pasan por Inventario
     });
+    setSheetAbierto(true);
   }
 
-  function cancelar() {
-    setCreando(false);
-    setEditandoId(null);
-    setForm(formVacio());
+  function cerrarSheet(abierto) {
+    setSheetAbierto(abierto);
+    if (!abierto) {
+      setEditandoId(null);
+      setForm(formVacio());
+    }
   }
 
   async function guardar() {
@@ -94,7 +97,7 @@ export default function Productos() {
         });
         setMensaje("Producto creado");
       }
-      cancelar();
+      cerrarSheet(false);
       cargarDatos();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo guardar el producto");
@@ -118,8 +121,6 @@ export default function Productos() {
     }
   }
 
-  const formularioAbierto = creando || editandoId !== null;
-
   const categorias = [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort();
 
   const productosFiltrados = productos.filter((p) => {
@@ -135,19 +136,131 @@ export default function Productos() {
           <h1>Productos</h1>
           <p>Catálogo, precios y categorías</p>
         </div>
-        {!formularioAbierto && (
-          <button className="prodad-btn-nuevo" onClick={iniciarCreacion}>
-            <Plus size={16} />
-            Nuevo
-          </button>
-        )}
+        <button className="prodad-btn-nuevo" onClick={iniciarCreacion}>
+          <Plus size={16} />
+          Nuevo
+        </button>
       </header>
 
       {mensaje && <div className="prodad-mensaje-exito">{mensaje}</div>}
-      {error && <div className="prodad-mensaje-error">{error}</div>}
+      {error && !sheetAbierto && <div className="prodad-mensaje-error">{error}</div>}
 
-      {formularioAbierto && (
+      {productos.length > 0 && (
+        <>
+          <div className="prodad-buscador">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Buscar producto..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
+
+          {categorias.length > 0 && (
+            <div className="prodad-filtros-categoria">
+              <button
+                className={`prodad-chip ${categoriaFiltro === "" ? "activo" : ""}`}
+                onClick={() => setCategoriaFiltro("")}
+              >
+                Todas
+              </button>
+              {categorias.map((c) => (
+                <button
+                  key={c}
+                  className={`prodad-chip ${categoriaFiltro === c ? "activo" : ""}`}
+                  onClick={() => setCategoriaFiltro(c)}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="prodad-lista">
+        {productosFiltrados.map((p) => {
+          const stockBajo = Number(p.stock_actual) <= UMBRAL_BAJO_STOCK;
+          return (
+            <div key={p.id} className="prodad-tarjeta">
+              <div className="prodad-fila-principal">
+                <div className="prodad-info">
+                  <span className="prodad-nombre">{p.nombre}</span>
+                  {p.categoria && (
+                    <span className="prodad-categoria">
+                      <Tag size={11} />
+                      {p.categoria}
+                    </span>
+                  )}
+                </div>
+                <span className="prodad-precio">
+                  ${Number(p.precio_unitario).toLocaleString("es-CO")}
+                </span>
+              </div>
+
+              <div className="prodad-stock-fila">
+                <span className={stockBajo ? "prodad-stock-bajo" : "prodad-stock"}>
+                  {stockBajo && <AlertTriangle size={12} />}
+                  Stock: {p.stock_actual}
+                </span>
+              </div>
+
+              {confirmandoEliminar === p.id ? (
+                <div className="prodad-confirmar">
+                  <span>¿Desactivar este producto?</span>
+                  <div className="prodad-botones">
+                    <button
+                      className="prodad-btn-secundario"
+                      onClick={() => setConfirmandoEliminar(null)}
+                      disabled={guardando}
+                    >
+                      No
+                    </button>
+                    <button
+                      className="prodad-btn-peligro"
+                      onClick={() => confirmarEliminar(p.id)}
+                      disabled={guardando}
+                    >
+                      Sí, desactivar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="prodad-acciones">
+                  <button className="prodad-btn-secundario" onClick={() => iniciarEdicion(p)}>
+                    <Pencil size={13} />
+                    Editar
+                  </button>
+                  <button
+                    className="prodad-btn-peligro-outline"
+                    onClick={() => setConfirmandoEliminar(p.id)}
+                  >
+                    <Trash2 size={13} />
+                    Desactivar
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {productos.length === 0 && (
+          <p className="prodad-sin-datos">Todavía no hay productos registrados</p>
+        )}
+        {productos.length > 0 && productosFiltrados.length === 0 && (
+          <p className="prodad-sin-datos">Ningún producto coincide con el filtro</p>
+        )}
+      </div>
+
+      <Sheet
+        open={sheetAbierto}
+        onOpenChange={cerrarSheet}
+        title={editandoId ? "Editar producto" : "Nuevo producto"}
+      >
         <div className="prodad-form">
+          {error && <div className="prodad-mensaje-error">{error}</div>}
+
           <label>Nombre</label>
           <input
             type="text"
@@ -179,7 +292,7 @@ export default function Productos() {
             onChange={(e) => setForm((f) => ({ ...f, precio_unitario: e.target.value }))}
           />
 
-          {creando && (
+          {!editandoId && (
             <>
               <label>Stock inicial</label>
               <input
@@ -198,129 +311,15 @@ export default function Productos() {
             </p>
           )}
 
-          <div className="prodad-botones">
-            <button className="prodad-btn-secundario" onClick={cancelar} disabled={guardando}>
-              <X size={15} />
-              Cancelar
-            </button>
-            <button className="prodad-btn-primario" onClick={guardar} disabled={guardando}>
-              {guardando ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
+          <button
+            className="prodad-btn-primario prodad-btn-guardar-sheet"
+            onClick={guardar}
+            disabled={guardando}
+          >
+            {guardando ? "Guardando..." : "Guardar"}
+          </button>
         </div>
-      )}
-
-      {!formularioAbierto && (
-        <>
-          {productos.length > 0 && (
-            <>
-              <div className="prodad-buscador">
-                <Search size={16} />
-                <input
-                  type="text"
-                  placeholder="Buscar producto..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                />
-              </div>
-
-              {categorias.length > 0 && (
-                <div className="prodad-filtros-categoria">
-                  <button
-                    className={`prodad-chip ${categoriaFiltro === "" ? "activo" : ""}`}
-                    onClick={() => setCategoriaFiltro("")}
-                  >
-                    Todas
-                  </button>
-                  {categorias.map((c) => (
-                    <button
-                      key={c}
-                      className={`prodad-chip ${categoriaFiltro === c ? "activo" : ""}`}
-                      onClick={() => setCategoriaFiltro(c)}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="prodad-lista">
-            {productosFiltrados.map((p) => {
-              const stockBajo = Number(p.stock_actual) <= UMBRAL_BAJO_STOCK;
-              return (
-                <div key={p.id} className="prodad-tarjeta">
-                  <div className="prodad-fila-principal">
-                    <div className="prodad-info">
-                      <span className="prodad-nombre">{p.nombre}</span>
-                      {p.categoria && (
-                        <span className="prodad-categoria">
-                          <Tag size={11} />
-                          {p.categoria}
-                        </span>
-                      )}
-                    </div>
-                    <span className="prodad-precio">
-                      ${Number(p.precio_unitario).toLocaleString("es-CO")}
-                    </span>
-                  </div>
-
-                  <div className="prodad-stock-fila">
-                    <span className={stockBajo ? "prodad-stock-bajo" : "prodad-stock"}>
-                      {stockBajo && <AlertTriangle size={12} />}
-                      Stock: {p.stock_actual}
-                    </span>
-                  </div>
-
-                  {confirmandoEliminar === p.id ? (
-                    <div className="prodad-confirmar">
-                      <span>¿Desactivar este producto?</span>
-                      <div className="prodad-botones">
-                        <button
-                          className="prodad-btn-secundario"
-                          onClick={() => setConfirmandoEliminar(null)}
-                          disabled={guardando}
-                        >
-                          No
-                        </button>
-                        <button
-                          className="prodad-btn-peligro"
-                          onClick={() => confirmarEliminar(p.id)}
-                          disabled={guardando}
-                        >
-                          Sí, desactivar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="prodad-acciones">
-                      <button className="prodad-btn-secundario" onClick={() => iniciarEdicion(p)}>
-                        <Pencil size={13} />
-                        Editar
-                      </button>
-                      <button
-                        className="prodad-btn-peligro-outline"
-                        onClick={() => setConfirmandoEliminar(p.id)}
-                      >
-                        <Trash2 size={13} />
-                        Desactivar
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {productos.length === 0 && (
-              <p className="prodad-sin-datos">Todavía no hay productos registrados</p>
-            )}
-            {productos.length > 0 && productosFiltrados.length === 0 && (
-              <p className="prodad-sin-datos">Ningún producto coincide con el filtro</p>
-            )}
-          </div>
-        </>
-      )}
+      </Sheet>
     </div>
   );
 }

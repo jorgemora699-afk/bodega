@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { UserRound, Plus, Pencil, Trash2, X, Search, DollarSign, AlertTriangle, Clock, Wallet } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, DollarSign, AlertTriangle, Clock, Wallet } from "lucide-react";
 import {
   listarTrabajadoras,
   crearTrabajadora,
   actualizarTrabajadora,
   eliminarTrabajadora,
 } from "../../../api/trabajadoras";
+import Sheet from "../../../components/Sheet";
 import "./Trabajadoras.css";
 
 function formVacio() {
@@ -35,7 +36,7 @@ export default function Trabajadoras() {
   const [trabajadoras, setTrabajadoras] = useState([]);
   const [busqueda, setBusqueda] = useState("");
 
-  const [creando, setCreando] = useState(false);
+  const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(formVacio());
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(null);
@@ -58,16 +59,15 @@ export default function Trabajadoras() {
   }
 
   function iniciarCreacion() {
-    setCreando(true);
     setEditandoId(null);
     setForm(formVacio());
     setMensaje(null);
     setError(null);
+    setSheetAbierto(true);
   }
 
   function iniciarEdicion(trabajadora) {
     setEditandoId(trabajadora.id);
-    setCreando(false);
     setMensaje(null);
     setError(null);
     setForm({
@@ -77,12 +77,15 @@ export default function Trabajadoras() {
       salario_mensual: trabajadora.salario_mensual ?? "",
       incluye_nomina: trabajadora.incluye_nomina,
     });
+    setSheetAbierto(true);
   }
 
-  function cancelar() {
-    setCreando(false);
-    setEditandoId(null);
-    setForm(formVacio());
+  function cerrarSheet(abierto) {
+    setSheetAbierto(abierto);
+    if (!abierto) {
+      setEditandoId(null);
+      setForm(formVacio());
+    }
   }
 
   async function guardar() {
@@ -111,7 +114,7 @@ export default function Trabajadoras() {
         await crearTrabajadora(payload);
         setMensaje("Trabajadora creada");
       }
-      cancelar();
+      cerrarSheet(false);
       cargarDatos();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo guardar la trabajadora");
@@ -135,8 +138,6 @@ export default function Trabajadoras() {
     }
   }
 
-  const formularioAbierto = creando || editandoId !== null;
-
   const trabajadorasFiltradas = trabajadoras.filter((t) =>
     t.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -153,18 +154,16 @@ export default function Trabajadoras() {
           <h1>Trabajadoras</h1>
           <p>Equipo y pago para el cálculo de salario</p>
         </div>
-        {!formularioAbierto && (
-          <button className="trabad-btn-nuevo" onClick={iniciarCreacion}>
-            <Plus size={16} />
-            Nueva
-          </button>
-        )}
+        <button className="trabad-btn-nuevo" onClick={iniciarCreacion}>
+          <Plus size={16} />
+          Nueva
+        </button>
       </header>
 
       {mensaje && <div className="trabad-mensaje-exito">{mensaje}</div>}
-      {error && <div className="trabad-mensaje-error">{error}</div>}
+      {error && !sheetAbierto && <div className="trabad-mensaje-error">{error}</div>}
 
-      {!formularioAbierto && sinConfigurar > 0 && (
+      {sinConfigurar > 0 && (
         <div className="trabad-alerta-global">
           <AlertTriangle size={15} />
           {sinConfigurar === 1
@@ -173,8 +172,111 @@ export default function Trabajadoras() {
         </div>
       )}
 
-      {formularioAbierto && (
+      {trabajadoras.length > 0 && (
+        <div className="trabad-buscador">
+          <Search size={16} />
+          <input
+            type="text"
+            placeholder="Buscar trabajadora..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
+      )}
+
+      <div className="trabad-lista">
+        {trabajadorasFiltradas.map((t) => {
+          const esMensual = t.tipo_pago === "mensual";
+          const configurado = esMensual ? t.salario_mensual != null : t.valor_hora != null;
+
+          return (
+            <div key={t.id} className="trabad-tarjeta">
+              <div className="trabad-fila-principal">
+                <div className="trabad-nombre-icono">
+                  <div className="trabad-avatar">{iniciales(t.nombre)}</div>
+                  <div className="trabad-nombre-info">
+                    <span className="trabad-nombre">{t.nombre}</span>
+                    <span className="trabad-tipo-badge">
+                      {esMensual ? <Wallet size={11} /> : <Clock size={11} />}
+                      {esMensual ? "Sueldo fijo" : "Por hora"}
+                    </span>
+                  </div>
+                </div>
+
+                {configurado ? (
+                  <span className="trabad-valor-hora">
+                    {esMensual ? (
+                      <>{formatearMoneda(t.salario_mensual)}/mes</>
+                    ) : (
+                      <>
+                        <DollarSign size={13} />
+                        {Number(t.valor_hora).toLocaleString("es-CO")}/h
+                      </>
+                    )}
+                  </span>
+                ) : (
+                  <span className="trabad-sin-valor">
+                    <AlertTriangle size={12} />
+                    Sin configurar
+                  </span>
+                )}
+              </div>
+
+              {confirmandoEliminar === t.id ? (
+                <div className="trabad-confirmar">
+                  <span>¿Desactivar esta trabajadora?</span>
+                  <div className="trabad-botones">
+                    <button
+                      className="trabad-btn-secundario"
+                      onClick={() => setConfirmandoEliminar(null)}
+                      disabled={guardando}
+                    >
+                      No
+                    </button>
+                    <button
+                      className="trabad-btn-peligro"
+                      onClick={() => confirmarEliminar(t.id)}
+                      disabled={guardando}
+                    >
+                      Sí, desactivar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="trabad-acciones">
+                  <button className="trabad-btn-secundario" onClick={() => iniciarEdicion(t)}>
+                    <Pencil size={13} />
+                    Editar
+                  </button>
+                  <button
+                    className="trabad-btn-peligro-outline"
+                    onClick={() => setConfirmandoEliminar(t.id)}
+                  >
+                    <Trash2 size={13} />
+                    Desactivar
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {trabajadoras.length === 0 && (
+          <p className="trabad-sin-datos">Todavía no hay trabajadoras registradas</p>
+        )}
+        {trabajadoras.length > 0 && trabajadorasFiltradas.length === 0 && (
+          <p className="trabad-sin-datos">Ninguna trabajadora coincide con "{busqueda}"</p>
+        )}
+      </div>
+
+      <Sheet
+        open={sheetAbierto}
+        onOpenChange={cerrarSheet}
+        title={editandoId ? "Editar trabajadora" : "Nueva trabajadora"}
+      >
         <div className="trabad-form">
+          {error && <div className="trabad-mensaje-error">{error}</div>}
+
           <label>Nombre</label>
           <input
             type="text"
@@ -242,118 +344,15 @@ export default function Trabajadoras() {
             Incluir en horarios y nómina
           </label>
 
-          <div className="trabad-botones">
-            <button className="trabad-btn-secundario" onClick={cancelar} disabled={guardando}>
-              <X size={15} />
-              Cancelar
-            </button>
-            <button className="trabad-btn-primario" onClick={guardar} disabled={guardando}>
-              {guardando ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
+          <button
+            className="trabad-btn-primario trabad-btn-guardar-sheet"
+            onClick={guardar}
+            disabled={guardando}
+          >
+            {guardando ? "Guardando..." : "Guardar"}
+          </button>
         </div>
-      )}
-
-      {!formularioAbierto && (
-        <>
-          {trabajadoras.length > 0 && (
-            <div className="trabad-buscador">
-              <Search size={16} />
-              <input
-                type="text"
-                placeholder="Buscar trabajadora..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
-            </div>
-          )}
-
-          <div className="trabad-lista">
-            {trabajadorasFiltradas.map((t) => {
-              const esMensual = t.tipo_pago === "mensual";
-              const configurado = esMensual ? t.salario_mensual != null : t.valor_hora != null;
-
-              return (
-                <div key={t.id} className="trabad-tarjeta">
-                  <div className="trabad-fila-principal">
-                    <div className="trabad-nombre-icono">
-                      <div className="trabad-avatar">{iniciales(t.nombre)}</div>
-                      <div className="trabad-nombre-info">
-                        <span className="trabad-nombre">{t.nombre}</span>
-                        <span className="trabad-tipo-badge">
-                          {esMensual ? <Wallet size={11} /> : <Clock size={11} />}
-                          {esMensual ? "Sueldo fijo" : "Por hora"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {configurado ? (
-                      <span className="trabad-valor-hora">
-                        {esMensual ? (
-                          <>{formatearMoneda(t.salario_mensual)}/mes</>
-                        ) : (
-                          <>
-                            <DollarSign size={13} />
-                            {Number(t.valor_hora).toLocaleString("es-CO")}/h
-                          </>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="trabad-sin-valor">
-                        <AlertTriangle size={12} />
-                        Sin configurar
-                      </span>
-                    )}
-                  </div>
-
-                  {confirmandoEliminar === t.id ? (
-                    <div className="trabad-confirmar">
-                      <span>¿Desactivar esta trabajadora?</span>
-                      <div className="trabad-botones">
-                        <button
-                          className="trabad-btn-secundario"
-                          onClick={() => setConfirmandoEliminar(null)}
-                          disabled={guardando}
-                        >
-                          No
-                        </button>
-                        <button
-                          className="trabad-btn-peligro"
-                          onClick={() => confirmarEliminar(t.id)}
-                          disabled={guardando}
-                        >
-                          Sí, desactivar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="trabad-acciones">
-                      <button className="trabad-btn-secundario" onClick={() => iniciarEdicion(t)}>
-                        <Pencil size={13} />
-                        Editar
-                      </button>
-                      <button
-                        className="trabad-btn-peligro-outline"
-                        onClick={() => setConfirmandoEliminar(t.id)}
-                      >
-                        <Trash2 size={13} />
-                        Desactivar
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {trabajadoras.length === 0 && (
-              <p className="trabad-sin-datos">Todavía no hay trabajadoras registradas</p>
-            )}
-            {trabajadoras.length > 0 && trabajadorasFiltradas.length === 0 && (
-              <p className="trabad-sin-datos">Ninguna trabajadora coincide con "{busqueda}"</p>
-            )}
-          </div>
-        </>
-      )}
+      </Sheet>
     </div>
   );
 }
