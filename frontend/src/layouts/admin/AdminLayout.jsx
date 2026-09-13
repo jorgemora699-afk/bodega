@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Receipt, BarChart3, Wallet, ArrowLeftRight, Truck, Package, Users, ChefHat, LogOut, Menu, X, Boxes } from "lucide-react";
+import { LayoutDashboard, Receipt, BarChart3, Wallet, ArrowLeftRight, Truck, Package, Users, ChefHat, LogOut, Menu, X, Boxes, Wheat } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./AdminLayout.css";
 
@@ -13,6 +13,7 @@ const LINKS = [
   { to: "/admin/proveedores", label: "Proveedores", Icon: Truck },
   { to: "/admin/productos", label: "Productos", Icon: Package },
   { to: "/admin/inventario", label: "Inventario", Icon: Boxes },
+  { to: "/admin/insumos", label: "Insumos", Icon: Wheat },
   { to: "/admin/trabajadoras", label: "Trabajadoras", Icon: Users },
   { to: "/admin/recetas", label: "Recetas", Icon: ChefHat },
 ];

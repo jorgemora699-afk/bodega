@@ -19,6 +19,7 @@ import Proveedores from "./pages/admin/proveedores/Proveedores";
 import Productos from "./pages/admin/productos/Productos";
 import Trabajadoras from "./pages/admin/trabajadoras/Trabajadoras";
 import RecetasAdmin from "./pages/admin/recetas/Recetas";
+import Insumos from "./pages/admin/.../Insumos";
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/admin/productos" element={<Productos />} />
             <Route path="/admin/inventario" element={<Inventario/>}/>
             <Route path="/admin/trabajadoras" element={<Trabajadoras />} />
+            <Route path="/admin/insumos" element={<Insumos />} />
             <Route path="/admin/recetas" element={<RecetasAdmin />} />
           </Route>
 
