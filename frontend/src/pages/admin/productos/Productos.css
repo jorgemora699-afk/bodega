@@ -185,16 +185,23 @@
 }
 
 .prodad-lista {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
 .prodad-tarjeta {
-  padding: 1rem 1.1rem;
+  padding: 0.85rem;
   border-radius: var(--radius-lg);
   border: 1.5px solid var(--color-border);
   background: var(--color-surface);
+  min-width: 0;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.prodad-tarjeta:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .prodad-fila-principal {
@@ -211,7 +218,12 @@
 
 .prodad-nombre {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1.25;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .prodad-categoria {
@@ -225,12 +237,13 @@
 
 .prodad-precio {
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--color-primary);
+  white-space: nowrap;
 }
 
 .prodad-stock-fila {
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
 }
 
 .prodad-stock {
@@ -252,18 +265,21 @@
 
 .prodad-acciones {
   display: flex;
-  gap: 0.6rem;
-  margin-top: 0.85rem;
-  padding-top: 0.85rem;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
   border-top: 1px solid var(--color-border);
 }
 
 .prodad-acciones button {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
+  padding: 0.45rem 0.35rem;
+  font-size: 0.75rem;
 }
 
 .prodad-confirmar {
@@ -283,4 +299,30 @@
 .prodad-btn-guardar-sheet {
   width: 100%;
   margin-top: 1rem;
+}
+
+@media (max-width: 520px) {
+  .prodad-container {
+    padding: 1.2rem 0.85rem 2.5rem;
+  }
+
+  .prodad-header {
+    gap: 0.7rem;
+  }
+
+  .prodad-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .prodad-btn-nuevo {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .prodad-lista {
+    grid-template-columns: 1fr;
+  }
+
+  .prodad-tarjeta {
+    padding: 0.85rem;
+  }
 }

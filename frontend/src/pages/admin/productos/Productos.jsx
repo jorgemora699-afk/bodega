@@ -19,6 +19,7 @@ export default function Productos() {
   const [productos, setProductos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState({});
 
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -35,11 +36,38 @@ export default function Productos() {
 
   async function cargarDatos() {
     setError(null);
+
     try {
-      setProductos(await listarProductos());
+      const datos = await listarProductos();
+
+      setProductos(datos);
+
+      const categoriasIniciales = [
+        ...new Set(
+          datos
+            .map((p) => p.categoria)
+            .filter(Boolean)
+        ),
+      ].sort();
+
+      if (categoriasIniciales.length > 0) {
+        setCategoriasAbiertas((prev) => ({
+          ...prev,
+          [categoriasIniciales[0]]: true,
+        }));
+      }
     } catch (err) {
       setError("No se pudieron cargar los productos");
     }
+  }
+
+  function toggleCategoria(categoria) {
+    setCategoriasAbiertas((prev) => ({
+      ...prev,
+      [categoria]: prev[categoria] === undefined
+        ? false
+        : !prev[categoria],
+    }));
   }
 
   function iniciarCreacion() {
@@ -180,77 +208,230 @@ export default function Productos() {
       )}
 
       <div className="prodad-lista">
-        {productosFiltrados.map((p) => {
-          const stockBajo = Number(p.stock_actual) <= UMBRAL_BAJO_STOCK;
-          return (
-            <div key={p.id} className="prodad-tarjeta">
-              <div className="prodad-fila-principal">
-                <div className="prodad-info">
-                  <span className="prodad-nombre">{p.nombre}</span>
-                  {p.categoria && (
-                    <span className="prodad-categoria">
-                      <Tag size={11} />
-                      {p.categoria}
-                    </span>
-                  )}
-                </div>
-                <span className="prodad-precio">
-                  ${Number(p.precio_unitario).toLocaleString("es-CO")}
-                </span>
-              </div>
-
-              <div className="prodad-stock-fila">
-                <span className={stockBajo ? "prodad-stock-bajo" : "prodad-stock"}>
-                  {stockBajo && <AlertTriangle size={12} />}
-                  Stock: {p.stock_actual}
-                </span>
-              </div>
-
-              {confirmandoEliminar === p.id ? (
-                <div className="prodad-confirmar">
-                  <span>¿Desactivar este producto?</span>
-                  <div className="prodad-botones">
-                    <button
-                      className="prodad-btn-secundario"
-                      onClick={() => setConfirmandoEliminar(null)}
-                      disabled={guardando}
-                    >
-                      No
-                    </button>
-                    <button
-                      className="prodad-btn-peligro"
-                      onClick={() => confirmarEliminar(p.id)}
-                      disabled={guardando}
-                    >
-                      Sí, desactivar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="prodad-acciones">
-                  <button className="prodad-btn-secundario" onClick={() => iniciarEdicion(p)}>
-                    <Pencil size={13} />
-                    Editar
-                  </button>
-                  <button
-                    className="prodad-btn-peligro-outline"
-                    onClick={() => setConfirmandoEliminar(p.id)}
-                  >
-                    <Trash2 size={13} />
-                    Desactivar
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
         {productos.length === 0 && (
-          <p className="prodad-sin-datos">Todavía no hay productos registrados</p>
+          <p className="prodad-sin-datos">
+            Todavía no hay productos registrados
+          </p>
         )}
+
         {productos.length > 0 && productosFiltrados.length === 0 && (
-          <p className="prodad-sin-datos">Ningún producto coincide con el filtro</p>
+          <p className="prodad-sin-datos">
+            Ningún producto coincide con el filtro
+          </p>
         )}
+
+        {productos.length > 0 &&
+          productosFiltrados.length > 0 &&
+          (categoriaFiltro === "" ? (
+            categorias.map((categoria) => {
+              const productosCategoria = productosFiltrados.filter(
+                (p) => p.categoria === categoria
+              );
+
+              if (productosCategoria.length === 0) {
+                return null;
+              }
+
+              const abierta = categoriasAbiertas[categoria] === true;
+
+              return (
+                <section key={categoria} className="prodad-grupo">
+                  <button
+                    type="button"
+                    className="prodad-grupo-header"
+                    onClick={() => toggleCategoria(categoria)}
+                  >
+                    <div className="prodad-grupo-info">
+                      <span className="prodad-grupo-titulo">
+                        {categoria}
+                      </span>
+
+                      <span className="prodad-grupo-cantidad">
+                        {productosCategoria.length}{" "}
+                        {productosCategoria.length === 1
+                          ? "producto"
+                          : "productos"}
+                      </span>
+                    </div>
+
+                    <span className="prodad-grupo-flecha">
+                      {abierta ? "⌃" : "⌄"}
+                    </span>
+                  </button>
+
+                  {abierta && (
+                    <div className="prodad-grid">
+                      {productosCategoria.map((p) => {
+                        const stockBajo =
+                          Number(p.stock_actual) <= UMBRAL_BAJO_STOCK;
+
+                        return (
+                          <div key={p.id} className="prodad-tarjeta">
+                            <div className="prodad-fila-principal">
+                              <div className="prodad-info">
+                                <span className="prodad-nombre">
+                                  {p.nombre}
+                                </span>
+
+                                <span className="prodad-categoria">
+                                  <Tag size={11} />
+                                  {p.categoria}
+                                </span>
+                              </div>
+
+                              <span className="prodad-precio">
+                                ${Number(p.precio_unitario).toLocaleString("es-CO")}
+                              </span>
+                            </div>
+
+                            <div className="prodad-stock-fila">
+                              <span
+                                className={
+                                  stockBajo
+                                    ? "prodad-stock-bajo"
+                                    : "prodad-stock"
+                                }
+                              >
+                                {stockBajo && <AlertTriangle size={12} />}
+                                Stock: {p.stock_actual}
+                              </span>
+                            </div>
+
+                            {confirmandoEliminar === p.id ? (
+                              <div className="prodad-confirmar">
+                                <span>¿Desactivar este producto?</span>
+
+                                <div className="prodad-botones">
+                                  <button
+                                    className="prodad-btn-secundario"
+                                    onClick={() =>
+                                      setConfirmandoEliminar(null)
+                                    }
+                                    disabled={guardando}
+                                  >
+                                    No
+                                  </button>
+
+                                  <button
+                                    className="prodad-btn-peligro"
+                                    onClick={() => confirmarEliminar(p.id)}
+                                    disabled={guardando}
+                                  >
+                                    {guardando ? "..." : "Sí, desactivar"}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="prodad-acciones">
+                                <button
+                                  className="prodad-btn-secundario"
+                                  onClick={() => iniciarEdicion(p)}
+                                >
+                                  <Pencil size={13} />
+                                  Editar
+                                </button>
+
+                                <button
+                                  className="prodad-btn-peligro-outline"
+                                  onClick={() =>
+                                    setConfirmandoEliminar(p.id)
+                                  }
+                                >
+                                  <Trash2 size={13} />
+                                  Desactivar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              );
+            })
+          ) : (
+            <div className="prodad-grid">
+              {productosFiltrados.map((p) => {
+                const stockBajo =
+                  Number(p.stock_actual) <= UMBRAL_BAJO_STOCK;
+
+                return (
+                  <div key={p.id} className="prodad-tarjeta">
+                    <div className="prodad-fila-principal">
+                      <div className="prodad-info">
+                        <span className="prodad-nombre">{p.nombre}</span>
+
+                        {p.categoria && (
+                          <span className="prodad-categoria">
+                            <Tag size={11} />
+                            {p.categoria}
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="prodad-precio">
+                        ${Number(p.precio_unitario).toLocaleString("es-CO")}
+                      </span>
+                    </div>
+
+                    <div className="prodad-stock-fila">
+                      <span
+                        className={
+                          stockBajo ? "prodad-stock-bajo" : "prodad-stock"
+                        }
+                      >
+                        {stockBajo && <AlertTriangle size={12} />}
+                        Stock: {p.stock_actual}
+                      </span>
+                    </div>
+
+                    {confirmandoEliminar === p.id ? (
+                      <div className="prodad-confirmar">
+                        <span>¿Desactivar este producto?</span>
+
+                        <div className="prodad-botones">
+                          <button
+                            className="prodad-btn-secundario"
+                            onClick={() => setConfirmandoEliminar(null)}
+                            disabled={guardando}
+                          >
+                            No
+                          </button>
+
+                          <button
+                            className="prodad-btn-peligro"
+                            onClick={() => confirmarEliminar(p.id)}
+                            disabled={guardando}
+                          >
+                            {guardando ? "..." : "Sí, desactivar"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="prodad-acciones">
+                        <button
+                          className="prodad-btn-secundario"
+                          onClick={() => iniciarEdicion(p)}
+                        >
+                          <Pencil size={13} />
+                          Editar
+                        </button>
+
+                        <button
+                          className="prodad-btn-peligro-outline"
+                          onClick={() => setConfirmandoEliminar(p.id)}
+                        >
+                          <Trash2 size={13} />
+                          Desactivar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
       </div>
 
       <Sheet
