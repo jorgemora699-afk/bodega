@@ -323,28 +323,42 @@ export default function Insumos() {
   // ---- tarjeta de insumo ----
 
   function renderTarjeta(i) {
-    const stockBajo =
-      Number(i.stock_actual) <= Number(i.stock_minimo);
+    const stockBajo = Number(i.stock_actual) <= Number(i.stock_minimo);
+    const proveedoresAbiertos = verProveedoresId === i.id;
 
     return (
       <div key={i.id} className="ins-tarjeta">
         <div className="ins-fila-principal">
           <span className="ins-nombre">{i.nombre}</span>
-
-          <span
-            className={
-              stockBajo ? "ins-stock-bajo" : "ins-stock"
-            }
-          >
+          <span className={stockBajo ? "ins-stock-bajo" : "ins-stock"}>
             {stockBajo && <AlertTriangle size={12} />}
             {i.stock_actual} {i.unidad_medida}
           </span>
         </div>
 
+        <button className="ins-btn-ver-proveedor" onClick={() => toggleProveedores(i.id)}>
+          <Phone size={12} />
+          {proveedoresAbiertos ? "Ocultar proveedor" : "Ver proveedor"}
+        </button>
+
+        {proveedoresAbiertos && (
+          <div className="ins-proveedores-lista ins-proveedores-lista-tarjeta">
+            {(proveedoresPorInsumo[i.id] || []).length === 0 ? (
+              <p className="ins-sin-proveedor-tarjeta">Sin proveedores registrados</p>
+            ) : (
+              proveedoresPorInsumo[i.id].map((prov) => (
+                <div key={prov.id} className="ins-proveedor-fila">
+                  <span>{prov.nombre}</span>
+                  <a href={`tel:${prov.celular}`}>{prov.celular}</a>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
         {confirmandoEliminar === i.id ? (
           <div className="ins-confirmar">
             <span>¿Desactivar este insumo?</span>
-
             <div className="ins-botones">
               <button
                 className="ins-btn-secundario"
@@ -353,7 +367,6 @@ export default function Insumos() {
               >
                 No
               </button>
-
               <button
                 className="ins-btn-peligro"
                 onClick={() => confirmarEliminar(i.id)}
@@ -365,14 +378,10 @@ export default function Insumos() {
           </div>
         ) : (
           <div className="ins-acciones">
-            <button
-              className="ins-btn-secundario"
-              onClick={() => iniciarEdicionCatalogo(i)}
-            >
+            <button className="ins-btn-secundario" onClick={() => iniciarEdicionCatalogo(i)}>
               <Pencil size={13} />
               Editar
             </button>
-
             <button
               className="ins-btn-peligro-outline"
               onClick={() => setConfirmandoEliminar(i.id)}

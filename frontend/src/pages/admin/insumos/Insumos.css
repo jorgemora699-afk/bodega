@@ -524,3 +524,28 @@
     grid-template-columns: 1fr;
   }
 }
+
+.ins-btn-ver-proveedor {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  padding: 0.4rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ins-proveedores-lista-tarjeta {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.ins-sin-proveedor-tarjeta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
