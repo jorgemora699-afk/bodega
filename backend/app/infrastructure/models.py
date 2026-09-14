@@ -9,6 +9,12 @@ proveedor_productos = db.Table(
     db.Column("producto_id", db.Integer, db.ForeignKey("productos.id"), primary_key=True),
 )
 
+proveedor_insumos = db.Table(
+    "proveedor_insumos",
+    db.Column("proveedor_id", db.Integer, db.ForeignKey("proveedores.id"), primary_key=True),
+    db.Column("insumo_id", db.Integer, db.ForeignKey("insumos.id"), primary_key=True),
+)
+
 class Producto(db.Model):
     __tablename__ = "productos"
 
@@ -177,6 +183,7 @@ class Proveedor(db.Model):
     notas = db.Column(db.Text, nullable=True)
 
     productos = db.relationship("Producto", secondary=proveedor_productos, back_populates="proveedores")
+    insumos = db.relationship("Insumo", secondary=proveedor_insumos, back_populates="proveedores")
 
     def to_dict(self):
         return {
@@ -185,6 +192,7 @@ class Proveedor(db.Model):
             "celular": self.celular,
             "notas": self.notas,
             "productos": [{"id": p.id, "nombre": p.nombre} for p in self.productos],
+            "insumos": [{"id": i.id, "nombre": i.nombre} for i in self.insumos],
         }
 
     def __repr__(self):
@@ -292,14 +300,15 @@ class Insumo(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
-    categoria = db.Column(db.String(20), nullable=False, default="cocina")  # "cocina" o "empaques_aseo"
-    unidad_medida = db.Column(db.String(20), nullable=False, default="unidad")  # g, kg, ml, l, unidad, paquete...
+    categoria = db.Column(db.String(20), nullable=False, default="cocina")
+    unidad_medida = db.Column(db.String(20), nullable=False, default="unidad")
     stock_actual = db.Column(db.Numeric(10, 3), nullable=False, default=0)
     stock_minimo = db.Column(db.Numeric(10, 3), nullable=False, default=5)
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     movimientos = db.relationship("MovimientoInsumo", back_populates="insumo")
+    proveedores = db.relationship("Proveedor", secondary=proveedor_insumos, back_populates="insumos")
 
     def to_dict(self):
         return {

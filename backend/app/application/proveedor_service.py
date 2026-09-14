@@ -1,5 +1,5 @@
 from app import db
-from app.infrastructure.models import Proveedor, Producto
+from app.infrastructure.models import Proveedor, Producto, Insumo
 
 
 class ProveedorService:
@@ -20,6 +20,13 @@ class ProveedorService:
         return producto.proveedores
 
     @staticmethod
+    def listar_por_insumo(insumo_id):
+        insumo = Insumo.query.get(insumo_id)
+        if not insumo:
+            return []
+        return insumo.proveedores
+
+    @staticmethod
     def crear(data):
         proveedor = Proveedor(
             nombre=data["nombre"],
@@ -31,6 +38,11 @@ class ProveedorService:
         if producto_ids:
             productos = Producto.query.filter(Producto.id.in_(producto_ids)).all()
             proveedor.productos = productos
+
+        insumo_ids = data.get("insumo_ids", [])
+        if insumo_ids:
+            insumos = Insumo.query.filter(Insumo.id.in_(insumo_ids)).all()
+            proveedor.insumos = insumos
 
         db.session.add(proveedor)
         db.session.commit()
@@ -51,6 +63,9 @@ class ProveedorService:
         if "producto_ids" in data:
             productos = Producto.query.filter(Producto.id.in_(data["producto_ids"])).all()
             proveedor.productos = productos
+        if "insumo_ids" in data:
+            insumos = Insumo.query.filter(Insumo.id.in_(data["insumo_ids"])).all()
+            proveedor.insumos = insumos
 
         db.session.commit()
         return proveedor

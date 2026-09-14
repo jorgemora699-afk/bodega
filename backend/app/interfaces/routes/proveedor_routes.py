@@ -10,6 +10,10 @@ def _proteger_proveedores():
         return exigir_rol("jefe", "trabajadora")
     return exigir_rol("jefe")
 
+@proveedor_bp.route("/por-insumo/<int:insumo_id>", methods=["GET"])
+def proveedores_por_insumo(insumo_id):
+    proveedores = ProveedorService.listar_por_insumo(insumo_id)
+    return jsonify([p.to_dict() for p in proveedores]), 200
 
 @proveedor_bp.route("", methods=["GET"])
 def listar_proveedores():

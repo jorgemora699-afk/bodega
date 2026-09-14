@@ -92,3 +92,10 @@ def registrar_salida():
 def bajo_stock():
     insumos = InsumoService.bajo_stock()
     return jsonify([i.to_dict() for i in insumos]), 200
+
+from app.application.proveedor_service import ProveedorService
+
+@insumo_bp.route("/<int:insumo_id>/proveedores", methods=["GET"])
+def proveedores_del_insumo(insumo_id):
+    proveedores = ProveedorService.listar_por_insumo(insumo_id)
+    return jsonify([p.to_dict() for p in proveedores]), 200
