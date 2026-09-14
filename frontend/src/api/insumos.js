@@ -39,3 +39,8 @@ export async function listarBajoStockInsumo() {
   const response = await apiClient.get("/insumos/bajo-stock");
   return response.data;
 }
+
+export async function listarProveedoresDeInsumo(insumoId) {
+  const response = await apiClient.get(`/insumos/${insumoId}/proveedores`);
+  return response.data;
+}

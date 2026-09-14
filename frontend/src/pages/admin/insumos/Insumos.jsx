@@ -9,6 +9,7 @@ import {
   TrendingUp,
   TrendingDown,
   Package2,
+  Phone,
 } from "lucide-react";
 import {
   listarInsumos,
@@ -23,6 +24,7 @@ import {
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import Sheet from "../../../components/Sheet";
 import "./Insumos.css";
+import { listarProveedoresDeInsumo } from "../../../api/insumos"; // agrégalo junto a las demás funciones de insumos
 
 const UNIDADES = ["unidad", "g", "kg", "ml", "l", "paquete"];
 
@@ -75,6 +77,8 @@ export default function Insumos() {
   const [insumos, setInsumos] = useState([]);
   const [trabajadoras, setTrabajadoras] = useState([]);
   const [bajoStock, setBajoStock] = useState([]);
+  const [proveedoresPorInsumo, setProveedoresPorInsumo] = useState({});
+  const [verProveedoresId, setVerProveedoresId] = useState(null);
   const [movimientos, setMovimientos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
@@ -101,6 +105,22 @@ export default function Insumos() {
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  async function toggleProveedores(insumoId) {
+    if (verProveedoresId === insumoId) {
+      setVerProveedoresId(null);
+      return;
+    }
+    setVerProveedoresId(insumoId);
+    if (!proveedoresPorInsumo[insumoId]) {
+      try {
+        const proveedores = await listarProveedoresDeInsumo(insumoId);
+        setProveedoresPorInsumo((prev) => ({ ...prev, [insumoId]: proveedores }));
+      } catch (err) {
+        setError("No se pudieron cargar los proveedores");
+      }
+    }
+  }
 
   async function cargarDatos() {
     setError(null);
@@ -419,20 +439,36 @@ export default function Insumos() {
       {bajoStock.length > 0 && (
         <section className="ins-seccion">
           <h2>Insumos por acabarse</h2>
-
           <div className="ins-lista-bajo-stock">
             {bajoStock.map((i) => (
-              <div
-                key={i.id}
-                className="ins-bajo-stock-fila"
-              >
-                <AlertTriangle size={13} />
+              <div key={i.id} className="ins-bajo-stock-card">
+                <div className="ins-bajo-stock-fila">
+                  <AlertTriangle size={13} />
+                  <span>{i.nombre}</span>
+                  <span className="ins-bajo-stock-cantidad">
+                    {i.stock_actual} {i.unidad_medida}
+                  </span>
+                </div>
 
-                <span>{i.nombre}</span>
+                <button className="ins-btn-proveedor" onClick={() => toggleProveedores(i.id)}>
+                  <Phone size={12} />
+                  Ver proveedor
+                </button>
 
-                <span className="ins-bajo-stock-cantidad">
-                  {i.stock_actual} {i.unidad_medida}
-                </span>
+                {verProveedoresId === i.id && (
+                  <div className="ins-proveedores-lista">
+                    {(proveedoresPorInsumo[i.id] || []).length === 0 ? (
+                      <p className="ins-sin-proveedor">Sin proveedores registrados</p>
+                    ) : (
+                      proveedoresPorInsumo[i.id].map((prov) => (
+                        <div key={prov.id} className="ins-proveedor-fila">
+                          <span>{prov.nombre}</span>
+                          <a href={`tel:${prov.celular}`}>{prov.celular}</a>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

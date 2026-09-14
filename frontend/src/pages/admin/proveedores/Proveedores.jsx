@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Truck, Plus, Phone, Pencil, Trash2, Search, Package } from "lucide-react";
+import { Truck, Plus, Phone, Pencil, Trash2, Search, Package, Wheat } from "lucide-react";
 import {
   listarProveedores,
   crearProveedor,
@@ -7,16 +7,18 @@ import {
   eliminarProveedor,
 } from "../../../api/proveedores";
 import { listarProductos } from "../../../api/productos";
+import { listarInsumos } from "../../../api/insumos";
 import Sheet from "../../../components/Sheet";
 import "./Proveedores.css";
 
 function formVacio() {
-  return { nombre: "", celular: "", notas: "", producto_ids: [] };
+  return { nombre: "", celular: "", notas: "", producto_ids: [], insumo_ids: [] };
 }
 
 export default function Proveedores() {
   const [proveedores, setProveedores] = useState([]);
   const [productos, setProductos] = useState([]);
+  const [insumos, setInsumos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
 
   const [sheetAbierto, setSheetAbierto] = useState(false);
@@ -35,12 +37,14 @@ export default function Proveedores() {
   async function cargarDatos() {
     setError(null);
     try {
-      const [proveedoresData, productosData] = await Promise.all([
+      const [proveedoresData, productosData, insumosData] = await Promise.all([
         listarProveedores(),
         listarProductos(),
+        listarInsumos(),
       ]);
       setProveedores(proveedoresData);
       setProductos(productosData);
+      setInsumos(insumosData);
     } catch (err) {
       setError("No se pudieron cargar los proveedores");
     }
@@ -54,6 +58,18 @@ export default function Proveedores() {
         producto_ids: yaEsta
           ? f.producto_ids.filter((id) => id !== productoId)
           : [...f.producto_ids, productoId],
+      };
+    });
+  }
+
+  function toggleInsumo(insumoId) {
+    setForm((f) => {
+      const yaEsta = f.insumo_ids.includes(insumoId);
+      return {
+        ...f,
+        insumo_ids: yaEsta
+          ? f.insumo_ids.filter((id) => id !== insumoId)
+          : [...f.insumo_ids, insumoId],
       };
     });
   }
@@ -75,6 +91,7 @@ export default function Proveedores() {
       celular: proveedor.celular,
       notas: proveedor.notas || "",
       producto_ids: proveedor.productos.map((p) => p.id),
+      insumo_ids: (proveedor.insumos || []).map((i) => i.id),
     });
     setSheetAbierto(true);
   }
@@ -137,7 +154,7 @@ export default function Proveedores() {
       <header className="prov-header">
         <div>
           <h1>Proveedores</h1>
-          <p>Contactos para reabastecer el inventario</p>
+          <p>Contactos para reabastecer productos e insumos</p>
         </div>
         <button className="prov-btn-nuevo" onClick={iniciarCreacion}>
           <Plus size={16} />
@@ -178,12 +195,18 @@ export default function Proveedores() {
 
             {prov.notas && <p className="prov-notas">{prov.notas}</p>}
 
-            {prov.productos.length > 0 && (
+            {(prov.productos.length > 0 || (prov.insumos || []).length > 0) && (
               <div className="prov-productos-tags">
                 {prov.productos.map((p) => (
-                  <span key={p.id} className="prov-tag">
+                  <span key={`p-${p.id}`} className="prov-tag">
                     <Package size={11} />
                     {p.nombre}
+                  </span>
+                ))}
+                {(prov.insumos || []).map((i) => (
+                  <span key={`i-${i.id}`} className="prov-tag prov-tag-insumo">
+                    <Wheat size={11} />
+                    {i.nombre}
                   </span>
                 ))}
               </div>
@@ -281,6 +304,23 @@ export default function Proveedores() {
             ))}
             {productos.length === 0 && (
               <p className="prov-checks-vacio">No hay productos creados todavía</p>
+            )}
+          </div>
+
+          <label>Insumos que suministra</label>
+          <div className="prov-checks">
+            {insumos.map((i) => (
+              <label key={i.id} className="prov-check-item">
+                <input
+                  type="checkbox"
+                  checked={form.insumo_ids.includes(i.id)}
+                  onChange={() => toggleInsumo(i.id)}
+                />
+                {i.nombre}
+              </label>
+            ))}
+            {insumos.length === 0 && (
+              <p className="prov-checks-vacio">No hay insumos creados todavía</p>
             )}
           </div>
 
