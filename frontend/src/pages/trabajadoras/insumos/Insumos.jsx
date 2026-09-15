@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   TrendingUp,
   TrendingDown,
+  Search,
 } from "lucide-react";
 import {
   listarInsumos,
@@ -51,6 +52,14 @@ export default function Insumos() {
   const [proveedoresPorInsumo, setProveedoresPorInsumo] = useState({});
   const [expandido, setExpandido] = useState(null);
   const [categoriaActiva, setCategoriaActiva] = useState("cocina");
+  const [busqueda, setBusqueda] = useState("");
+  const [busquedaMovimiento, setBusquedaMovimiento] = useState("");
+
+  const insumosParaMovimiento = insumos.filter((insumo) =>
+    insumo.nombre
+        .toLowerCase()
+        .includes(busquedaMovimiento.toLowerCase())
+  );
 
   useEffect(() => {
     cargarDatos();
@@ -74,6 +83,7 @@ export default function Insumos() {
 
   function abrirMovimiento() {
     setForm(formVacio());
+    setBusquedaMovimiento("");
     setMensaje(null);
     setError(null);
     setSheetAbierto(true);
@@ -83,7 +93,8 @@ export default function Insumos() {
     setSheetAbierto(abierto);
 
     if (!abierto) {
-      setForm(formVacio());
+        setForm(formVacio());
+        setBusquedaMovimiento("");
     }
   }
 
@@ -192,7 +203,11 @@ export default function Insumos() {
   });
 
   const insumosFiltrados = insumosOrdenados.filter(
-    (insumo) => insumo.categoria === categoriaActiva
+    (insumo) =>
+        insumo.categoria === categoriaActiva &&
+        insumo.nombre
+        .toLowerCase()
+        .includes(busqueda.toLowerCase())
   );
 
   return (
@@ -266,6 +281,17 @@ export default function Insumos() {
         >
             📦 Empaques y aseo
         </button>
+      </div>
+
+      <div className="tins-buscador">
+        <Search size={17} />
+
+        <input
+            type="text"
+            placeholder="Buscar insumo..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+        />
       </div>
 
       <section className="tins-seccion">
@@ -455,32 +481,61 @@ export default function Insumos() {
 
           {/* INSUMO */}
 
-          <label>Insumo</label>
+          <label>Buscar insumo</label>
 
-          <select
-            value={form.insumo_id}
-            onChange={(e) =>
-              setForm((f) => ({
+          <div className="tins-buscador-movimiento">
+          <Search size={16} />
+
+          <input
+            type="text"
+            placeholder="Escribe el nombre del insumo..."
+            value={busquedaMovimiento}
+            onChange={(e) => {
+            setBusquedaMovimiento(e.target.value);
+
+            setForm((f) => ({
                 ...f,
-                insumo_id: e.target.value,
-              }))
-            }
-          >
-            <option value="">
-              Selecciona...
-            </option>
+                insumo_id: "",
+            }));
+            }}
+          />
+          </div>
 
-            {insumos.map((i) => (
-              <option
-                key={i.id}
-                value={i.id}
-              >
-                {i.nombre} — {i.stock_actual}{" "}
-                {i.unidad_medida}
-              </option>
-            ))}
+          {busquedaMovimiento && !form.insumo_id && (
+          <div className="tins-resultados-movimiento">
+            {insumosParaMovimiento.length === 0 ? (
+            <p className="tins-sin-resultados">
+                No se encontraron insumos
+            </p>
+            ) : (
+            insumosParaMovimiento.map((insumo) => (
+                <button
+                type="button"
+                key={insumo.id}
+                className="tins-resultado-movimiento"
+                onClick={() => {
+                    setForm((f) => ({
+                    ...f,
+                    insumo_id: String(insumo.id),
+                    }));
 
-          </select>
+                    setBusquedaMovimiento(insumo.nombre);
+                    setError(null);
+                }}
+                >
+                <div>
+                    <strong>{insumo.nombre}</strong>
+
+                    <span>
+                    Stock actual: {insumo.stock_actual}{" "}
+                    {insumo.unidad_medida}
+                    </span>
+                </div>
+                </button>
+              ))
+              )}
+          </div>
+          )}
 
           {/* CANTIDAD */}
 
