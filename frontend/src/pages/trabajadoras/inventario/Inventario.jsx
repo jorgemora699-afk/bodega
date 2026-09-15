@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Package, PackagePlus, Phone, AlertTriangle, CheckCircle2, Minus, Plus } from "lucide-react";
+import {
+  Package,
+  PackagePlus,
+  Phone,
+  AlertTriangle,
+  CheckCircle2,
+  Minus,
+  Plus,
+} from "lucide-react";
+
 import { listarProductos } from "../../../api/productos";
 import { registrarEntrada, listarBajoStock } from "../../../api/inventario";
 import { listarProveedoresDeProducto } from "../../../api/proveedores";
@@ -14,6 +23,7 @@ export default function Inventario() {
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [enviando, setEnviando] = useState(false);
+
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
 
@@ -25,11 +35,14 @@ export default function Inventario() {
   }, []);
 
   async function cargarDatos() {
+    setError(null);
+
     try {
       const [productosData, bajoStockData] = await Promise.all([
         listarProductos(),
         listarBajoStock(),
       ]);
+
       setProductos(productosData);
       setBajoStock(bajoStockData);
     } catch (err) {
@@ -47,6 +60,7 @@ export default function Inventario() {
 
   function cerrarSheet(abierto) {
     setSheetAbierto(abierto);
+
     if (!abierto) {
       setProductoSeleccionado(null);
       setCantidad(1);
@@ -70,11 +84,17 @@ export default function Inventario() {
         motivo: "produccion",
       });
 
-      setMensaje(`Se agregaron ${cantidad} unidades de ${productoSeleccionado.nombre}`);
+      setMensaje(
+        `Se agregaron ${cantidad} unidades de ${productoSeleccionado.nombre}`
+      );
+
       cerrarSheet(false);
       cargarDatos();
     } catch (err) {
-      setError(err.response?.data?.error || "No se pudo registrar la producción");
+      setError(
+        err.response?.data?.error ||
+          "No se pudo registrar la producción"
+      );
     } finally {
       setEnviando(false);
     }
@@ -85,90 +105,185 @@ export default function Inventario() {
       setExpandido(null);
       return;
     }
+
     setExpandido(productoId);
+
     if (!proveedoresPorProducto[productoId]) {
       try {
         const proveedores = await listarProveedoresDeProducto(productoId);
-        setProveedoresPorProducto((prev) => ({ ...prev, [productoId]: proveedores }));
+
+        setProveedoresPorProducto((prev) => ({
+          ...prev,
+          [productoId]: proveedores,
+        }));
       } catch (err) {
         setError("No se pudieron cargar los proveedores");
       }
     }
   }
 
+  // Identificar productos que están bajos de stock
+  const idsBajoStock = new Set(
+    bajoStock.map((producto) => producto.id)
+  );
+
+  // Mostrar primero los productos con stock bajo
+  const productosOrdenados = [...productos].sort((a, b) => {
+    const aBajo = idsBajoStock.has(a.id);
+    const bBajo = idsBajoStock.has(b.id);
+
+    if (aBajo && !bBajo) return -1;
+    if (!aBajo && bBajo) return 1;
+
+    return a.nombre.localeCompare(b.nombre);
+  });
+
   return (
     <div className="inv-container">
       <header className="inv-header">
-        <h1>Inventario</h1>
-        <p>Registra producción y revisa qué se está acabando</p>
+        <div>
+          <h1>Inventario</h1>
+          <p>
+            {productos.length} productos registrados
+            {bajoStock.length > 0 &&
+              ` · ${bajoStock.length} por acabarse`}
+          </p>
+        </div>
       </header>
 
       {mensaje && (
         <div className="inv-mensaje-exito">
-          <CheckCircle2 size={16} /> {mensaje}
+          <CheckCircle2 size={16} />
+          {mensaje}
         </div>
       )}
-      {error && !sheetAbierto && <div className="inv-mensaje-error">{error}</div>}
+
+      {error && !sheetAbierto && (
+        <div className="inv-mensaje-error">
+          {error}
+        </div>
+      )}
 
       <section className="inv-seccion">
         <h2>
           <PackagePlus size={16} />
-          Registrar producción
+          Mis productos
         </h2>
 
-        <div className="inv-grid-productos">
-          {productos.map((producto) => (
-            <button key={producto.id} className="inv-prod-btn" onClick={() => abrirProduccion(producto)}>
-              <span className="inv-prod-icono">
-                <Package size={18} />
-              </span>
-              <span className="inv-prod-nombre">{producto.nombre}</span>
-              <span className="inv-prod-stock">Stock: {producto.stock_actual}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="inv-seccion">
-        <h2>
-          <AlertTriangle size={16} />
-          Productos por acabarse
-        </h2>
-
-        {bajoStock.length === 0 ? (
+        {productosOrdenados.length === 0 ? (
           <div className="inv-sin-alertas">
             <CheckCircle2 size={18} />
-            <span>Todo el stock está en buen nivel</span>
+            <span>No hay productos registrados</span>
           </div>
         ) : (
-          <div className="inv-lista-bajo-stock">
-            {bajoStock.map((producto) => (
-              <div key={producto.id} className="inv-bajo-stock-card">
-                <div className="inv-bajo-stock-info">
-                  <span className="inv-prod-nombre">{producto.nombre}</span>
-                  <span className="inv-badge-bajo">Quedan {producto.stock_actual}</span>
-                </div>
-                <button className="inv-btn-secundario" onClick={() => verProveedores(producto.id)}>
-                  <Phone size={14} />
-                  Ver proveedor
-                </button>
+          <div className="inv-lista-productos">
+            {productosOrdenados.map((producto) => {
+              const estaBajoStock = idsBajoStock.has(producto.id);
 
-                {expandido === producto.id && (
-                  <div className="inv-proveedores-lista">
-                    {(proveedoresPorProducto[producto.id] || []).length === 0 ? (
-                      <p className="inv-sin-proveedor">No hay proveedores registrados para este producto</p>
-                    ) : (
-                      proveedoresPorProducto[producto.id].map((prov) => (
-                        <a key={prov.id} href={`tel:${prov.celular}`} className="inv-proveedor-fila">
-                          <span>{prov.nombre}</span>
-                          <span className="inv-proveedor-numero">{prov.celular}</span>
-                        </a>
-                      ))
-                    )}
+              const proveedores =
+                proveedoresPorProducto[producto.id] || [];
+
+              return (
+                <div
+                  key={producto.id}
+                  className={`inv-producto-card ${
+                    estaBajoStock ? "stock-bajo" : ""
+                  }`}
+                >
+                  <div className="inv-producto-top">
+                    <div className="inv-producto-info">
+                      <div className="inv-producto-nombre-wrapper">
+                        <span className="inv-producto-icono">
+                          <Package size={16} />
+                        </span>
+
+                        <span className="inv-prod-nombre">
+                          {producto.nombre}
+                        </span>
+                      </div>
+
+                      <span className="inv-producto-label">
+                        Stock actual
+                      </span>
+
+                      <span className="inv-producto-stock">
+                        {producto.stock_actual}
+                      </span>
+                    </div>
+
+                    <div className="inv-producto-estado">
+                      {estaBajoStock ? (
+                        <span className="inv-badge-bajo">
+                          <AlertTriangle size={12} />
+                          Stock bajo
+                        </span>
+                      ) : (
+                        <span className="inv-badge-ok">
+                          <CheckCircle2 size={12} />
+                          Disponible
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  <div className="inv-producto-acciones">
+                    <button
+                      className="inv-btn-produccion"
+                      onClick={() =>
+                        abrirProduccion(producto)
+                      }
+                    >
+                      <PackagePlus size={14} />
+                      Registrar producción
+                    </button>
+
+                    <button
+                      className={`inv-btn-secundario ${
+                        expandido === producto.id
+                          ? "activo"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        verProveedores(producto.id)
+                      }
+                    >
+                      <Phone size={14} />
+
+                      {expandido === producto.id
+                        ? "Ocultar proveedor"
+                        : "Ver proveedor"}
+                    </button>
+                  </div>
+
+                  {expandido === producto.id && (
+                    <div className="inv-proveedores-lista">
+                      {proveedores.length === 0 ? (
+                        <p className="inv-sin-proveedor">
+                          No hay proveedores registrados
+                          para este producto
+                        </p>
+                      ) : (
+                        proveedores.map((prov) => (
+                          <a
+                            key={prov.id}
+                            href={`tel:${prov.celular}`}
+                            className="inv-proveedor-fila"
+                          >
+                            <span>
+                              {prov.nombre}
+                            </span>
+
+                            <span className="inv-proveedor-numero">
+                              {prov.celular}
+                            </span>
+                          </a>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
@@ -176,20 +291,46 @@ export default function Inventario() {
       <Sheet
         open={sheetAbierto}
         onOpenChange={cerrarSheet}
-        title={productoSeleccionado ? productoSeleccionado.nombre : "Registrar producción"}
+        title={
+          productoSeleccionado
+            ? productoSeleccionado.nombre
+            : "Registrar producción"
+        }
       >
         <div className="inv-sheet-body">
-          {error && <div className="inv-mensaje-error">{error}</div>}
+          {error && (
+            <div className="inv-mensaje-error">
+              {error}
+            </div>
+          )}
 
-          <p className="inv-sheet-subtitulo">Stock actual: {productoSeleccionado?.stock_actual}</p>
+          <p className="inv-sheet-subtitulo">
+            Stock actual:{" "}
+            {productoSeleccionado?.stock_actual}
+          </p>
 
-          <label>¿Cuántas unidades se hicieron?</label>
+          <label>
+            ¿Cuántas unidades se hicieron?
+          </label>
+
           <div className="inv-stepper">
-            <button type="button" className="inv-stepper-btn" onClick={() => ajustarCantidad(-1)}>
+            <button
+              type="button"
+              className="inv-stepper-btn"
+              onClick={() => ajustarCantidad(-1)}
+            >
               <Minus size={16} />
             </button>
-            <span className="inv-stepper-valor">{cantidad}</span>
-            <button type="button" className="inv-stepper-btn" onClick={() => ajustarCantidad(1)}>
+
+            <span className="inv-stepper-valor">
+              {cantidad}
+            </span>
+
+            <button
+              type="button"
+              className="inv-stepper-btn"
+              onClick={() => ajustarCantidad(1)}
+            >
               <Plus size={16} />
             </button>
           </div>
@@ -199,7 +340,9 @@ export default function Inventario() {
             onClick={registrarProduccion}
             disabled={enviando}
           >
-            {enviando ? "Registrando..." : "Registrar producción"}
+            {enviando
+              ? "Registrando..."
+              : "Registrar producción"}
           </button>
         </div>
       </Sheet>
