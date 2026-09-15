@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { ShoppingCart, Package, Clock, ChefHat, LogOut } from "lucide-react";
+import { ShoppingCart, Package, Clock, ChefHat, LogOut, Wheat } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import "./TrabajadoraLayout.css";
 
