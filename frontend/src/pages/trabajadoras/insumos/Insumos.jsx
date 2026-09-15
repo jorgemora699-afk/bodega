@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { Wheat, Phone, AlertTriangle, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Wheat,
+  Phone,
+  AlertTriangle,
+  CheckCircle2,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import {
   listarInsumos,
   registrarEntradaInsumo,
@@ -14,6 +21,7 @@ const MOTIVOS_ENTRADA = [
   { valor: "compra", label: "Compra" },
   { valor: "ajuste", label: "Ajuste de conteo" },
 ];
+
 const MOTIVOS_SALIDA = [
   { valor: "uso", label: "Uso en cocina" },
   { valor: "merma", label: "Merma / dañado" },
@@ -21,7 +29,12 @@ const MOTIVOS_SALIDA = [
 ];
 
 function formVacio() {
-  return { tipo: "entrada", insumo_id: "", cantidad: "", motivo: "compra" };
+  return {
+    tipo: "entrada",
+    insumo_id: "",
+    cantidad: "",
+    motivo: "compra",
+  };
 }
 
 export default function Insumos() {
@@ -31,6 +44,7 @@ export default function Insumos() {
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [form, setForm] = useState(formVacio());
   const [enviando, setEnviando] = useState(false);
+
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
 
@@ -42,11 +56,14 @@ export default function Insumos() {
   }, []);
 
   async function cargarDatos() {
+    setError(null);
+
     try {
       const [insumosData, bajoStockData] = await Promise.all([
         listarInsumos(),
         listarBajoStockInsumo(),
       ]);
+
       setInsumos(insumosData);
       setBajoStock(bajoStockData);
     } catch (err) {
@@ -63,11 +80,18 @@ export default function Insumos() {
 
   function cerrarSheet(abierto) {
     setSheetAbierto(abierto);
-    if (!abierto) setForm(formVacio());
+
+    if (!abierto) {
+      setForm(formVacio());
+    }
   }
 
   function cambiarTipo(tipo) {
-    setForm((f) => ({ ...f, tipo, motivo: tipo === "entrada" ? "compra" : "uso" }));
+    setForm((f) => ({
+      ...f,
+      tipo,
+      motivo: tipo === "entrada" ? "compra" : "uso",
+    }));
   }
 
   async function guardar() {
@@ -91,11 +115,15 @@ export default function Insumos() {
       } else {
         await registrarSalidaInsumo(payload);
       }
+
       setMensaje("Movimiento registrado correctamente");
       cerrarSheet(false);
       cargarDatos();
     } catch (err) {
-      setError(err.response?.data?.error || "No se pudo registrar el movimiento");
+      setError(
+        err.response?.data?.error ||
+          "No se pudo registrar el movimiento"
+      );
     } finally {
       setEnviando(false);
     }
@@ -106,164 +134,368 @@ export default function Insumos() {
       setExpandido(null);
       return;
     }
+
     setExpandido(insumoId);
+
     if (!proveedoresPorInsumo[insumoId]) {
       try {
         const proveedores = await listarProveedoresDeInsumo(insumoId);
-        setProveedoresPorInsumo((prev) => ({ ...prev, [insumoId]: proveedores }));
+
+        setProveedoresPorInsumo((prev) => ({
+          ...prev,
+          [insumoId]: proveedores,
+        }));
       } catch (err) {
         setError("No se pudieron cargar los proveedores");
       }
     }
   }
 
-  const motivosDisponibles = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
+  const motivosDisponibles =
+    form.tipo === "entrada"
+      ? MOTIVOS_ENTRADA
+      : MOTIVOS_SALIDA;
+
+  /*
+   * Creamos un conjunto con los IDs que están bajo de stock.
+   * Esto nos permite mostrar todos los insumos en una sola lista
+   * y saber cuáles necesitan atención.
+   */
+  const idsBajoStock = new Set(
+    bajoStock.map((insumo) => insumo.id)
+  );
+
+  /*
+   * Los insumos con stock bajo aparecen primero.
+   * Los demás aparecen después.
+   */
+  const insumosOrdenados = [...insumos].sort((a, b) => {
+    const aBajo = idsBajoStock.has(a.id);
+    const bBajo = idsBajoStock.has(b.id);
+
+    if (aBajo && !bBajo) return -1;
+    if (!aBajo && bBajo) return 1;
+
+    return a.nombre.localeCompare(b.nombre);
+  });
 
   return (
     <div className="tins-container">
+
+      {/* =========================================
+          HEADER
+      ========================================= */}
+
       <header className="tins-header">
         <div>
           <h1>Insumos</h1>
-          <p>Ingredientes, empaques y aseo</p>
+          <p>
+            {insumos.length} registrados
+            {bajoStock.length > 0 &&
+              ` · ${bajoStock.length} por acabarse`}
+          </p>
         </div>
-        <button className="tins-btn-nuevo" onClick={abrirMovimiento}>
+
+        <button
+          className="tins-btn-nuevo"
+          onClick={abrirMovimiento}
+        >
+          <TrendingUp size={15} />
           Registrar movimiento
         </button>
       </header>
 
+      {/* =========================================
+          MENSAJES
+      ========================================= */}
+
       {mensaje && (
         <div className="tins-mensaje-exito">
-          <CheckCircle2 size={16} /> {mensaje}
+          <CheckCircle2 size={16} />
+          {mensaje}
         </div>
       )}
-      {error && !sheetAbierto && <div className="tins-mensaje-error">{error}</div>}
+
+      {error && !sheetAbierto && (
+        <div className="tins-mensaje-error">
+          {error}
+        </div>
+      )}
+
+      {/* =========================================
+          LISTADO DE INSUMOS
+      ========================================= */}
 
       <section className="tins-seccion">
-        <h2>
-          <AlertTriangle size={16} />
-          Insumos por acabarse
-        </h2>
 
-        {bajoStock.length === 0 ? (
-          <div className="tins-sin-alertas">
-            <CheckCircle2 size={18} />
-            <span>Todos los insumos están en buen nivel</span>
-          </div>
-        ) : (
-          <div className="tins-lista-bajo-stock">
-            {bajoStock.map((i) => (
-              <div key={i.id} className="tins-bajo-stock-card">
-                <div className="tins-bajo-stock-info">
-                  <span className="tins-nombre">{i.nombre}</span>
-                  <span className="tins-badge-bajo">
-                    Quedan {i.stock_actual} {i.unidad_medida}
-                  </span>
-                </div>
-                <button className="tins-btn-secundario" onClick={() => verProveedores(i.id)}>
-                  <Phone size={14} />
-                  Ver proveedor
-                </button>
-
-                {expandido === i.id && (
-                  <div className="tins-proveedores-lista">
-                    {(proveedoresPorInsumo[i.id] || []).length === 0 ? (
-                      <p className="tins-sin-proveedor">No hay proveedores registrados para este insumo</p>
-                    ) : (
-                      proveedoresPorInsumo[i.id].map((prov) => (
-                        <a key={prov.id} href={`tel:${prov.celular}`} className="tins-proveedor-fila">
-                          <span>{prov.nombre}</span>
-                          <span className="tins-proveedor-numero">{prov.celular}</span>
-                        </a>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="tins-seccion">
         <h2>
           <Wheat size={16} />
-          Catálogo
+          Mis insumos
         </h2>
-        <div className="tins-lista-catalogo">
-          {insumos.map((i) => (
-            <div key={i.id} className="tins-catalogo-fila">
-              <span>{i.nombre}</span>
-              <span className="tins-catalogo-stock">
-                {i.stock_actual} {i.unidad_medida}
-              </span>
-            </div>
-          ))}
-        </div>
+
+        {insumosOrdenados.length === 0 ? (
+          <div className="tins-sin-alertas">
+            <CheckCircle2 size={18} />
+            <span>No hay insumos registrados</span>
+          </div>
+        ) : (
+          <div className="tins-lista-insumos">
+
+            {insumosOrdenados.map((insumo) => {
+              const estaBajoStock = idsBajoStock.has(insumo.id);
+              const proveedores =
+                proveedoresPorInsumo[insumo.id] || [];
+
+              return (
+                <div
+                  key={insumo.id}
+                  className={`tins-insumo-card ${
+                    estaBajoStock ? "stock-bajo" : ""
+                  }`}
+                >
+
+                  {/* =====================================
+                      INFORMACIÓN PRINCIPAL
+                  ===================================== */}
+
+                  <div className="tins-insumo-top">
+
+                    <div className="tins-insumo-info">
+                      <span className="tins-nombre">
+                        {insumo.nombre}
+                      </span>
+
+                      <span className="tins-insumo-label">
+                        Stock actual
+                      </span>
+
+                      <span className="tins-insumo-stock">
+                        {insumo.stock_actual}{" "}
+                        {insumo.unidad_medida}
+                      </span>
+                    </div>
+
+                    <div className="tins-insumo-estado">
+
+                      {estaBajoStock ? (
+                        <span className="tins-badge-bajo">
+                          <AlertTriangle size={12} />
+                          Stock bajo
+                        </span>
+                      ) : (
+                        <span className="tins-badge-ok">
+                          <CheckCircle2 size={12} />
+                          Disponible
+                        </span>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                  {/* =====================================
+                      BOTÓN PROVEEDOR
+                  ===================================== */}
+
+                  <button
+                    className={`tins-btn-secundario ${
+                      expandido === insumo.id
+                        ? "activo"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      verProveedores(insumo.id)
+                    }
+                  >
+                    <Phone size={14} />
+
+                    {expandido === insumo.id
+                      ? "Ocultar proveedores"
+                      : "Ver proveedor"}
+                  </button>
+
+                  {/* =====================================
+                      PROVEEDORES
+                  ===================================== */}
+
+                  {expandido === insumo.id && (
+                    <div className="tins-proveedores-lista">
+
+                      {proveedores.length === 0 ? (
+                        <p className="tins-sin-proveedor">
+                          No hay proveedores registrados
+                          para este insumo
+                        </p>
+                      ) : (
+                        proveedores.map((prov) => (
+                          <a
+                            key={prov.id}
+                            href={`tel:${prov.celular}`}
+                            className="tins-proveedor-fila"
+                          >
+                            <span>
+                              {prov.nombre}
+                            </span>
+
+                            <span className="tins-proveedor-numero">
+                              {prov.celular}
+                            </span>
+                          </a>
+                        ))
+                      )}
+
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
+
+          </div>
+        )}
+
       </section>
 
-      <Sheet open={sheetAbierto} onOpenChange={cerrarSheet} title="Movimiento de insumo">
+      {/* =========================================
+          SHEET - NUEVO MOVIMIENTO
+      ========================================= */}
+
+      <Sheet
+        open={sheetAbierto}
+        onOpenChange={cerrarSheet}
+        title="Movimiento de insumo"
+      >
         <div className="tins-sheet-body">
-          {error && <div className="tins-mensaje-error">{error}</div>}
+
+          {error && (
+            <div className="tins-mensaje-error">
+              {error}
+            </div>
+          )}
+
+          {/* TIPO */}
 
           <label>Tipo de movimiento</label>
+
           <div className="tins-tipos">
+
             <button
               type="button"
-              className={`tins-tipo-btn entrada ${form.tipo === "entrada" ? "activo" : ""}`}
-              onClick={() => cambiarTipo("entrada")}
+              className={`tins-tipo-btn entrada ${
+                form.tipo === "entrada"
+                  ? "activo"
+                  : ""
+              }`}
+              onClick={() =>
+                cambiarTipo("entrada")
+              }
             >
               <TrendingUp size={15} />
               Entrada
             </button>
+
             <button
               type="button"
-              className={`tins-tipo-btn salida ${form.tipo === "salida" ? "activo" : ""}`}
-              onClick={() => cambiarTipo("salida")}
+              className={`tins-tipo-btn salida ${
+                form.tipo === "salida"
+                  ? "activo"
+                  : ""
+              }`}
+              onClick={() =>
+                cambiarTipo("salida")
+              }
             >
               <TrendingDown size={15} />
               Salida
             </button>
+
           </div>
 
+          {/* INSUMO */}
+
           <label>Insumo</label>
+
           <select
             value={form.insumo_id}
-            onChange={(e) => setForm((f) => ({ ...f, insumo_id: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                insumo_id: e.target.value,
+              }))
+            }
           >
-            <option value="">Selecciona...</option>
+            <option value="">
+              Selecciona...
+            </option>
+
             {insumos.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.nombre} (stock: {i.stock_actual} {i.unidad_medida})
+              <option
+                key={i.id}
+                value={i.id}
+              >
+                {i.nombre} — {i.stock_actual}{" "}
+                {i.unidad_medida}
               </option>
             ))}
+
           </select>
 
+          {/* CANTIDAD */}
+
           <label>Cantidad</label>
+
           <input
             type="number"
             min="0.01"
             step="0.01"
             value={form.cantidad}
-            onChange={(e) => setForm((f) => ({ ...f, cantidad: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                cantidad: e.target.value,
+              }))
+            }
+            placeholder="Ej: 5"
           />
 
+          {/* MOTIVO */}
+
           <label>Motivo</label>
+
           <select
             value={form.motivo}
-            onChange={(e) => setForm((f) => ({ ...f, motivo: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                motivo: e.target.value,
+              }))
+            }
           >
             {motivosDisponibles.map((m) => (
-              <option key={m.valor} value={m.valor}>
+              <option
+                key={m.valor}
+                value={m.valor}
+              >
                 {m.label}
               </option>
             ))}
           </select>
 
-          <button className="tins-btn-primario tins-btn-guardar-sheet" onClick={guardar} disabled={enviando}>
-            {enviando ? "Guardando..." : "Guardar movimiento"}
+          {/* GUARDAR */}
+
+          <button
+            className="tins-btn-primario tins-btn-guardar-sheet"
+            onClick={guardar}
+            disabled={enviando}
+          >
+            {enviando
+              ? "Guardando..."
+              : "Guardar movimiento"}
           </button>
+
         </div>
       </Sheet>
+
     </div>
   );
 }
