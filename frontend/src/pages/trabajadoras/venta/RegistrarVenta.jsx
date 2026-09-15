@@ -20,7 +20,6 @@ import "./RegistrarVenta.css";
 const METODOS_PAGO = [
   { valor: "efectivo", label: "Efectivo", Icon: Banknote },
   { valor: "transferencia", label: "Transferencia", Icon: ArrowLeftRight },
-  { valor: "datafono", label: "Datáfono", Icon: CreditCard },
 ];
 
 export default function RegistrarVenta() {
@@ -266,6 +265,11 @@ export default function RegistrarVenta() {
                   className={`venta-prod-card ${
                     enCarrito > 0 ? "en-carrito" : ""
                   } ${agotado ? "agotado" : ""}`}
+                  onClick={() => {
+                    if (!agotado) {
+                      agregarAlCarrito(producto);
+                    }
+                  }}
                 >
                   <div className="venta-prod-imagen">
                     <ShoppingBag size={28} />
@@ -297,15 +301,6 @@ export default function RegistrarVenta() {
                       {stock.texto}
                     </span>
                   </div>
-
-                  <button
-                    type="button"
-                    className="venta-prod-agregar"
-                    disabled={agotado}
-                    onClick={() => agregarAlCarrito(producto)}
-                  >
-                    {agotado ? "Agotado" : enCarrito > 0 ? "Agregar otro" : "Agregar"}
-                  </button>
                 </div>
               );
             })}

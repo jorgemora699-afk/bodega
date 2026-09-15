@@ -326,47 +326,29 @@
   background: var(--color-danger);
 }
 
-/* =========================
-   BOTÓN AGREGAR
-   ========================= */
-
-.venta-prod-agregar {
-  margin: 0 0.85rem 0.85rem;
-
-  padding: 0.6rem 0.7rem;
-
-  border: none;
-  border-radius: var(--radius-sm);
-
-  background: var(--color-primary);
-  color: white;
-
-  font-size: 0.78rem;
-  font-weight: 700;
-
+.venta-prod-card {
   cursor: pointer;
-
-  transition:
-    background 0.15s ease,
-    transform 0.1s ease;
 }
 
-.venta-prod-agregar:hover {
-  background: var(--color-brand-dark);
+.venta-prod-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
 }
 
-.venta-prod-agregar:active {
+.venta-prod-card:active {
   transform: scale(0.98);
 }
 
-.venta-prod-agregar:disabled {
-  background: var(--color-border);
-  color: var(--color-text-secondary);
+.venta-prod-card.agotado {
   cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.venta-prod-agregar:disabled:hover {
-  background: var(--color-border);
+.venta-prod-card.agotado:hover {
+  transform: none;
+  border-color: var(--color-border);
+  box-shadow: none;
 }
 
 /* =========================
