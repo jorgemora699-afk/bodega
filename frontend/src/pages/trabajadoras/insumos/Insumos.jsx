@@ -95,6 +95,17 @@ export default function Insumos() {
     }));
   }
 
+  function ajustarCantidad(delta) {
+    setForm((f) => {
+        const actual = Number(f.cantidad || 0);
+
+        return {
+        ...f,
+        cantidad: Math.max(0.01, actual + delta),
+        };
+    });
+  }
+
   async function guardar() {
     if (!form.insumo_id || !form.cantidad) {
       setError("Selecciona un insumo e ingresa la cantidad");
@@ -475,19 +486,40 @@ export default function Insumos() {
 
           <label>Cantidad</label>
 
+          <div className="tins-stepper">
+          <button
+            type="button"
+            className="tins-stepper-btn"
+            onClick={() => ajustarCantidad(-1)}
+          >
+              −
+          </button>
+
           <input
             type="number"
             min="0.01"
             step="0.01"
             value={form.cantidad}
-            onChange={(e) =>
-              setForm((f) => ({
+            onChange={(e) => {
+            const valor = e.target.value;
+
+            setForm((f) => ({
                 ...f,
-                cantidad: e.target.value,
-              }))
-            }
+                cantidad: valor,
+            }));
+            }}
             placeholder="Ej: 5"
+            className="tins-stepper-input"
           />
+
+        <button
+            type="button"
+            className="tins-stepper-btn"
+            onClick={() => ajustarCantidad(1)}
+        >
+            +
+        </button>
+        </div>
 
           {/* MOTIVO */}
 
