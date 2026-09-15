@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Minus,
   Plus,
+  Search,
 } from "lucide-react";
 
 import { listarProductos } from "../../../api/productos";
@@ -23,9 +24,16 @@ export default function Inventario() {
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [enviando, setEnviando] = useState(false);
+  const [busquedaProducto, setBusquedaProducto] = useState("");
+  const productosProduccion = productos.filter((producto) =>
+    producto.nombre
+      .toLowerCase()
+      .includes(busquedaProducto.toLowerCase())
+  );
 
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
+  const [busqueda, setBusqueda] = useState("");
 
   const [proveedoresPorProducto, setProveedoresPorProducto] = useState({});
   const [expandido, setExpandido] = useState(null);
@@ -53,6 +61,7 @@ export default function Inventario() {
   function abrirProduccion() {
     setProductoSeleccionado(null);
     setCantidad(1);
+    setBusquedaProducto("");
     setMensaje(null);
     setError(null);
     setSheetAbierto(true);
@@ -64,6 +73,7 @@ export default function Inventario() {
     if (!abierto) {
       setProductoSeleccionado(null);
       setCantidad(1);
+      setBusquedaProducto("");
     }
   }
 
@@ -143,6 +153,12 @@ export default function Inventario() {
     return a.nombre.localeCompare(b.nombre);
   });
 
+  const productosFiltrados = productosOrdenados.filter((producto) =>
+    producto.nombre
+      .toLowerCase()
+      .includes(busqueda.toLowerCase())
+  );
+
   return (
     <div className="inv-container">
       <header className="inv-header">
@@ -177,20 +193,31 @@ export default function Inventario() {
         </div>
       )}
 
+      <div className="inv-buscador">
+        <Search size={17} />
+
+        <input
+          type="text"
+          placeholder="Buscar producto..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
+
       <section className="inv-seccion">
         <h2>
           <PackagePlus size={16} />
           Mis productos
         </h2>
 
-        {productosOrdenados.length === 0 ? (
+        {productosFiltrados.length === 0 ? (
           <div className="inv-sin-alertas">
             <CheckCircle2 size={18} />
             <span>No hay productos registrados</span>
           </div>
         ) : (
           <div className="inv-lista-productos">
-            {productosOrdenados.map((producto) => {
+            {productosFiltrados.map((producto) => {
               const estaBajoStock = idsBajoStock.has(producto.id);
 
               const proveedores =
@@ -308,28 +335,52 @@ export default function Inventario() {
             </div>
           )}
 
-          <label>Producto</label>
+          <label>Buscar producto</label>
 
-          <select
-            value={productoSeleccionado?.id || ""}
-            onChange={(e) => {
-              const producto = productos.find(
-                (p) => p.id === Number(e.target.value)
-              );
+          <div className="inv-producto-buscador">
+            <Search size={16} />
 
-              setProductoSeleccionado(producto || null);
-              setCantidad(1);
-              setError(null);
-            }}
-          >
-            <option value="">Selecciona un producto...</option>
+            <input
+              type="text"
+              placeholder="Escribe el nombre del producto..."
+              value={busquedaProducto}
+              onChange={(e) => {
+                setBusquedaProducto(e.target.value);
+                setProductoSeleccionado(null);
+              }}
+            />
+          </div>
 
-            {productos.map((producto) => (
-              <option key={producto.id} value={producto.id}>
-                {producto.nombre} — Stock: {producto.stock_actual}
-              </option>
-            ))}
-          </select>
+          {busquedaProducto && !productoSeleccionado && (
+            <div className="inv-productos-resultados">
+              {productosProduccion.length === 0 ? (
+                <p className="inv-sin-productos">
+                  No se encontraron productos
+                </p>
+              ) : (
+                productosProduccion.map((producto) => (
+                  <button
+                    type="button"
+                    key={producto.id}
+                    className="inv-producto-resultado"
+                    onClick={() => {
+                      setProductoSeleccionado(producto);
+                      setBusquedaProducto(producto.nombre);
+                      setCantidad(1);
+                      setError(null);
+                    }}
+                  >
+                    <div>
+                      <strong>{producto.nombre}</strong>
+                      <span>
+                        Stock actual: {producto.stock_actual}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
 
           {productoSeleccionado && (
             <>
@@ -375,41 +426,6 @@ export default function Inventario() {
               </div>
             </>
           )}
-
-          <div className="inv-stepper">
-            <button
-              type="button"
-              className="inv-stepper-btn"
-              onClick={() => ajustarCantidad(-1)}
-            >
-              <Minus size={16} />
-            </button>
-
-            <input
-              type="number"
-              min="1"
-              value={cantidad}
-              onChange={(e) => {
-                const valor = e.target.value;
-
-                if (valor === "") {
-                  setCantidad("");
-                  return;
-                }
-
-                setCantidad(Math.max(1, Number(valor)));
-              }}
-              className="inv-stepper-input"
-            />
-
-            <button
-              type="button"
-              className="inv-stepper-btn"
-              onClick={() => ajustarCantidad(1)}
-            >
-              <Plus size={16} />
-            </button>
-          </div>
 
           <button
             className="inv-btn-primario inv-btn-guardar-sheet"
