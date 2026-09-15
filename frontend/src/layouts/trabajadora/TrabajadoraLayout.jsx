@@ -7,6 +7,7 @@ import "./TrabajadoraLayout.css";
 const TABS = [
   { to: "/venta", label: "Venta", Icon: ShoppingCart },
   { to: "/inventario", label: "Inventario", Icon: Package },
+  { to: "/insumos", label: "Insumos", Icon: Wheat },
   { to: "/horario", label: "Horario", Icon: Clock },
   { to: "/recetas", label: "Recetas", Icon: ChefHat },
 ];
