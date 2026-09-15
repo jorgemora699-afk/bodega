@@ -61,35 +61,78 @@ export default function RegistrarVenta() {
   }
 
   function agregarAlCarrito(producto) {
-    setMensaje(null);
-    setError(null);
-    setCarrito((prev) => {
-      const existente = prev.find((i) => i.producto_id === producto.id);
+    // No permitir agregar productos sin stock
+    if (Number(producto.stock_actual) <= 0) {
+      return;
+    }
+
+    setCarrito((actual) => {
+      const existente = actual.find((item) => item.id === producto.id);
+
       if (existente) {
-        return prev.map((i) =>
-          i.producto_id === producto.id ? { ...i, cantidad: i.cantidad + 1 } : i
+        // No superar el stock disponible
+        if (existente.cantidad >= Number(producto.stock_actual)) {
+          return actual;
+        }
+
+        return actual.map((item) =>
+          item.id === producto.id
+            ? { ...item, cantidad: item.cantidad + 1 }
+            : item
         );
       }
-      return [
-        ...prev,
-        {
-          producto_id: producto.id,
-          nombre: producto.nombre,
-          precio_unitario: producto.precio_unitario,
-          cantidad: 1,
-        },
-      ];
+
+      return [...actual, { ...producto, cantidad: 1 }];
     });
   }
 
-  function ajustarCantidadCarrito(productoId, delta) {
-    setCarrito((prev) =>
-      prev
-        .map((i) =>
-          i.producto_id === productoId ? { ...i, cantidad: i.cantidad + delta } : i
-        )
-        .filter((i) => i.cantidad > 0)
+  function ajustarCantidadCarrito(id, delta) {
+    setCarrito((actual) =>
+      actual
+        .map((item) => {
+          if (item.id !== id) return item;
+
+          const nuevaCantidad = item.cantidad + delta;
+
+          // No permitir menos de 1
+          if (nuevaCantidad < 1) {
+            return item;
+          }
+
+          // No permitir superar el stock disponible
+          if (nuevaCantidad > Number(item.stock_actual)) {
+            return item;
+          }
+
+          return {
+            ...item,
+            cantidad: nuevaCantidad,
+          };
+        })
     );
+  }
+
+  function obtenerEstadoStock(stock) {
+    const cantidad = Number(stock);
+
+    if (cantidad <= 0) {
+      return {
+        clase: "agotado",
+        texto: "Agotado",
+      };
+    }
+
+    if (cantidad <= 5) {
+      return {
+        clase: "bajo",
+        texto: `Poco stock · ${cantidad} disponibles`,
+      };
+    }
+
+    return {
+      clase: "disponible",
+      texto: `${cantidad} disponibles`,
+    };
   }
 
   function quitarDelCarrito(productoId) {
@@ -213,28 +256,57 @@ export default function RegistrarVenta() {
 
           <div className="venta-grid-productos">
             {productosFiltrados.map((producto) => {
-              const bajoStock = producto.stock_actual <= 5;
+              const stock = obtenerEstadoStock(producto.stock_actual);
+              const agotado = Number(producto.stock_actual) <= 0;
               const enCarrito = cantidadEnCarrito(producto.id);
+
               return (
-                <button
+                <div
                   key={producto.id}
-                  className={`venta-prod-btn ${enCarrito > 0 ? "en-carrito" : ""}`}
-                  onClick={() => agregarAlCarrito(producto)}
+                  className={`venta-prod-card ${
+                    enCarrito > 0 ? "en-carrito" : ""
+                  } ${agotado ? "agotado" : ""}`}
                 >
-                  {enCarrito > 0 && (
-                    <span className="venta-prod-badge-carrito">{enCarrito}</span>
-                  )}
-                  <span className="venta-prod-icono">
-                    <ShoppingBag size={20} />
-                  </span>
-                  <span className="venta-prod-nombre">{producto.nombre}</span>
-                  <span className="venta-prod-precio">
-                    ${Number(producto.precio_unitario).toLocaleString("es-CO")}
-                  </span>
-                  <span className={`venta-prod-stock ${bajoStock ? "bajo" : ""}`}>
-                    Stock: {producto.stock_actual}
-                  </span>
-                </button>
+                  <div className="venta-prod-imagen">
+                    <ShoppingBag size={28} />
+
+                    {agotado && (
+                      <div className="venta-prod-overlay">
+                        Agotado
+                      </div>
+                    )}
+
+                    {enCarrito > 0 && (
+                      <span className="venta-prod-badge-carrito">
+                        {enCarrito}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="venta-prod-info">
+                    <span className="venta-prod-nombre">
+                      {producto.nombre}
+                    </span>
+
+                    <span className="venta-prod-precio">
+                      ${Number(producto.precio_unitario).toLocaleString("es-CO")}
+                    </span>
+
+                    <span className={`venta-prod-stock ${stock.clase}`}>
+                      <span className="venta-stock-dot"></span>
+                      {stock.texto}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="venta-prod-agregar"
+                    disabled={agotado}
+                    onClick={() => agregarAlCarrito(producto)}
+                  >
+                    {agotado ? "Agotado" : enCarrito > 0 ? "Agregar otro" : "Agregar"}
+                  </button>
+                </div>
               );
             })}
 
