@@ -9,6 +9,10 @@
 ========================= */
 
 .inv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
@@ -209,29 +213,6 @@
   margin-top: auto;
 }
 
-.inv-btn-produccion {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  width: 100%;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 0.5rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.74rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-.inv-btn-produccion:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
 
 .inv-btn-secundario {
   display: flex;
@@ -453,6 +434,15 @@
     padding: 1.2rem 0.85rem 2.5rem;
   }
 
+  .inv-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .inv-btn-produccion-header {
+    width: 100%;
+  }
+
   .inv-header h1 {
     font-size: 1.35rem;
   }
@@ -472,4 +462,33 @@
   .inv-prod-nombre {
     font-size: 0.85rem;
   }
+}
+
+.inv-btn-produccion-header {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+
+  background: var(--color-primary);
+  color: white;
+
+  border: none;
+  border-radius: var(--radius-sm);
+
+  padding: 0.6rem 0.85rem;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.inv-btn-produccion-header:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }

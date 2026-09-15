@@ -50,8 +50,8 @@ export default function Inventario() {
     }
   }
 
-  function abrirProduccion(producto) {
-    setProductoSeleccionado(producto);
+  function abrirProduccion() {
+    setProductoSeleccionado(null);
     setCantidad(1);
     setMensaje(null);
     setError(null);
@@ -156,14 +156,8 @@ export default function Inventario() {
         </div>
 
         <button
-          className="inv-btn-nuevo"
-          onClick={() => {
-            setProductoSeleccionado(null);
-            setCantidad(1);
-            setMensaje(null);
-            setError(null);
-            setSheetAbierto(true);
-          }}
+          className="inv-btn-produccion-header"
+          onClick={abrirProduccion}
         >
           <PackagePlus size={15} />
           Registrar producción
@@ -246,15 +240,6 @@ export default function Inventario() {
                   </div>
 
                   <div className="inv-producto-acciones">
-                    <button
-                      className="inv-btn-produccion"
-                      onClick={() =>
-                        abrirProduccion(producto)
-                      }
-                    >
-                      <PackagePlus size={14} />
-                      Registrar producción
-                    </button>
 
                     <button
                       className={`inv-btn-secundario ${
@@ -323,14 +308,73 @@ export default function Inventario() {
             </div>
           )}
 
-          <p className="inv-sheet-subtitulo">
-            Stock actual:{" "}
-            {productoSeleccionado?.stock_actual}
-          </p>
+          <label>Producto</label>
 
-          <label>
-            ¿Cuántas unidades se hicieron?
-          </label>
+          <select
+            value={productoSeleccionado?.id || ""}
+            onChange={(e) => {
+              const producto = productos.find(
+                (p) => p.id === Number(e.target.value)
+              );
+
+              setProductoSeleccionado(producto || null);
+              setCantidad(1);
+              setError(null);
+            }}
+          >
+            <option value="">Selecciona un producto...</option>
+
+            {productos.map((producto) => (
+              <option key={producto.id} value={producto.id}>
+                {producto.nombre} — Stock: {producto.stock_actual}
+              </option>
+            ))}
+          </select>
+
+          {productoSeleccionado && (
+            <>
+              <p className="inv-sheet-subtitulo">
+                Stock actual: {productoSeleccionado.stock_actual}
+              </p>
+
+              <label>¿Cuántas unidades se hicieron?</label>
+
+              <div className="inv-stepper">
+                <button
+                  type="button"
+                  className="inv-stepper-btn"
+                  onClick={() => ajustarCantidad(-1)}
+                >
+                  <Minus size={16} />
+                </button>
+
+                <input
+                  type="number"
+                  min="1"
+                  value={cantidad}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+
+                    if (valor === "") {
+                      setCantidad("");
+                      return;
+                    }
+
+                    setCantidad(Math.max(1, Number(valor)));
+                  }}
+                  className="inv-stepper-input"
+                />
+
+                <button
+                  type="button"
+                  className="inv-stepper-btn"
+                  onClick={() => ajustarCantidad(1)}
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </>
+          )}
 
           <div className="inv-stepper">
             <button
@@ -370,7 +414,7 @@ export default function Inventario() {
           <button
             className="inv-btn-primario inv-btn-guardar-sheet"
             onClick={registrarProduccion}
-            disabled={enviando}
+            disabled={enviando || !productoSeleccionado}
           >
             {enviando
               ? "Registrando..."
