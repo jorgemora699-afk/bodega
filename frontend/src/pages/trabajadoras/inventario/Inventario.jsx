@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Package, PackagePlus, Phone, AlertTriangle, CheckCircle2, Minus, Plus } from "lucide-react";
+import { Package, PackagePlus, Phone, AlertTriangle, CheckCircle2, Minus, Plus, ChevronLeft } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { registrarEntrada, listarBajoStock } from "../../../api/inventario";
 import { listarProveedoresDeProducto } from "../../../api/proveedores";
@@ -39,6 +39,11 @@ export default function Inventario() {
     setProductoSeleccionado(producto);
     setCantidad(1);
     setMensaje(null);
+    setError(null);
+  }
+
+  function cambiarProducto() {
+    setProductoSeleccionado(null);
     setError(null);
   }
 
@@ -111,27 +116,39 @@ export default function Inventario() {
           Registrar producción
         </h2>
 
-        <div className="inv-grid-productos">
-          {productos.map((producto) => (
-            <button
-              key={producto.id}
-              className={`inv-prod-btn ${
-                productoSeleccionado?.id === producto.id ? "activo" : ""
-              }`}
-              onClick={() => seleccionarProducto(producto)}
-            >
+        {!productoSeleccionado ? (
+          <div className="inv-grid-productos">
+            {productos.map((producto) => (
+              <button
+                key={producto.id}
+                className="inv-prod-btn"
+                onClick={() => seleccionarProducto(producto)}
+              >
+                <span className="inv-prod-icono">
+                  <Package size={18} />
+                </span>
+                <span className="inv-prod-nombre">{producto.nombre}</span>
+                <span className="inv-prod-stock">Stock: {producto.stock_actual}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="inv-form-produccion">
+            <button className="inv-producto-elegido" onClick={cambiarProducto}>
+              <ChevronLeft size={16} />
               <span className="inv-prod-icono">
                 <Package size={18} />
               </span>
-              <span className="inv-prod-nombre">{producto.nombre}</span>
-              <span className="inv-prod-stock">Stock: {producto.stock_actual}</span>
+              <span className="inv-producto-elegido-info">
+                <span className="inv-producto-elegido-nombre">{productoSeleccionado.nombre}</span>
+                <span className="inv-producto-elegido-stock">
+                  Stock actual: {productoSeleccionado.stock_actual}
+                </span>
+              </span>
+              <span className="inv-producto-elegido-cambiar">Cambiar</span>
             </button>
-          ))}
-        </div>
 
-        {productoSeleccionado && (
-          <div className="inv-form-produccion">
-            <label>¿Cuántas unidades se hicieron de {productoSeleccionado.nombre}?</label>
+            <label>¿Cuántas unidades se hicieron?</label>
             <div className="inv-stepper">
               <button type="button" className="inv-stepper-btn" onClick={() => ajustarCantidad(-1)}>
                 <Minus size={16} />
