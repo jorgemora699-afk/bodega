@@ -50,6 +50,7 @@ export default function Insumos() {
 
   const [proveedoresPorInsumo, setProveedoresPorInsumo] = useState({});
   const [expandido, setExpandido] = useState(null);
+  const [categoriaActiva, setCategoriaActiva] = useState("cocina");
 
   useEffect(() => {
     cargarDatos();
@@ -179,6 +180,10 @@ export default function Insumos() {
     return a.nombre.localeCompare(b.nombre);
   });
 
+  const insumosFiltrados = insumosOrdenados.filter(
+    (insumo) => insumo.categoria === categoriaActiva
+  );
+
   return (
     <div className="tins-container">
 
@@ -226,6 +231,32 @@ export default function Insumos() {
           LISTADO DE INSUMOS
       ========================================= */}
 
+      <div className="tins-categorias">
+        <button
+            className={`tins-categoria-btn ${
+            categoriaActiva === "cocina" ? "activo" : ""
+            }`}
+            onClick={() => {
+            setCategoriaActiva("cocina");
+            setExpandido(null);
+            }}
+        >
+            🍳 Cocina
+        </button>
+
+        <button
+            className={`tins-categoria-btn ${
+            categoriaActiva === "empaques_aseo" ? "activo" : ""
+            }`}
+            onClick={() => {
+            setCategoriaActiva("empaques_aseo");
+            setExpandido(null);
+            }}
+        >
+            📦 Empaques y aseo
+        </button>
+      </div>
+
       <section className="tins-seccion">
 
         <h2>
@@ -233,7 +264,7 @@ export default function Insumos() {
           Mis insumos
         </h2>
 
-        {insumosOrdenados.length === 0 ? (
+        {insumosFiltrados.length === 0 ? (
           <div className="tins-sin-alertas">
             <CheckCircle2 size={18} />
             <span>No hay insumos registrados</span>
@@ -241,7 +272,7 @@ export default function Insumos() {
         ) : (
           <div className="tins-lista-insumos">
 
-            {insumosOrdenados.map((insumo) => {
+            {insumosFiltrados.map((insumo) => {
               const estaBajoStock = idsBajoStock.has(insumo.id);
               const proveedores =
                 proveedoresPorInsumo[insumo.id] || [];

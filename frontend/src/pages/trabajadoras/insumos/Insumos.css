@@ -472,4 +472,47 @@
   .tins-insumo-card {
     padding: 0.8rem;
   }
+
+  .tins-categorias {
+    gap: 0.45rem;
+  }
+
+  .tins-categoria-btn {
+    padding: 0.6rem 0.5rem;
+    font-size: 0.74rem;
+  }
+}
+
+
+.tins-categorias {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+}
+
+.tins-categoria-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tins-categoria-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.tins-categoria-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
 }
