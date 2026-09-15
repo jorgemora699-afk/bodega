@@ -18,7 +18,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .admin-inv-header h1 {
@@ -69,8 +69,8 @@
 }
 
 .admin-inv-mensaje-exito {
-  background: #DCEFE9;
-  color: #1B6A5C;
+  background: #dcefe9;
+  color: #1b6a5c;
 }
 
 .admin-inv-mensaje-error {
@@ -80,123 +80,376 @@
 
 
 /* =========================================
-   SECCIONES
+   RESUMEN
 ========================================= */
 
-.admin-inv-seccion {
-  margin-bottom: 2rem;
+.admin-inv-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1.2rem;
 }
 
-.admin-inv-seccion h2 {
-  font-size: 0.9rem;
+.admin-inv-resumen-card {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.admin-inv-resumen-card.alerta {
+  border-color: #e4c77a;
+}
+
+.admin-inv-resumen-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-background);
+  color: var(--color-primary);
+}
+
+.admin-inv-resumen-card.alerta .admin-inv-resumen-icono {
+  color: #a97900;
+  background: #fff7df;
+}
+
+.admin-inv-resumen-card div:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-inv-resumen-card strong {
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.admin-inv-resumen-card span {
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
   color: var(--color-text-secondary);
-  margin: 0 0 0.75rem;
+}
+
+
+/* =========================================
+   BUSCADOR
+========================================= */
+
+.admin-inv-buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.admin-inv-buscador:focus-within {
+  border-color: var(--color-primary);
+}
+
+.admin-inv-buscador input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.85rem;
+}
+
+.admin-inv-buscador input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.admin-inv-buscador > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+
+/* =========================================
+   FILTROS
+========================================= */
+
+.admin-inv-filtros {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  margin-bottom: 1.35rem;
+  scrollbar-width: none;
+}
+
+.admin-inv-filtros::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-inv-filtros button {
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-inv-filtros button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.admin-inv-filtros button.activo {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+
+/* =========================================
+   PRODUCTOS
+========================================= */
+
+.admin-inv-productos-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.admin-inv-categoria-grupo {
+  min-width: 0;
+}
+
+.admin-inv-categoria-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.admin-inv-categoria-header h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.admin-inv-categoria-header span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.35rem;
+  border-radius: 20px;
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
-
-/* =========================================
-   ESTADOS VACÍOS
-========================================= */
-
-.admin-inv-sin-alertas {
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-  text-align: center;
-  padding: 1rem 0;
-}
-
-
-/* =========================================
-   PRODUCTOS POR ACABARSE
-========================================= */
-
-.admin-inv-lista-stock {
+.admin-inv-productos-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.7rem;
 }
 
-.admin-inv-stock-card {
-  padding: 0.85rem;
-  border-radius: var(--radius-lg);
-  border: 1.5px solid var(--color-border);
-  background: var(--color-surface);
+
+/* =========================================
+   TARJETA PRODUCTO
+========================================= */
+
+.admin-inv-producto-card {
+  position: relative;
   min-width: 0;
+  padding: 0.85rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
-.admin-inv-stock-card:hover {
+.admin-inv-producto-card:hover {
   border-color: var(--color-primary);
   transform: translateY(-1px);
 }
 
+.admin-inv-producto-card-bajo {
+  border-color: #e4c77a;
+}
+
+.admin-inv-producto-card-agotado {
+  border-color: var(--color-danger);
+}
+
 
 /* =========================================
-   INFORMACIÓN DEL PRODUCTO
+   CONTENIDO PRODUCTO
 ========================================= */
 
-.admin-inv-stock-info {
+.admin-inv-producto-contenido {
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: 0.5rem;
-  margin-bottom: 0.65rem;
-  font-size: 0.88rem;
-  font-weight: 600;
+  gap: 0.65rem;
   min-width: 0;
 }
 
-.admin-inv-stock-info > span:first-child {
-  width: 100%;
+.admin-inv-producto-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-primary);
+}
+
+.admin-inv-producto-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-inv-producto-nombre {
+  font-size: 0.84rem;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.admin-inv-producto-stock {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+}
 
-/* =========================================
-   BADGE STOCK BAJO
-========================================= */
-
-.admin-inv-badge-bajo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  width: fit-content;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.2rem 0.55rem;
-  border-radius: 20px;
-  background: var(--color-brand);
-  color: var(--color-brand-dark);
+.admin-inv-producto-stock strong {
+  color: var(--color-text);
 }
 
 
 /* =========================================
-   BOTÓN PROVEEDOR
+   ESTADO STOCK
 ========================================= */
 
-.admin-inv-btn-proveedor {
+.admin-inv-estado-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.admin-inv-estado-stock.normal {
+  color: #1b6a5c;
+}
+
+.admin-inv-estado-stock.bajo {
+  color: #a97900;
+}
+
+.admin-inv-estado-stock.agotado {
+  color: var(--color-danger);
+}
+
+.admin-inv-punto-estado {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1b6a5c;
+}
+
+
+/* =========================================
+   MENÚ ⋮
+========================================= */
+
+.admin-inv-producto-menu-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.admin-inv-menu-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  width: 100%;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
   background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-primary);
-  padding: 0.45rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.74rem;
-  font-weight: 600;
+  color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.admin-inv-btn-proveedor:hover {
-  border-color: var(--color-primary);
+.admin-inv-menu-btn:hover {
   background: var(--color-background);
+  color: var(--color-primary);
+}
+
+.admin-inv-menu {
+  position: absolute;
+  z-index: 20;
+  top: 32px;
+  right: 0;
+  width: 190px;
+  padding: 0.35rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.admin-inv-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-inv-menu button:hover {
+  background: var(--color-background);
+  color: var(--color-primary);
 }
 
 
@@ -204,10 +457,37 @@
    PROVEEDORES
 ========================================= */
 
-.admin-inv-proveedores-lista {
-  margin-top: 0.65rem;
-  padding-top: 0.65rem;
+.admin-inv-proveedores {
+  margin-top: 0.75rem;
+  padding-top: 0.7rem;
   border-top: 1px solid var(--color-border);
+}
+
+.admin-inv-proveedores-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.admin-inv-proveedores-header span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.admin-inv-proveedores-header button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.admin-inv-proveedores-lista {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -215,57 +495,124 @@
 
 .admin-inv-proveedor-fila {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  font-size: 0.78rem;
+  font-size: 0.73rem;
 }
 
-.admin-inv-proveedor-fila span {
+.admin-inv-proveedor-fila > span:first-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
+  font-weight: 600;
 }
 
 .admin-inv-proveedor-fila a {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
   color: var(--color-primary);
   font-weight: 600;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .admin-inv-sin-proveedor {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
   margin: 0;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
 }
 
 
 /* =========================================
-   MOVIMIENTOS RECIENTES
+   BLOQUE HISTORIAL
 ========================================= */
 
-.admin-inv-lista-movimientos {
+.admin-inv-movimientos-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.8rem;
+  padding: 0.9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.admin-inv-movimientos-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.admin-inv-movimientos-titulo > svg {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.admin-inv-movimientos-titulo h2 {
+  margin: 0 0 0.15rem;
+  font-size: 0.82rem;
+}
+
+.admin-inv-movimientos-titulo p {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--color-text-secondary);
+}
+
+.admin-inv-btn-historial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-inv-btn-historial:hover {
+  background: var(--color-background);
+  border-color: var(--color-primary);
+}
+
+
+/* =========================================
+   HISTORIAL DENTRO DEL SHEET
+========================================= */
+
+.admin-inv-historial {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
 }
 
+
+/* =========================================
+   MOVIMIENTOS
+========================================= */
+
 .admin-inv-mov-fila {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.6rem 0.7rem;
+  padding: 0.65rem 0.7rem;
   border-radius: var(--radius-lg);
   border: 1.5px solid var(--color-border);
   background: var(--color-surface);
   min-width: 0;
 }
-
-
-/* =========================================
-   ICONO DEL MOVIMIENTO
-========================================= */
 
 .admin-inv-mov-icono {
   display: flex;
@@ -273,24 +620,19 @@
   justify-content: center;
   width: 27px;
   height: 27px;
-  border-radius: 50%;
   flex-shrink: 0;
+  border-radius: 50%;
 }
 
 .admin-inv-mov-icono.entrada {
-  background: #DCEFE9;
-  color: #1B6A5C;
+  background: #dcefe9;
+  color: #1b6a5c;
 }
 
 .admin-inv-mov-icono.salida {
   background: var(--color-danger-tint);
   color: var(--color-danger);
 }
-
-
-/* =========================================
-   INFORMACIÓN MOVIMIENTO
-========================================= */
 
 .admin-inv-mov-info {
   display: flex;
@@ -301,8 +643,8 @@
 }
 
 .admin-inv-mov-producto {
-  font-weight: 600;
   font-size: 0.82rem;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -318,18 +660,48 @@
 }
 
 .admin-inv-mov-cantidad {
-  font-weight: 700;
-  font-size: 0.82rem;
-  white-space: nowrap;
   flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .admin-inv-mov-cantidad.entrada {
-  color: #1B6A5C;
+  color: #1b6a5c;
 }
 
 .admin-inv-mov-cantidad.salida {
   color: var(--color-danger);
+}
+
+
+/* =========================================
+   ESTADO VACÍO
+========================================= */
+
+.admin-inv-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.admin-inv-vacio svg {
+  margin-bottom: 0.35rem;
+  color: var(--color-primary);
+}
+
+.admin-inv-vacio strong {
+  color: var(--color-text);
+  font-size: 0.85rem;
+}
+
+.admin-inv-vacio span {
+  font-size: 0.74rem;
 }
 
 
@@ -344,10 +716,10 @@
 }
 
 .admin-inv-form label {
+  margin-top: 0.5rem;
   font-size: 0.8rem;
   color: var(--color-text-secondary);
   font-weight: 600;
-  margin-top: 0.5rem;
 }
 
 .admin-inv-form input,
@@ -367,6 +739,19 @@
 .admin-inv-form input:focus,
 .admin-inv-form select:focus {
   border-color: var(--color-primary);
+}
+
+.admin-inv-stock-seleccionado {
+  padding: 0.5rem 0.65rem;
+  margin-top: 0.15rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+}
+
+.admin-inv-stock-seleccionado strong {
+  color: var(--color-text);
 }
 
 
@@ -389,10 +774,10 @@
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-border);
   background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  color: var(--color-text-secondary);
   transition: all 0.2s ease;
 }
 
@@ -401,9 +786,9 @@
 }
 
 .admin-inv-tipo-btn.entrada.activo {
-  background: #1B6A5C;
+  background: #1b6a5c;
   color: white;
-  border-color: #1B6A5C;
+  border-color: #1b6a5c;
 }
 
 .admin-inv-tipo-btn.salida.activo {
@@ -469,15 +854,67 @@
     font-size: 0.76rem;
   }
 
-  .admin-inv-lista-stock {
+  .admin-inv-resumen {
+    gap: 0.45rem;
+  }
+
+  .admin-inv-resumen-card {
+    padding: 0.6rem;
+    gap: 0.4rem;
+  }
+
+  .admin-inv-resumen-icono {
+    width: 29px;
+    height: 29px;
+  }
+
+  .admin-inv-resumen-card strong {
+    font-size: 0.9rem;
+  }
+
+  .admin-inv-resumen-card span {
+    font-size: 0.62rem;
+  }
+
+  .admin-inv-productos-grid {
     grid-template-columns: 1fr;
   }
 
-  .admin-inv-stock-card {
+  .admin-inv-producto-card {
     padding: 0.8rem;
   }
 
-  .admin-inv-mov-fila {
-    padding: 0.55rem 0.65rem;
+  .admin-inv-movimientos-resumen {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-inv-btn-historial {
+    width: 100%;
+  }
+}
+
+
+/* =========================================
+   MÓVILES PEQUEÑOS
+========================================= */
+
+@media (max-width: 380px) {
+  .admin-inv-header {
+    flex-direction: column;
+  }
+
+  .admin-inv-btn-nuevo {
+    width: 100%;
+  }
+
+  .admin-inv-resumen-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-inv-resumen-icono {
+    width: 28px;
+    height: 28px;
   }
 }
