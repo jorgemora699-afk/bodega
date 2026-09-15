@@ -68,11 +68,16 @@ export default function Inventario() {
   }
 
   function ajustarCantidad(delta) {
-    setCantidad((c) => Math.max(1, Number(c) + delta));
+    setCantidad((c) => Math.max(1, Number(c || 1) + delta));
   }
 
   async function registrarProduccion() {
     if (!productoSeleccionado) return;
+
+    if (!cantidad || Number(cantidad) < 1) {
+      setError("Ingresa una cantidad válida");
+      return;
+    }
 
     setEnviando(true);
     setError(null);
@@ -149,6 +154,20 @@ export default function Inventario() {
               ` · ${bajoStock.length} por acabarse`}
           </p>
         </div>
+
+        <button
+          className="inv-btn-nuevo"
+          onClick={() => {
+            setProductoSeleccionado(null);
+            setCantidad(1);
+            setMensaje(null);
+            setError(null);
+            setSheetAbierto(true);
+          }}
+        >
+          <PackagePlus size={15} />
+          Registrar producción
+        </button>
       </header>
 
       {mensaje && (
@@ -322,9 +341,22 @@ export default function Inventario() {
               <Minus size={16} />
             </button>
 
-            <span className="inv-stepper-valor">
-              {cantidad}
-            </span>
+            <input
+              type="number"
+              min="1"
+              value={cantidad}
+              onChange={(e) => {
+                const valor = e.target.value;
+
+                if (valor === "") {
+                  setCantidad("");
+                  return;
+                }
+
+                setCantidad(Math.max(1, Number(valor)));
+              }}
+              className="inv-stepper-input"
+            />
 
             <button
               type="button"
