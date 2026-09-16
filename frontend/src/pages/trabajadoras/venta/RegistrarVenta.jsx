@@ -11,6 +11,7 @@ import {
   Check,
   Search,
   ChevronLeft,
+  Printer,
 } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
@@ -37,6 +38,7 @@ export default function RegistrarVenta() {
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
+  const [reciboOrden, setReciboOrden] = useState(null);
 
   useEffect(() => {
     cargarDatos();
@@ -146,7 +148,7 @@ export default function RegistrarVenta() {
     setError(null);
 
     try {
-      await crearOrden({
+      const orden = await crearOrden({
         trabajadora_id: Number(trabajadoraId),
         metodo_pago: metodoPago,
         items: carrito.map((i) => ({
@@ -155,11 +157,11 @@ export default function RegistrarVenta() {
         })),
       });
 
-      setMensaje("Venta registrada correctamente");
+      setReciboOrden(orden);
       setCarrito([]);
       setMetodoPago("");
       setTrabajadoraId("");
-      setVista("catalogo");
+      setVista("recibo");
       cargarDatos();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo registrar la venta");
@@ -167,6 +169,22 @@ export default function RegistrarVenta() {
     } finally {
       setEnviando(false);
     }
+  }
+
+  function nuevaVenta() {
+    setReciboOrden(null);
+    setMensaje(null);
+    setVista("catalogo");
+  }
+
+  function formatearFechaRecibo(isoString) {
+    return new Date(isoString).toLocaleString("es-CO", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   const categorias = [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort();
@@ -394,53 +412,51 @@ export default function RegistrarVenta() {
         </div>
       )}
 
-      {vista === "confirmando" && (
-        <div className="venta-confirmacion">
+      {vista === "recibo" && reciboOrden && (
+        <div className="venta-recibo-pantalla">
           <div className="venta-confirmacion-icono">
-            <ShoppingBag size={26} />
+            <Check size={26} />
           </div>
-          <h2>Confirmar venta</h2>
+          <h2>Venta registrada</h2>
+          <p className="venta-recibo-numero">Pedido #{reciboOrden.id}</p>
 
-          <div className="venta-confirmacion-items">
-            {carrito.map((item) => (
-              <div key={item.producto_id} className="venta-resumen-fila">
+          <div id="recibo-print" className="recibo-imprimible">
+            <div className="recibo-negocio">Bodega línea amarilla</div>
+            <div className="recibo-fecha">{formatearFechaRecibo(reciboOrden.fecha)}</div>
+            <div className="recibo-linea" />
+
+            {reciboOrden.ventas.map((v) => (
+              <div key={v.id} className="recibo-item">
                 <span>
-                  {item.cantidad} × {item.nombre}
+                  {v.cantidad} × {v.producto_nombre}
                 </span>
-                <span>
-                  ${(Number(item.precio_unitario) * item.cantidad).toLocaleString("es-CO")}
-                </span>
+                <span>${Number(v.total).toLocaleString("es-CO")}</span>
               </div>
             ))}
+
+            <div className="recibo-linea" />
+
+            <div className="recibo-total">
+              <span>Total</span>
+              <span>${Number(reciboOrden.total).toLocaleString("es-CO")}</span>
+            </div>
+
+            <div className="recibo-detalle recibo-capitalize">
+              Método de pago: {reciboOrden.metodo_pago}
+            </div>
+            <div className="recibo-detalle">Atendido por: {reciboOrden.trabajadora_nombre}</div>
+            <div className="recibo-pedido">Pedido #{reciboOrden.id}</div>
+
+            <div className="recibo-footer">¡Gracias por su compra!</div>
           </div>
 
-          <div className="venta-resumen-fila">
-            <span>Método de pago</span>
-            <span className="venta-capitalize">{metodoPago}</span>
-          </div>
-          <div className="venta-resumen-fila">
-            <span>Vendido por</span>
-            <span>{trabajadoras.find((t) => t.id === Number(trabajadoraId))?.nombre}</span>
-          </div>
-          <div className="venta-resumen-fila venta-resumen-total">
-            <span>Total</span>
-            <span>${totalCarrito.toLocaleString("es-CO")}</span>
-          </div>
-
-          <div className="venta-confirmacion-botones">
-            <button
-              className="venta-btn-secundario"
-              onClick={() => setVista("carrito")}
-              disabled={enviando}
-            >
-              Volver
+          <div className="venta-recibo-botones">
+            <button className="venta-btn-secundario" onClick={() => window.print()}>
+              <Printer size={16} />
+              Imprimir recibo
             </button>
-            <button
-              className="venta-btn-primario"
-              onClick={confirmarOrden}
-              disabled={enviando}
-            >
-              {enviando ? "Registrando..." : "Confirmar venta"}
+            <button className="venta-btn-primario" onClick={nuevaVenta}>
+              Nueva venta
             </button>
           </div>
         </div>

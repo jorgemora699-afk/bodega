@@ -874,3 +874,112 @@
     font-size: 0.65rem;
   }
 }
+
+.venta-recibo-pantalla {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.venta-recibo-pantalla h2 {
+  font-size: 1.15rem;
+  margin: 0.75rem 0 0.2rem;
+}
+
+.venta-recibo-numero {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 1.25rem;
+}
+
+.venta-recibo-botones {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.venta-recibo-botones button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* --- Recibo imprimible: oculto en pantalla, solo visible al imprimir --- */
+
+.recibo-imprimible {
+  display: none;
+}
+
+.recibo-negocio {
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-align: center;
+  margin-bottom: 0.2rem;
+}
+
+.recibo-fecha {
+  text-align: center;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.recibo-linea {
+  border-top: 1px dashed #000;
+  margin: 0.5rem 0;
+}
+
+.recibo-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+
+.recibo-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0.4rem 0;
+}
+
+.recibo-detalle {
+  font-size: 0.8rem;
+  margin-bottom: 0.15rem;
+}
+
+.recibo-capitalize {
+  text-transform: capitalize;
+}
+
+.recibo-pedido {
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+}
+
+.recibo-footer {
+  text-align: center;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .recibo-imprimible,
+  .recibo-imprimible * {
+    visibility: visible;
+  }
+  .recibo-imprimible {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
+    font-family: "Courier New", monospace;
+  }
+}
