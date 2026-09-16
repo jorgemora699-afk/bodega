@@ -6,6 +6,8 @@ orden_bp = Blueprint("ordenes", __name__, url_prefix="/api/ordenes")
 
 @orden_bp.before_request
 def _proteger_ordenes():
+    if request.method == "PUT":
+        return exigir_rol("jefe")
     return exigir_rol("jefe", "trabajadora")
 
 
@@ -30,6 +32,16 @@ def crear_orden():
     if error:
         return jsonify({"error": error}), 400
     return jsonify(orden.to_dict()), 201
+
+
+@orden_bp.route("/<int:orden_id>", methods=["PUT"])
+def actualizar_orden(orden_id):
+    data = request.get_json()
+    orden, error = OrdenService.actualizar(orden_id, data)
+    if error:
+        status = 404 if error == "Orden no encontrada" else 400
+        return jsonify({"error": error}), status
+    return jsonify(orden.to_dict()), 200
 
 
 @orden_bp.route("/<int:orden_id>", methods=["DELETE"])

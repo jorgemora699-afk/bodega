@@ -10,6 +10,7 @@ from app.domain.salario import (
 from calendar import monthrange
 from app.domain.periodos import rango_por_periodo
 from app.domain.periodos import rango_por_periodo as _rango_por_periodo
+from zoneinfo import ZoneInfo
 
 
 class AdminService:
@@ -120,12 +121,14 @@ class AdminService:
     def ventas_por_dia(periodo="semana"):
         inicio, fin = rango_por_periodo(periodo)
 
+        fecha_colombia = func.date(func.timezone("America/Bogota", func.timezone("UTC", Venta.fecha)))
+
         resultados = db.session.query(
-            func.date(Venta.fecha).label("fecha"),
+            fecha_colombia.label("fecha"),
             func.sum(Venta.total).label("total"),
         ).filter(
             Venta.fecha.between(inicio, fin)
-        ).group_by(func.date(Venta.fecha)).order_by(func.date(Venta.fecha)).all()
+        ).group_by(fecha_colombia).order_by(fecha_colombia).all()
 
         return [
             {"fecha": r.fecha.isoformat(), "total": float(r.total)}
@@ -134,7 +137,10 @@ class AdminService:
 
     @staticmethod
     def tendencia_mensual(meses=6):
-        hoy = date.today()
+        zona_colombia = ZoneInfo("America/Bogota")
+        zona_utc = ZoneInfo("UTC")
+
+        hoy = datetime.now(zona_colombia).date()
         resultado = []
 
         for i in range(meses - 1, -1, -1):
@@ -148,8 +154,11 @@ class AdminService:
             ultimo_dia = monthrange(anio, mes)[1]
             fin = date(anio, mes, ultimo_dia)
 
-            inicio_dt = datetime.combine(inicio, datetime.min.time())
-            fin_dt = datetime.combine(fin, datetime.max.time())
+            inicio_local = datetime.combine(inicio, datetime.min.time(), tzinfo=zona_colombia)
+            fin_local = datetime.combine(fin, datetime.max.time(), tzinfo=zona_colombia)
+
+            inicio_dt = inicio_local.astimezone(zona_utc).replace(tzinfo=None)
+            fin_dt = fin_local.astimezone(zona_utc).replace(tzinfo=None)
 
             total_ventas = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
                 Venta.fecha.between(inicio_dt, fin_dt)
