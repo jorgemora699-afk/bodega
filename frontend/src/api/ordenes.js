@@ -10,6 +10,11 @@ export async function listarOrdenes() {
   return response.data;
 }
 
+export async function actualizarOrden(ordenId, data) {
+  const response = await apiClient.put(`/ordenes/${ordenId}`, data);
+  return response.data;
+}
+
 export async function anularOrden(ordenId) {
   const response = await apiClient.delete(`/ordenes/${ordenId}`);
   return response.data;

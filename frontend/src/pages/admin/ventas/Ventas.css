@@ -356,3 +356,116 @@
   font-size: 0.8rem;
   color: var(--color-text-secondary);
 }
+
+.vad-orden-edit-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.75rem;
+}
+
+.vad-orden-edit-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.vad-orden-edit-item-nombre {
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vad-orden-edit-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vad-orden-edit-stepper button {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.vad-orden-edit-stepper span {
+  min-width: 1.5ch;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.vad-orden-edit-subtotal {
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vad-orden-edit-quitar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.vad-orden-edit-vacio {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.vad-orden-edit-agregar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.vad-orden-edit-agregar select {
+  flex: 1;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+
+.vad-orden-edit-agregar button {
+  width: 36px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.vad-orden-edit-agregar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vad-orden-edit-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: 0.5rem;
+}

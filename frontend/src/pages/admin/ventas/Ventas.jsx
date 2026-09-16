@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Receipt, Pencil, Trash2, ShoppingBag } from "lucide-react";
+import { Pencil, Trash2, ShoppingBag, Plus, Minus, X } from "lucide-react";
 import { listarVentas, actualizarVenta, eliminarVenta } from "../../../api/ventas";
-import { listarOrdenes, anularOrden } from "../../../api/ordenes";
+import { listarOrdenes, actualizarOrden, anularOrden } from "../../../api/ordenes";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import "./Ventas.css";
@@ -21,6 +21,10 @@ function formatearMoneda(valor) {
   return `$${Number(valor).toLocaleString("es-CO")}`;
 }
 
+function formOrdenVacio() {
+  return { metodo_pago: "", trabajadora_id: "", items: [] };
+}
+
 export default function Ventas() {
   const [ordenes, setOrdenes] = useState([]);
   const [ventasSueltas, setVentasSueltas] = useState([]);
@@ -29,6 +33,11 @@ export default function Ventas() {
 
   const [editandoVentaId, setEditandoVentaId] = useState(null);
   const [formEdicion, setFormEdicion] = useState({});
+
+  const [editandoOrdenId, setEditandoOrdenId] = useState(null);
+  const [formOrden, setFormOrden] = useState(formOrdenVacio());
+  const [productoParaAgregar, setProductoParaAgregar] = useState("");
+
   const [confirmandoAnular, setConfirmandoAnular] = useState(null); // { tipo: 'orden'|'venta', id }
 
   const [guardando, setGuardando] = useState(false);
@@ -61,6 +70,7 @@ export default function Ventas() {
 
   function iniciarEdicionVenta(venta) {
     setEditandoVentaId(venta.id);
+    setEditandoOrdenId(null);
     setConfirmandoAnular(null);
     setMensaje(null);
     setError(null);
@@ -97,6 +107,119 @@ export default function Ventas() {
     }
   }
 
+  // --- edición de un pedido (orden con varias líneas) ---
+
+  function iniciarEdicionOrden(orden) {
+    setEditandoOrdenId(orden.id);
+    setEditandoVentaId(null);
+    setConfirmandoAnular(null);
+    setMensaje(null);
+    setError(null);
+    setProductoParaAgregar("");
+    setFormOrden({
+      metodo_pago: orden.metodo_pago,
+      trabajadora_id: orden.trabajadora_id,
+      items: orden.ventas.map((v) => ({
+        producto_id: v.producto_id,
+        nombre: v.producto_nombre,
+        precio_unitario: v.precio_unitario,
+        cantidad: v.cantidad,
+      })),
+    });
+  }
+
+  function cancelarEdicionOrden() {
+    setEditandoOrdenId(null);
+    setFormOrden(formOrdenVacio());
+    setProductoParaAgregar("");
+  }
+
+  function ajustarCantidadItem(productoId, delta) {
+    setFormOrden((f) => ({
+      ...f,
+      items: f.items
+        .map((item) =>
+          item.producto_id === productoId
+            ? { ...item, cantidad: item.cantidad + delta }
+            : item
+        )
+        .filter((item) => item.cantidad > 0),
+    }));
+  }
+
+  function quitarItem(productoId) {
+    setFormOrden((f) => ({
+      ...f,
+      items: f.items.filter((item) => item.producto_id !== productoId),
+    }));
+  }
+
+  function agregarItem() {
+    if (!productoParaAgregar) return;
+
+    const producto = productos.find((p) => p.id === Number(productoParaAgregar));
+    if (!producto) return;
+
+    setFormOrden((f) => {
+      const existente = f.items.find((item) => item.producto_id === producto.id);
+      if (existente) {
+        return {
+          ...f,
+          items: f.items.map((item) =>
+            item.producto_id === producto.id
+              ? { ...item, cantidad: item.cantidad + 1 }
+              : item
+          ),
+        };
+      }
+      return {
+        ...f,
+        items: [
+          ...f.items,
+          {
+            producto_id: producto.id,
+            nombre: producto.nombre,
+            precio_unitario: producto.precio_unitario,
+            cantidad: 1,
+          },
+        ],
+      };
+    });
+    setProductoParaAgregar("");
+  }
+
+  async function guardarEdicionOrden(ordenId) {
+    if (!formOrden.metodo_pago || !formOrden.trabajadora_id) {
+      setError("Selecciona método de pago y quién realiza la venta");
+      return;
+    }
+    if (formOrden.items.length === 0) {
+      setError("El pedido debe tener al menos un producto");
+      return;
+    }
+
+    setGuardando(true);
+    setError(null);
+
+    try {
+      await actualizarOrden(ordenId, {
+        metodo_pago: formOrden.metodo_pago,
+        trabajadora_id: Number(formOrden.trabajadora_id),
+        items: formOrden.items.map((i) => ({
+          producto_id: i.producto_id,
+          cantidad: i.cantidad,
+        })),
+      });
+      setMensaje("Pedido actualizado correctamente");
+      cancelarEdicionOrden();
+      cargarDatos();
+    } catch (err) {
+      setError(err.response?.data?.error || "No se pudo actualizar el pedido");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   // --- anular (orden completa o venta suelta) ---
 
   async function confirmarAnular() {
@@ -127,6 +250,11 @@ export default function Ventas() {
     ...ventasSueltas.map((v) => ({ tipo: "venta", fecha: v.fecha, data: v })),
   ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
+  const totalFormOrden = formOrden.items.reduce(
+    (sum, i) => sum + Number(i.precio_unitario) * i.cantidad,
+    0
+  );
+
   return (
     <div className="vad-container">
       <header className="vad-header">
@@ -145,69 +273,186 @@ export default function Ventas() {
             const orden = entrada.data;
             const anulandoEsta =
               confirmandoAnular?.tipo === "orden" && confirmandoAnular.id === orden.id;
+            const editandoEsta = editandoOrdenId === orden.id;
 
             return (
               <div key={`orden-${orden.id}`} className="vad-tarjeta">
-                <div className="vad-fila-principal">
-                  <div className="vad-orden-titulo">
-                    <ShoppingBag size={15} />
-                    <span>
-                      Pedido #{orden.id}
-                      {orden.editado && <span className="vad-badge-editado">Editada</span>}
-                    </span>
-                  </div>
-                  <span className="vad-total">{formatearMoneda(orden.total)}</span>
-                </div>
-
-                <div className="vad-orden-items">
-                  {orden.ventas.map((v) => (
-                    <div key={v.id} className="vad-orden-item">
-                      <span>
-                        {v.cantidad} × {v.producto_nombre}
-                      </span>
-                      <span>{formatearMoneda(v.total)}</span>
+                {editandoEsta ? (
+                  <div className="vad-form-edicion">
+                    <label>Productos del pedido</label>
+                    <div className="vad-orden-edit-items">
+                      {formOrden.items.map((item) => (
+                        <div key={item.producto_id} className="vad-orden-edit-item">
+                          <span className="vad-orden-edit-item-nombre">{item.nombre}</span>
+                          <div className="vad-orden-edit-stepper">
+                            <button
+                              type="button"
+                              onClick={() => ajustarCantidadItem(item.producto_id, -1)}
+                            >
+                              <Minus size={13} />
+                            </button>
+                            <span>{item.cantidad}</span>
+                            <button
+                              type="button"
+                              onClick={() => ajustarCantidadItem(item.producto_id, 1)}
+                            >
+                              <Plus size={13} />
+                            </button>
+                          </div>
+                          <span className="vad-orden-edit-subtotal">
+                            {formatearMoneda(Number(item.precio_unitario) * item.cantidad)}
+                          </span>
+                          <button
+                            type="button"
+                            className="vad-orden-edit-quitar"
+                            onClick={() => quitarItem(item.producto_id)}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      {formOrden.items.length === 0 && (
+                        <p className="vad-orden-edit-vacio">Sin productos — agrega al menos uno</p>
+                      )}
                     </div>
-                  ))}
-                </div>
 
-                <div className="vad-detalle">
-                  <span className="vad-capitalize">{orden.metodo_pago}</span>
-                  <span>·</span>
-                  <span>{orden.trabajadora_nombre}</span>
-                </div>
+                    <div className="vad-orden-edit-agregar">
+                      <select
+                        value={productoParaAgregar}
+                        onChange={(e) => setProductoParaAgregar(e.target.value)}
+                      >
+                        <option value="">Agregar producto...</option>
+                        {productos.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.nombre}
+                          </option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={agregarItem} disabled={!productoParaAgregar}>
+                        <Plus size={14} />
+                      </button>
+                    </div>
 
-                <div className="vad-detalle vad-fecha">{formatearFecha(orden.fecha)}</div>
+                    <label>Método de pago</label>
+                    <div className="vad-metodos">
+                      {METODOS_PAGO.map((metodo) => (
+                        <button
+                          key={metodo}
+                          className={`vad-metodo-btn ${
+                            formOrden.metodo_pago === metodo ? "activo" : ""
+                          }`}
+                          onClick={() => setFormOrden((f) => ({ ...f, metodo_pago: metodo }))}
+                        >
+                          {metodo}
+                        </button>
+                      ))}
+                    </div>
 
-                {anulandoEsta ? (
-                  <div className="vad-confirmar-anular">
-                    <span>¿Anular este pedido completo?</span>
+                    <label>Vendido por</label>
+                    <select
+                      value={formOrden.trabajadora_id}
+                      onChange={(e) =>
+                        setFormOrden((f) => ({ ...f, trabajadora_id: e.target.value }))
+                      }
+                    >
+                      <option value="">Selecciona...</option>
+                      {trabajadoras.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.nombre}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="vad-orden-edit-total">
+                      <span>Total</span>
+                      <span>{formatearMoneda(totalFormOrden)}</span>
+                    </div>
+
                     <div className="vad-botones-edicion">
                       <button
                         className="vad-btn-secundario"
-                        onClick={() => setConfirmandoAnular(null)}
+                        onClick={cancelarEdicionOrden}
                         disabled={guardando}
                       >
-                        No
+                        Cancelar
                       </button>
                       <button
-                        className="vad-btn-peligro"
-                        onClick={confirmarAnular}
+                        className="vad-btn-primario"
+                        onClick={() => guardarEdicionOrden(orden.id)}
                         disabled={guardando}
                       >
-                        {guardando ? "Anulando..." : "Sí, anular"}
+                        {guardando ? "Guardando..." : "Guardar"}
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="vad-acciones">
-                    <button
-                      className="vad-btn-peligro-outline"
-                      onClick={() => setConfirmandoAnular({ tipo: "orden", id: orden.id })}
-                    >
-                      <Trash2 size={13} />
-                      Anular pedido
-                    </button>
-                  </div>
+                  <>
+                    <div className="vad-fila-principal">
+                      <div className="vad-orden-titulo">
+                        <ShoppingBag size={15} />
+                        <span>
+                          Pedido #{orden.id}
+                          {orden.editado && <span className="vad-badge-editado">Editada</span>}
+                        </span>
+                      </div>
+                      <span className="vad-total">{formatearMoneda(orden.total)}</span>
+                    </div>
+
+                    <div className="vad-orden-items">
+                      {orden.ventas.map((v) => (
+                        <div key={v.id} className="vad-orden-item">
+                          <span>
+                            {v.cantidad} × {v.producto_nombre}
+                          </span>
+                          <span>{formatearMoneda(v.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="vad-detalle">
+                      <span className="vad-capitalize">{orden.metodo_pago}</span>
+                      <span>·</span>
+                      <span>{orden.trabajadora_nombre}</span>
+                    </div>
+
+                    <div className="vad-detalle vad-fecha">{formatearFecha(orden.fecha)}</div>
+
+                    {anulandoEsta ? (
+                      <div className="vad-confirmar-anular">
+                        <span>¿Anular este pedido completo?</span>
+                        <div className="vad-botones-edicion">
+                          <button
+                            className="vad-btn-secundario"
+                            onClick={() => setConfirmandoAnular(null)}
+                            disabled={guardando}
+                          >
+                            No
+                          </button>
+                          <button
+                            className="vad-btn-peligro"
+                            onClick={confirmarAnular}
+                            disabled={guardando}
+                          >
+                            {guardando ? "Anulando..." : "Sí, anular"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="vad-acciones">
+                        <button className="vad-btn-secundario" onClick={() => iniciarEdicionOrden(orden)}>
+                          <Pencil size={13} />
+                          Editar
+                        </button>
+                        <button
+                          className="vad-btn-peligro-outline"
+                          onClick={() => setConfirmandoAnular({ tipo: "orden", id: orden.id })}
+                        >
+                          <Trash2 size={13} />
+                          Anular pedido
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );
