@@ -6,7 +6,7 @@ import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import "./Ventas.css";
 
-const METODOS_PAGO = ["efectivo", "transferencia", "datafono"];
+const METODOS_PAGO = ["efectivo", "transferencia"];
 
 function formatearFecha(isoString) {
   return new Date(isoString).toLocaleString("es-CO", {

@@ -1,49 +1,77 @@
+/* =========================================
+   CONTENEDOR
+========================================= */
+
 .vad-container {
+  width: 100%;
   max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  box-sizing: border-box;
 }
+
+
+/* =========================================
+   HEADER
+========================================= */
 
 .vad-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .vad-header h1 {
-  font-size: 1.5rem;
   margin: 0 0 0.2rem;
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
 .vad-header p {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
 
 .vad-btn-nuevo {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.6rem 0.85rem;
+  border: none;
+  border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: white;
-  border: none;
-  padding: 0.65rem 1.1rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
+
+.vad-btn-nuevo:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+
+/* =========================================
+   MENSAJES
+========================================= */
 
 .vad-mensaje-exito,
 .vad-mensaje-error {
-  padding: 0.7rem 1rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 0.8rem;
   margin-bottom: 1rem;
-  font-weight: 500;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .vad-mensaje-exito {
@@ -56,140 +84,254 @@
   color: var(--color-danger);
 }
 
+
+/* =========================================
+   FILTROS DE PERIODO
+========================================= */
+
 .vad-periodos {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.1rem;
-  flex-wrap: wrap;
+  gap: 0.4rem;
+  overflow-x: auto;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.2rem;
+  scrollbar-width: none;
+}
+
+.vad-periodos::-webkit-scrollbar {
+  display: none;
 }
 
 .vad-periodo-btn {
-  padding: 0.5rem 0.9rem;
-  border-radius: 20px;
+  flex-shrink: 0;
+  padding: 0.42rem 0.75rem;
   border: 1.5px solid var(--color-border);
+  border-radius: 20px;
   background: var(--color-surface);
-  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  font-size: 0.73rem;
   font-weight: 600;
   cursor: pointer;
-  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.vad-periodo-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .vad-periodo-btn.activo {
+  border-color: var(--color-primary);
   background: var(--color-primary);
   color: white;
-  border-color: var(--color-primary);
 }
+
+
+/* =========================================
+   RESUMEN
+========================================= */
 
 .vad-resumen {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 1.15rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 1.1rem;
 }
 
 .vad-resumen-total {
   margin-left: auto;
-  font-size: 1.05rem;
-  font-weight: 800;
   color: var(--color-primary);
+  font-size: 1rem;
+  font-weight: 800;
 }
 
+
+/* =========================================
+   FORMULARIO NUEVA VENTA
+========================================= */
+
 .vad-form {
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  padding: 1.15rem;
+  margin-bottom: 1.5rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 
 .vad-form h2 {
-  font-size: 1.05rem;
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .vad-form label {
-  font-size: 0.78rem;
-  font-weight: 700;
+  margin-top: 0.65rem;
   color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  margin-top: 0.7rem;
+  font-size: 0.73rem;
+  font-weight: 700;
 }
 
-.vad-form select {
-  padding: 0.7rem;
-  border-radius: var(--radius-sm);
+.vad-form select,
+.vad-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.7rem;
   border: 1.5px solid var(--color-border);
-  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.vad-form select:focus,
+.vad-form input:focus {
+  border-color: var(--color-primary);
+}
+
+
+/* =========================================
+   PRODUCTOS / CARRITO
+========================================= */
+
+.vad-carrito {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.vad-carrito-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: var(--color-bg);
 }
+
+.vad-carrito-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.vad-carrito-nombre {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.vad-carrito-precio {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+}
+
+
+/* =========================================
+   STEPPER CARRITO
+========================================= */
 
 .vad-stepper {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: var(--color-bg);
-  border: 1.5px solid var(--color-border);
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  padding: 0.45rem 0.7rem;
-  width: fit-content;
+  background: var(--color-surface);
 }
 
 .vad-stepper button {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  border: none;
-  background: var(--color-surface);
-  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-primary);
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.vad-stepper button:hover {
+  background: var(--color-border);
 }
 
 .vad-stepper span {
-  font-weight: 700;
   min-width: 1.5ch;
   text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
+
+/* =========================================
+   MÉTODOS DE PAGO
+========================================= */
+
 .vad-metodos {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
 }
 
 .vad-metodo-btn {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.6rem;
-  border-radius: var(--radius-sm);
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.6rem 0.35rem;
   border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: var(--color-bg);
-  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
-  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
 }
 
-.vad-metodo-btn.activo {
-  background: var(--color-primary);
-  color: white;
+.vad-metodo-btn:hover {
   border-color: var(--color-primary);
 }
 
+.vad-metodo-btn.activo {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+
+/* =========================================
+   BOTONES FORMULARIO
+========================================= */
+
 .vad-botones-form {
   display: flex;
-  gap: 0.6rem;
-  margin-top: 1.25rem;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
 }
 
 .vad-botones-form button {
@@ -200,82 +342,126 @@
 .vad-btn-primario,
 .vad-btn-peligro,
 .vad-btn-peligro-outline {
-  padding: 0.65rem;
+  min-height: 38px;
+  padding: 0.6rem 0.75rem;
   border-radius: var(--radius-sm);
+  font-size: 0.8rem;
   font-weight: 700;
-  font-size: 0.85rem;
   cursor: pointer;
+  transition: opacity 0.2s ease, background 0.2s ease;
 }
 
 .vad-btn-secundario {
-  background: transparent;
   border: 1.5px solid var(--color-border);
+  background: transparent;
   color: var(--color-primary);
 }
 
+.vad-btn-secundario:hover {
+  background: var(--color-bg);
+}
+
 .vad-btn-primario {
+  border: none;
   background: var(--color-primary);
   color: white;
-  border: none;
+}
+
+.vad-btn-primario:hover {
+  opacity: 0.9;
 }
 
 .vad-btn-peligro {
+  border: none;
   background: var(--color-danger);
   color: white;
-  border: none;
 }
 
 .vad-btn-peligro-outline {
-  background: transparent;
   border: 1.5px solid var(--color-danger);
+  background: transparent;
   color: var(--color-danger);
 }
+
+
+/* =========================================
+   LISTA DE VENTAS
+========================================= */
 
 .vad-lista {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
+
+/* =========================================
+   TARJETA DE VENTA
+========================================= */
+
 .vad-tarjeta {
-  background: var(--color-surface);
+  padding: 0.85rem;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 1rem 1.1rem;
+  background: var(--color-surface);
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
+
+.vad-tarjeta:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+
+/* =========================================
+   FILA PRINCIPAL
+========================================= */
 
 .vad-fila-principal {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .vad-producto {
+  min-width: 0;
+  font-size: 0.88rem;
   font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.vad-badge-editado {
-  margin-left: 0.5rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
-  border-radius: 20px;
-  background: var(--color-brand-tint);
-  color: var(--color-brand-dark);
+  line-height: 1.3;
 }
 
 .vad-total {
+  flex-shrink: 0;
+  font-size: 0.95rem;
   font-weight: 800;
-  font-size: 1.05rem;
+  color: var(--color-text);
 }
+
+.vad-badge-editado {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 20px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.6rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+
+/* =========================================
+   DETALLE
+========================================= */
 
 .vad-detalle {
   display: flex;
-  gap: 0.4rem;
-  font-size: 0.82rem;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
   color: var(--color-text-secondary);
-  margin-top: 0.35rem;
+  font-size: 0.75rem;
 }
 
 .vad-capitalize {
@@ -283,21 +469,67 @@
 }
 
 .vad-fecha {
-  font-size: 0.75rem;
+  margin-top: 0.25rem;
   color: var(--color-text-secondary);
-  margin-top: 0.3rem;
+  font-size: 0.68rem;
 }
+
+
+/* =========================================
+   ORDEN
+========================================= */
+
+.vad-orden-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+  color: var(--color-primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.vad-orden-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.45rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.vad-orden-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.73rem;
+}
+
+.vad-orden-item span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================
+   ACCIONES
+========================================= */
 
 .vad-acciones,
 .vad-confirmar-anular {
-  margin-top: 0.85rem;
-  padding-top: 0.85rem;
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
   border-top: 1px solid var(--color-border);
 }
 
 .vad-acciones {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .vad-acciones button {
@@ -305,154 +537,133 @@
 }
 
 .vad-confirmar-anular {
-  font-size: 0.85rem;
-}
-
-.vad-sin-ventas {
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  padding: 2.5rem 0;
-}
-
-.vad-header {
-  margin-bottom: 1.25rem;
-}
-
-.vad-header h1 {
-  font-size: 1.5rem;
-  margin: 0 0 0.2rem;
-  font-weight: 700;
-}
-
-.vad-header p {
-  margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
 }
 
-.vad-orden-titulo {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--color-primary);
+.vad-confirmar-anular p {
+  margin: 0 0 0.65rem;
 }
 
-.vad-orden-items {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin: 0.6rem 0;
-  padding: 0.6rem 0.7rem;
-  background: var(--color-bg);
-  border-radius: var(--radius-sm);
-}
 
-.vad-orden-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-}
+/* =========================================
+   EDICIÓN DE ORDEN
+========================================= */
 
 .vad-orden-edit-items {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin: 0.4rem 0 0.75rem;
+  margin: 0.5rem 0 0.75rem;
 }
 
 .vad-orden-edit-item {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.6rem;
-  border-radius: var(--radius-sm);
+  gap: 0.45rem;
+  padding: 0.5rem 0.55rem;
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: var(--color-bg);
 }
 
 .vad-orden-edit-item-nombre {
-  font-size: 0.82rem;
-  font-weight: 600;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.76rem;
+  font-weight: 600;
 }
 
 .vad-orden-edit-stepper {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
 .vad-orden-edit-stepper button {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 23px;
+  height: 23px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-primary);
   cursor: pointer;
 }
 
 .vad-orden-edit-stepper span {
   min-width: 1.5ch;
   text-align: center;
+  font-size: 0.75rem;
   font-weight: 700;
-  font-size: 0.82rem;
 }
 
 .vad-orden-edit-subtotal {
-  font-size: 0.78rem;
-  font-weight: 700;
   white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .vad-orden-edit-quitar {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  padding: 0;
   border: none;
+  background: transparent;
   color: var(--color-danger);
   cursor: pointer;
 }
 
 .vad-orden-edit-vacio {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
   margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
 }
+
+
+/* =========================================
+   AGREGAR PRODUCTO A EDICIÓN
+========================================= */
 
 .vad-orden-edit-agregar {
   display: flex;
   gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.7rem;
 }
 
 .vad-orden-edit-agregar select {
   flex: 1;
-  padding: 0.5rem 0.6rem;
-  border-radius: var(--radius-sm);
+  min-width: 0;
+  padding: 0.55rem 0.6rem;
   border: 1px solid var(--color-border);
-  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.78rem;
+  outline: none;
+}
+
+.vad-orden-edit-agregar select:focus {
+  border-color: var(--color-primary);
 }
 
 .vad-orden-edit-agregar button {
-  width: 36px;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: var(--color-primary);
-  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
   cursor: pointer;
 }
 
@@ -461,11 +672,142 @@
   cursor: not-allowed;
 }
 
+
+/* =========================================
+   TOTAL EDICIÓN
+========================================= */
+
 .vad-orden-edit-total {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  font-weight: 700;
-  padding: 0.5rem 0;
-  border-top: 1px solid var(--color-border);
+  gap: 1rem;
+  padding: 0.65rem 0 0;
   margin-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.vad-orden-edit-total strong {
+  color: var(--color-primary);
+  font-size: 1rem;
+}
+
+
+/* =========================================
+   SIN VENTAS
+========================================= */
+
+.vad-sin-ventas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+
+/* =========================================
+   DISABLED
+========================================= */
+
+.vad-btn-nuevo:disabled,
+.vad-btn-primario:disabled,
+.vad-btn-secundario:disabled,
+.vad-btn-peligro:disabled,
+.vad-btn-peligro-outline:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 520px) {
+
+  .vad-container {
+    padding: 1.2rem 0.85rem 2.5rem;
+  }
+
+  .vad-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .vad-header p {
+    font-size: 0.8rem;
+  }
+
+  .vad-btn-nuevo {
+    padding: 0.55rem 0.7rem;
+    font-size: 0.74rem;
+  }
+
+  .vad-form {
+    padding: 1rem;
+  }
+
+  .vad-metodo-btn {
+    font-size: 0.68rem;
+    padding: 0.55rem 0.25rem;
+  }
+
+  .vad-tarjeta {
+    padding: 0.8rem;
+  }
+
+  .vad-orden-edit-item {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .vad-orden-edit-subtotal {
+    display: none;
+  }
+}
+
+
+/* =========================================
+   MÓVILES PEQUEÑOS
+========================================= */
+
+@media (max-width: 380px) {
+
+  .vad-header {
+    flex-direction: column;
+  }
+
+  .vad-btn-nuevo {
+    width: 100%;
+  }
+
+  .vad-botones-form {
+    flex-direction: column;
+  }
+
+  .vad-metodos {
+    grid-template-columns: 1fr;
+  }
+
+  .vad-metodo-btn {
+    min-height: 38px;
+  }
+
+  .vad-fila-principal {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .vad-total {
+    align-self: flex-start;
+  }
+
+  .vad-acciones {
+    flex-direction: column;
+  }
 }
