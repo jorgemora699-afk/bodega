@@ -131,12 +131,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
-
   background: var(--color-surface);
-
+  cursor: pointer;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -174,17 +172,13 @@
 
 .venta-prod-imagen {
   position: relative;
-
   width: 100%;
   aspect-ratio: 1 / 0.75;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   background: var(--color-brand-tint);
   color: var(--color-brand-dark);
-
   overflow: hidden;
 }
 
@@ -197,18 +191,13 @@
 .venta-prod-overlay {
   position: absolute;
   inset: 0;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   background: rgba(0, 0, 0, 0.48);
-
   color: white;
-
   font-size: 0.75rem;
   font-weight: 700;
-
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -222,24 +211,17 @@
   top: 0.55rem;
   right: 0.55rem;
   z-index: 2;
-
   min-width: 22px;
   height: 22px;
-
   padding: 0 0.3rem;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 50%;
-
   background: var(--color-primary);
   color: white;
-
   font-size: 0.7rem;
   font-weight: 700;
-
   box-shadow: var(--shadow-sm);
 }
 
@@ -251,24 +233,20 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-
   padding: 0.85rem 0.85rem 0.7rem;
 }
 
 .venta-prod-nombre {
   min-height: 2.2rem;
-
   font-weight: 700;
   font-size: 0.88rem;
   line-height: 1.25;
-
   color: var(--color-primary);
 }
 
 .venta-prod-precio {
   font-size: 0.95rem;
   font-weight: 800;
-
   color: var(--color-primary);
 }
 
@@ -280,9 +258,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-
   margin-top: 0.1rem;
-
   font-size: 0.7rem;
   font-weight: 600;
 }
@@ -290,13 +266,11 @@
 .venta-stock-dot {
   width: 7px;
   height: 7px;
-
   flex-shrink: 0;
-
   border-radius: 50%;
 }
 
-/* Stock disponible */
+/* Disponible */
 
 .venta-prod-stock.disponible {
   color: var(--color-success);
@@ -326,43 +300,15 @@
   background: var(--color-danger);
 }
 
-.venta-prod-card {
-  cursor: pointer;
-}
-
-.venta-prod-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
-}
-
-.venta-prod-card:active {
-  transform: scale(0.98);
-}
-
-.venta-prod-card.agotado {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.venta-prod-card.agotado:hover {
-  transform: none;
-  border-color: var(--color-border);
-  box-shadow: none;
-}
-
 /* =========================
    SIN RESULTADOS
    ========================= */
 
 .venta-sin-resultados {
   grid-column: 1 / -1;
-
   font-size: 0.85rem;
   color: var(--color-text-secondary);
-
   text-align: center;
-
   padding: 1.5rem 0;
 }
 
@@ -375,24 +321,17 @@
   bottom: 78px;
   left: 1rem;
   right: 1rem;
-
   max-width: 400px;
   margin: 0 auto;
-
   display: flex;
   justify-content: space-between;
   align-items: center;
-
   background: var(--color-primary);
   color: white;
-
   border: none;
   border-radius: var(--radius-lg);
-
   padding: 0.85rem 1.1rem;
-
   box-shadow: var(--shadow-md);
-
   cursor: pointer;
   z-index: 15;
 }
@@ -401,7 +340,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -417,11 +355,9 @@
 
 .venta-detalle {
   margin-top: 1.75rem;
-
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-
   animation: venta-aparecer 0.2s ease;
 }
 
@@ -440,23 +376,17 @@
 .venta-detalle label {
   font-size: 0.78rem;
   font-weight: 600;
-
   color: var(--color-text-secondary);
-
   margin-top: 0.75rem;
-
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .venta-detalle select {
   padding: 0.75rem;
-
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-border);
-
   font-size: 0.9rem;
-
   background: var(--color-surface);
 }
 
@@ -468,17 +398,12 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-
   background: transparent;
   border: none;
-
   color: var(--color-text-secondary);
-
   font-size: 0.82rem;
   font-weight: 600;
-
   cursor: pointer;
-
   padding: 0;
   margin-bottom: 1rem;
 }
@@ -491,23 +416,17 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-
   margin-bottom: 1.25rem;
 }
 
 .venta-carrito-item {
   display: grid;
-
   grid-template-columns: 1fr auto auto auto;
-
   align-items: center;
   gap: 0.6rem;
-
   padding: 0.65rem 0.75rem;
-
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-border);
-
   background: var(--color-surface);
 }
 
@@ -520,7 +439,6 @@
 .venta-carrito-item-nombre {
   font-weight: 600;
   font-size: 0.85rem;
-
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -535,14 +453,10 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-
   background: var(--color-surface);
-
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-sm);
-
   padding: 0.5rem 0.75rem;
-
   width: fit-content;
 }
 
@@ -553,17 +467,13 @@
 .venta-stepper-btn {
   width: 34px;
   height: 34px;
-
   border-radius: 8px;
   border: none;
-
   background: var(--color-bg);
   color: var(--color-primary);
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   cursor: pointer;
   font-weight: 700;
 }
@@ -575,16 +485,13 @@
 .venta-stepper-valor {
   font-size: 1.1rem;
   font-weight: 700;
-
   min-width: 2ch;
-
   text-align: center;
 }
 
 .venta-carrito-item-subtotal {
   font-weight: 700;
   font-size: 0.85rem;
-
   white-space: nowrap;
 }
 
@@ -592,14 +499,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
   background: transparent;
   border: none;
-
   color: var(--color-danger);
-
   cursor: pointer;
-
   padding: 0.2rem;
 }
 
@@ -614,32 +517,23 @@
 
 .venta-metodo-btn {
   flex: 1;
-
   display: flex;
   flex-direction: column;
   align-items: center;
-
   gap: 0.3rem;
-
   padding: 0.65rem 0.4rem;
-
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-border);
-
   background: var(--color-surface);
-
   font-size: 0.72rem;
   font-weight: 600;
-
   cursor: pointer;
-
   color: var(--color-text-secondary);
 }
 
 .venta-metodo-btn.activo {
   background: var(--color-primary);
   color: white;
-
   border-color: var(--color-primary);
 }
 
@@ -651,13 +545,10 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-
   font-weight: 700;
   font-size: 1.35rem;
-
   margin-top: 1.25rem;
   padding-top: 1rem;
-
   border-top: 1.5px dashed var(--color-border);
 }
 
@@ -668,15 +559,11 @@
 .venta-btn-primario,
 .venta-btn-secundario {
   padding: 0.85rem;
-
   border-radius: var(--radius-sm);
-
   font-weight: 700;
   font-size: 0.9rem;
-
   cursor: pointer;
   border: none;
-
   margin-top: 1rem;
 }
 
@@ -692,9 +579,7 @@
 
 .venta-btn-secundario {
   background: transparent;
-
   border: 1.5px solid var(--color-border);
-
   color: var(--color-primary);
 }
 
@@ -704,32 +589,23 @@
 
 .venta-confirmacion {
   margin-top: 1rem;
-
   background: var(--color-surface);
-
   border-radius: var(--radius-lg);
   border: 1.5px solid var(--color-border);
-
   padding: 1.75rem 1.5rem;
-
   text-align: center;
-
   animation: venta-aparecer 0.2s ease;
 }
 
 .venta-confirmacion-icono {
   width: 52px;
   height: 52px;
-
   border-radius: 50%;
-
   background: var(--color-brand-tint);
   color: var(--color-brand-dark);
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   margin: 0 auto 0.75rem;
 }
 
@@ -741,21 +617,18 @@
 .venta-confirmacion-items {
   display: flex;
   flex-direction: column;
-
   margin-bottom: 0.4rem;
 }
 
 .venta-resumen-fila {
   display: flex;
   justify-content: space-between;
-
+  align-items: center;
   padding: 0.6rem 0;
-
   border-bottom: 1px solid var(--color-border);
-
   font-size: 0.88rem;
-
   text-align: left;
+  gap: 1rem;
 }
 
 .venta-capitalize {
@@ -765,12 +638,9 @@
 .venta-resumen-total {
   font-weight: 700;
   font-size: 1.2rem;
-
   border-bottom: none;
-
   margin-top: 0.4rem;
   padding-top: 0.75rem;
-
   border-top: 1.5px dashed var(--color-border);
 }
 
@@ -785,6 +655,145 @@
 }
 
 /* =========================
+   PANTALLA DE RECIBO
+   ========================= */
+
+.venta-recibo-pantalla {
+  margin-top: 1rem;
+  text-align: center;
+  animation: venta-aparecer 0.25s ease;
+}
+
+.venta-recibo-pantalla h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.3rem;
+  font-weight: 700;
+}
+
+.venta-recibo-numero {
+  margin: 0 0 1.25rem;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+/* =========================
+   RECIBO IMPRIMIBLE
+   ========================= */
+
+.recibo-imprimible {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 1.4rem 1.25rem;
+  background: white;
+  color: #222;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.recibo-negocio {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 0.3rem;
+}
+
+.recibo-fecha {
+  text-align: center;
+  color: #666;
+  font-size: 0.72rem;
+  margin-bottom: 0.9rem;
+}
+
+.recibo-linea {
+  width: 100%;
+  border-top: 1px dashed #cfcfcf;
+  margin: 0.75rem 0;
+}
+
+.recibo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  line-height: 1.35;
+}
+
+.recibo-item span:first-child {
+  flex: 1;
+}
+
+.recibo-item span:last-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.recibo-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.25rem 0;
+}
+
+.recibo-detalle {
+  margin-top: 0.65rem;
+  font-size: 0.74rem;
+  color: #555;
+}
+
+.recibo-capitalize {
+  text-transform: capitalize;
+}
+
+.recibo-pedido {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.72rem;
+  color: #777;
+  font-weight: 600;
+}
+
+.recibo-footer {
+  text-align: center;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed #cfcfcf;
+  font-size: 0.75rem;
+  color: #555;
+  font-weight: 600;
+}
+
+/* =========================
+   BOTONES DEL RECIBO
+   ========================= */
+
+.venta-recibo-botones {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.venta-recibo-botones button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.venta-recibo-botones .venta-btn-secundario,
+.venta-recibo-botones .venta-btn-primario {
+  margin-top: 1rem;
+}
+
+/* =========================
    PRODUCTO ELEGIDO
    ========================= */
 
@@ -792,20 +801,13 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-
   width: 100%;
-
   padding: 0.75rem 0.9rem;
-
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-border);
-
   background: var(--color-surface);
-
   cursor: pointer;
-
   margin-bottom: 1.1rem;
-
   color: var(--color-text-secondary);
 }
 
@@ -813,14 +815,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-
   flex: 1;
 }
 
 .venta-producto-elegido-nombre {
   font-weight: 700;
   font-size: 0.88rem;
-
   color: var(--color-primary);
 }
 
@@ -832,9 +832,7 @@
 .venta-producto-elegido-cambiar {
   font-size: 0.75rem;
   font-weight: 600;
-
   color: var(--color-primary);
-
   text-decoration: underline;
 }
 
@@ -873,113 +871,94 @@
   .venta-prod-stock {
     font-size: 0.65rem;
   }
+
+  .venta-carrito-item {
+    grid-template-columns: 1fr auto;
+    gap: 0.45rem;
+  }
+
+  .venta-carrito-item-info {
+    grid-column: 1 / -1;
+  }
+
+  .venta-carrito-item-subtotal {
+    font-size: 0.8rem;
+  }
+
+  .venta-confirmacion {
+    padding: 1.5rem 1rem;
+  }
+
+  .venta-confirmacion-botones {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .venta-recibo-pantalla {
+    padding-bottom: 1rem;
+  }
+
+  .recibo-imprimible {
+    max-width: 100%;
+    padding: 1.25rem 1rem;
+  }
+
+  .venta-recibo-botones {
+    flex-direction: column;
+    gap: 0;
+  }
 }
 
-.venta-recibo-pantalla {
-  text-align: center;
-  padding: 1.5rem 0;
-}
-
-.venta-recibo-pantalla h2 {
-  font-size: 1.15rem;
-  margin: 0.75rem 0 0.2rem;
-}
-
-.venta-recibo-numero {
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-  margin: 0 0 1.25rem;
-}
-
-.venta-recibo-botones {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-}
-
-.venta-recibo-botones button {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-}
-
-/* --- Recibo imprimible: oculto en pantalla, solo visible al imprimir --- */
-
-.recibo-imprimible {
-  display: none;
-}
-
-.recibo-negocio {
-  font-weight: 700;
-  font-size: 1.1rem;
-  text-align: center;
-  margin-bottom: 0.2rem;
-}
-
-.recibo-fecha {
-  text-align: center;
-  font-size: 0.8rem;
-  margin-bottom: 0.5rem;
-}
-
-.recibo-linea {
-  border-top: 1px dashed #000;
-  margin: 0.5rem 0;
-}
-
-.recibo-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  margin-bottom: 0.2rem;
-}
-
-.recibo-total {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 700;
-  font-size: 1rem;
-  margin: 0.4rem 0;
-}
-
-.recibo-detalle {
-  font-size: 0.8rem;
-  margin-bottom: 0.15rem;
-}
-
-.recibo-capitalize {
-  text-transform: capitalize;
-}
-
-.recibo-pedido {
-  font-size: 0.8rem;
-  margin-top: 0.4rem;
-}
-
-.recibo-footer {
-  text-align: center;
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-  font-style: italic;
-}
+/* =========================
+   IMPRESIÓN
+   ========================= */
 
 @media print {
   body * {
     visibility: hidden;
   }
-  .recibo-imprimible,
-  .recibo-imprimible * {
+
+  #recibo-print,
+  #recibo-print * {
     visibility: visible;
   }
-  .recibo-imprimible {
-    display: block;
+
+  #recibo-print {
     position: absolute;
-    top: 0;
     left: 0;
+    top: 0;
     width: 100%;
-    padding: 1rem;
-    font-family: "Courier New", monospace;
+    max-width: 320px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .recibo-negocio {
+    font-size: 14pt;
+  }
+
+  .recibo-fecha {
+    font-size: 9pt;
+  }
+
+  .recibo-item {
+    font-size: 9pt;
+  }
+
+  .recibo-total {
+    font-size: 11pt;
+  }
+
+  .recibo-detalle,
+  .recibo-pedido,
+  .recibo-footer {
+    font-size: 8pt;
+  }
+
+  .recibo-linea {
+    margin: 7px 0;
   }
 }

@@ -7,10 +7,10 @@ import {
   Trash2,
   Banknote,
   ArrowLeftRight,
-  CreditCard,
   Check,
   Search,
   ChevronLeft,
+  Printer,
 } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
@@ -28,8 +28,8 @@ export default function RegistrarVenta() {
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
 
-  const [carrito, setCarrito] = useState([]); // [{ producto_id, nombre, precio_unitario, cantidad }]
-  const [vista, setVista] = useState("catalogo"); // "catalogo" | "carrito" | "confirmando"
+  const [carrito, setCarrito] = useState([]);
+  const [vista, setVista] = useState("catalogo");
 
   const [metodoPago, setMetodoPago] = useState("");
   const [trabajadoraId, setTrabajadoraId] = useState("");
@@ -37,6 +37,8 @@ export default function RegistrarVenta() {
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
+
+  const [reciboOrden, setReciboOrden] = useState(null);
 
   useEffect(() => {
     cargarDatos();
@@ -48,6 +50,7 @@ export default function RegistrarVenta() {
         listarProductos(),
         listarTrabajadoras(),
       ]);
+
       setProductos(productosData);
       setTrabajadoras(trabajadorasData);
     } catch (err) {
@@ -65,12 +68,15 @@ export default function RegistrarVenta() {
     }
 
     setCarrito((actual) => {
-      const existente = actual.find((item) => item.producto_id === producto.id);
+      const existente = actual.find(
+        (item) => item.producto_id === producto.id
+      );
 
       if (existente) {
         if (existente.cantidad >= Number(producto.stock_actual)) {
           return actual;
         }
+
         return actual.map((item) =>
           item.producto_id === producto.id
             ? { ...item, cantidad: item.cantidad + 1 }
@@ -78,7 +84,14 @@ export default function RegistrarVenta() {
         );
       }
 
-      return [...actual, { ...producto, producto_id: producto.id, cantidad: 1 }];
+      return [
+        ...actual,
+        {
+          ...producto,
+          producto_id: producto.id,
+          cantidad: 1,
+        },
+      ];
     });
   }
 
@@ -92,7 +105,10 @@ export default function RegistrarVenta() {
         if (nuevaCantidad < 1) return item;
         if (nuevaCantidad > Number(item.stock_actual)) return item;
 
-        return { ...item, cantidad: nuevaCantidad };
+        return {
+          ...item,
+          cantidad: nuevaCantidad,
+        };
       })
     );
   }
@@ -121,22 +137,32 @@ export default function RegistrarVenta() {
   }
 
   function quitarDelCarrito(productoId) {
-    setCarrito((prev) => prev.filter((i) => i.producto_id !== productoId));
+    setCarrito((prev) =>
+      prev.filter((i) => i.producto_id !== productoId)
+    );
   }
 
   function irAlCarrito() {
+    setError(null);
     setVista("carrito");
   }
 
   function volverAlCatalogo() {
+    setError(null);
     setVista("catalogo");
   }
 
   function irAConfirmar() {
+    if (carrito.length === 0) {
+      setError("Agrega al menos un producto al carrito");
+      return;
+    }
+
     if (!metodoPago || !trabajadoraId) {
       setError("Selecciona método de pago y quién realiza la venta");
       return;
     }
+
     setError(null);
     setVista("confirmando");
   }
@@ -146,7 +172,7 @@ export default function RegistrarVenta() {
     setError(null);
 
     try {
-      await crearOrden({
+      const orden = await crearOrden({
         trabajadora_id: Number(trabajadoraId),
         metodo_pago: metodoPago,
         items: carrito.map((i) => ({
@@ -155,39 +181,85 @@ export default function RegistrarVenta() {
         })),
       });
 
-      setMensaje("Venta registrada correctamente");
+      setReciboOrden(orden);
       setCarrito([]);
       setMetodoPago("");
       setTrabajadoraId("");
-      setVista("catalogo");
-      cargarDatos();
+      setMensaje(null);
+      setVista("recibo");
+
+      await cargarDatos();
     } catch (err) {
-      setError(err.response?.data?.error || "No se pudo registrar la venta");
+      setError(
+        err.response?.data?.error ||
+          "No se pudo registrar la venta"
+      );
       setVista("carrito");
     } finally {
       setEnviando(false);
     }
   }
 
-  const categorias = [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort();
+  function nuevaVenta() {
+    setReciboOrden(null);
+    setMensaje(null);
+    setError(null);
+    setBusqueda("");
+    setCategoriaFiltro("");
+    setVista("catalogo");
+  }
+
+  function formatearFechaRecibo(isoString) {
+    if (!isoString) return "";
+
+    return new Date(isoString).toLocaleString("es-CO", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  const categorias = [
+    ...new Set(
+      productos.map((p) => p.categoria).filter(Boolean)
+    ),
+  ].sort();
 
   const productosFiltrados = productos.filter((p) => {
-    const coincideBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase());
-    const coincideCategoria = !categoriaFiltro || p.categoria === categoriaFiltro;
+    const coincideBusqueda = p.nombre
+      .toLowerCase()
+      .includes(busqueda.toLowerCase());
+
+    const coincideCategoria =
+      !categoriaFiltro || p.categoria === categoriaFiltro;
+
     return coincideBusqueda && coincideCategoria;
   });
 
   const totalCarrito = carrito.reduce(
-    (sum, i) => sum + Number(i.precio_unitario) * i.cantidad,
+    (sum, i) =>
+      sum + Number(i.precio_unitario) * i.cantidad,
     0
   );
-  const cantidadTotalCarrito = carrito.reduce((sum, i) => sum + i.cantidad, 0);
+
+  const cantidadTotalCarrito = carrito.reduce(
+    (sum, i) => sum + i.cantidad,
+    0
+  );
 
   return (
     <div className="venta-container">
-      {vista !== "confirmando" && (
+
+      {/* =========================
+          HEADER
+          ========================= */}
+
+      {vista !== "confirmando" && vista !== "recibo" && (
         <header className="venta-header">
           <h1>Registrar venta</h1>
+
           <p>
             {vista === "catalogo"
               ? "Toca los productos para agregarlos al carrito"
@@ -196,12 +268,26 @@ export default function RegistrarVenta() {
         </header>
       )}
 
+      {/* =========================
+          MENSAJES
+          ========================= */}
+
       {mensaje && (
         <div className="venta-mensaje-exito">
-          <Check size={16} /> {mensaje}
+          <Check size={16} />
+          {mensaje}
         </div>
       )}
-      {error && <div className="venta-mensaje-error">{error}</div>}
+
+      {error && (
+        <div className="venta-mensaje-error">
+          {error}
+        </div>
+      )}
+
+      {/* =========================
+          CATÁLOGO
+          ========================= */}
 
       {vista === "catalogo" && (
         <>
@@ -209,27 +295,43 @@ export default function RegistrarVenta() {
             <>
               <div className="venta-buscador">
                 <Search size={16} />
+
                 <input
                   type="text"
                   placeholder="Buscar producto..."
                   value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
+                  onChange={(e) =>
+                    setBusqueda(e.target.value)
+                  }
                 />
               </div>
 
               {categorias.length > 0 && (
                 <div className="venta-filtros-categoria">
                   <button
-                    className={`venta-chip ${categoriaFiltro === "" ? "activo" : ""}`}
-                    onClick={() => setCategoriaFiltro("")}
+                    className={`venta-chip ${
+                      categoriaFiltro === ""
+                        ? "activo"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setCategoriaFiltro("")
+                    }
                   >
                     Todas
                   </button>
+
                   {categorias.map((c) => (
                     <button
                       key={c}
-                      className={`venta-chip ${categoriaFiltro === c ? "activo" : ""}`}
-                      onClick={() => setCategoriaFiltro(c)}
+                      className={`venta-chip ${
+                        categoriaFiltro === c
+                          ? "activo"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        setCategoriaFiltro(c)
+                      }
                     >
                       {c}
                     </button>
@@ -241,16 +343,26 @@ export default function RegistrarVenta() {
 
           <div className="venta-grid-productos">
             {productosFiltrados.map((producto) => {
-              const stock = obtenerEstadoStock(producto.stock_actual);
-              const agotado = Number(producto.stock_actual) <= 0;
-              const enCarrito = cantidadEnCarrito(producto.id);
+              const stock = obtenerEstadoStock(
+                producto.stock_actual
+              );
+
+              const agotado =
+                Number(producto.stock_actual) <= 0;
+
+              const enCarrito =
+                cantidadEnCarrito(producto.id);
 
               return (
                 <div
                   key={producto.id}
                   className={`venta-prod-card ${
-                    enCarrito > 0 ? "en-carrito" : ""
-                  } ${agotado ? "agotado" : ""}`}
+                    enCarrito > 0
+                      ? "en-carrito"
+                      : ""
+                  } ${
+                    agotado ? "agotado" : ""
+                  }`}
                   onClick={() => {
                     if (!agotado) {
                       agregarAlCarrito(producto);
@@ -279,10 +391,15 @@ export default function RegistrarVenta() {
                     </span>
 
                     <span className="venta-prod-precio">
-                      ${Number(producto.precio_unitario).toLocaleString("es-CO")}
+                      $
+                      {Number(
+                        producto.precio_unitario
+                      ).toLocaleString("es-CO")}
                     </span>
 
-                    <span className={`venta-prod-stock ${stock.clase}`}>
+                    <span
+                      className={`venta-prod-stock ${stock.clase}`}
+                    >
                       <span className="venta-stock-dot"></span>
                       {stock.texto}
                     </span>
@@ -291,39 +408,71 @@ export default function RegistrarVenta() {
               );
             })}
 
-            {productos.length > 0 && productosFiltrados.length === 0 && (
-              <p className="venta-sin-resultados">Ningún producto coincide con el filtro</p>
-            )}
+            {productos.length > 0 &&
+              productosFiltrados.length === 0 && (
+                <p className="venta-sin-resultados">
+                  Ningún producto coincide con el filtro
+                </p>
+              )}
           </div>
 
           {carrito.length > 0 && (
-            <button className="venta-carrito-fab" onClick={irAlCarrito}>
+            <button
+              className="venta-carrito-fab"
+              onClick={irAlCarrito}
+            >
               <span className="venta-carrito-fab-info">
                 <ShoppingCart size={18} />
-                {cantidadTotalCarrito} producto{cantidadTotalCarrito !== 1 ? "s" : ""}
+
+                {cantidadTotalCarrito} producto
+                {cantidadTotalCarrito !== 1
+                  ? "s"
+                  : ""}
               </span>
+
               <span className="venta-carrito-fab-total">
-                ${totalCarrito.toLocaleString("es-CO")}
+                $
+                {totalCarrito.toLocaleString(
+                  "es-CO"
+                )}
               </span>
             </button>
           )}
         </>
       )}
 
+      {/* =========================
+          CARRITO
+          ========================= */}
+
       {vista === "carrito" && (
         <div className="venta-detalle">
-          <button className="venta-volver-catalogo" onClick={volverAlCatalogo}>
+
+          <button
+            className="venta-volver-catalogo"
+            onClick={volverAlCatalogo}
+          >
             <ChevronLeft size={16} />
             Seguir agregando productos
           </button>
 
           <div className="venta-carrito-lista">
             {carrito.map((item) => (
-              <div key={item.producto_id} className="venta-carrito-item">
+              <div
+                key={item.producto_id}
+                className="venta-carrito-item"
+              >
                 <div className="venta-carrito-item-info">
-                  <span className="venta-carrito-item-nombre">{item.nombre}</span>
+                  <span className="venta-carrito-item-nombre">
+                    {item.nombre}
+                  </span>
+
                   <span className="venta-carrito-item-precio">
-                    ${Number(item.precio_unitario).toLocaleString("es-CO")} c/u
+                    $
+                    {Number(
+                      item.precio_unitario
+                    ).toLocaleString("es-CO")}{" "}
+                    c/u
                   </span>
                 </div>
 
@@ -331,27 +480,49 @@ export default function RegistrarVenta() {
                   <button
                     type="button"
                     className="venta-stepper-btn"
-                    onClick={() => ajustarCantidadCarrito(item.producto_id, -1)}
+                    onClick={() =>
+                      ajustarCantidadCarrito(
+                        item.producto_id,
+                        -1
+                      )
+                    }
                   >
                     <Minus size={14} />
                   </button>
-                  <span className="venta-stepper-valor">{item.cantidad}</span>
+
+                  <span className="venta-stepper-valor">
+                    {item.cantidad}
+                  </span>
+
                   <button
                     type="button"
                     className="venta-stepper-btn"
-                    onClick={() => ajustarCantidadCarrito(item.producto_id, 1)}
+                    onClick={() =>
+                      ajustarCantidadCarrito(
+                        item.producto_id,
+                        1
+                      )
+                    }
                   >
                     <Plus size={14} />
                   </button>
                 </div>
 
                 <span className="venta-carrito-item-subtotal">
-                  ${(Number(item.precio_unitario) * item.cantidad).toLocaleString("es-CO")}
+                  $
+                  {(
+                    Number(item.precio_unitario) *
+                    item.cantidad
+                  ).toLocaleString("es-CO")}
                 </span>
 
                 <button
                   className="venta-carrito-item-quitar"
-                  onClick={() => quitarDelCarrito(item.producto_id)}
+                  onClick={() =>
+                    quitarDelCarrito(
+                      item.producto_id
+                    )
+                  }
                 >
                   <Trash2 size={15} />
                 </button>
@@ -360,24 +531,47 @@ export default function RegistrarVenta() {
           </div>
 
           <label>Método de pago</label>
+
           <div className="venta-metodos">
-            {METODOS_PAGO.map(({ valor, label, Icon }) => (
-              <button
-                key={valor}
-                className={`venta-metodo-btn ${metodoPago === valor ? "activo" : ""}`}
-                onClick={() => setMetodoPago(valor)}
-              >
-                <Icon size={18} />
-                <span>{label}</span>
-              </button>
-            ))}
+            {METODOS_PAGO.map(
+              ({ valor, label, Icon }) => (
+                <button
+                  key={valor}
+                  className={`venta-metodo-btn ${
+                    metodoPago === valor
+                      ? "activo"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    setMetodoPago(valor)
+                  }
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                </button>
+              )
+            )}
           </div>
 
-          <label>¿Quién realiza la venta?</label>
-          <select value={trabajadoraId} onChange={(e) => setTrabajadoraId(e.target.value)}>
-            <option value="">Selecciona...</option>
+          <label>
+            ¿Quién realiza la venta?
+          </label>
+
+          <select
+            value={trabajadoraId}
+            onChange={(e) =>
+              setTrabajadoraId(e.target.value)
+            }
+          >
+            <option value="">
+              Selecciona...
+            </option>
+
             {trabajadoras.map((t) => (
-              <option key={t.id} value={t.id}>
+              <option
+                key={t.id}
+                value={t.id}
+              >
                 {t.nombre}
               </option>
             ))}
@@ -385,30 +579,55 @@ export default function RegistrarVenta() {
 
           <div className="venta-total">
             <span>Total</span>
-            <span>${totalCarrito.toLocaleString("es-CO")}</span>
+
+            <span>
+              $
+              {totalCarrito.toLocaleString(
+                "es-CO"
+              )}
+            </span>
           </div>
 
-          <button className="venta-btn-primario" onClick={irAConfirmar}>
+          <button
+            className="venta-btn-primario"
+            onClick={irAConfirmar}
+          >
             Continuar
           </button>
         </div>
       )}
 
+      {/* =========================
+          CONFIRMACIÓN
+          ========================= */}
+
       {vista === "confirmando" && (
         <div className="venta-confirmacion">
+
           <div className="venta-confirmacion-icono">
             <ShoppingBag size={26} />
           </div>
+
           <h2>Confirmar venta</h2>
 
           <div className="venta-confirmacion-items">
             {carrito.map((item) => (
-              <div key={item.producto_id} className="venta-resumen-fila">
+              <div
+                key={item.producto_id}
+                className="venta-resumen-fila"
+              >
                 <span>
-                  {item.cantidad} × {item.nombre}
+                  {item.cantidad} ×{" "}
+                  {item.nombre}
                 </span>
+
                 <span>
-                  ${(Number(item.precio_unitario) * item.cantidad).toLocaleString("es-CO")}
+                  $
+                  {(
+                    Number(
+                      item.precio_unitario
+                    ) * item.cantidad
+                  ).toLocaleString("es-CO")}
                 </span>
               </div>
             ))}
@@ -416,31 +635,159 @@ export default function RegistrarVenta() {
 
           <div className="venta-resumen-fila">
             <span>Método de pago</span>
-            <span className="venta-capitalize">{metodoPago}</span>
+
+            <span className="venta-capitalize">
+              {metodoPago}
+            </span>
           </div>
+
           <div className="venta-resumen-fila">
             <span>Vendido por</span>
-            <span>{trabajadoras.find((t) => t.id === Number(trabajadoraId))?.nombre}</span>
+
+            <span>
+              {
+                trabajadoras.find(
+                  (t) =>
+                    t.id ===
+                    Number(trabajadoraId)
+                )?.nombre
+              }
+            </span>
           </div>
+
           <div className="venta-resumen-fila venta-resumen-total">
             <span>Total</span>
-            <span>${totalCarrito.toLocaleString("es-CO")}</span>
+
+            <span>
+              $
+              {totalCarrito.toLocaleString(
+                "es-CO"
+              )}
+            </span>
           </div>
 
           <div className="venta-confirmacion-botones">
             <button
               className="venta-btn-secundario"
-              onClick={() => setVista("carrito")}
+              onClick={() =>
+                setVista("carrito")
+              }
               disabled={enviando}
             >
               Volver
             </button>
+
             <button
               className="venta-btn-primario"
               onClick={confirmarOrden}
               disabled={enviando}
             >
-              {enviando ? "Registrando..." : "Confirmar venta"}
+              {enviando
+                ? "Registrando..."
+                : "Confirmar venta"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================
+          RECIBO
+          ========================= */}
+
+      {vista === "recibo" && reciboOrden && (
+        <div className="venta-recibo-pantalla">
+
+          <div className="venta-confirmacion-icono">
+            <Check size={26} />
+          </div>
+
+          <h2>Venta registrada</h2>
+
+          <p className="venta-recibo-numero">
+            Pedido #{reciboOrden.id}
+          </p>
+
+          <div
+            id="recibo-print"
+            className="recibo-imprimible"
+          >
+            <div className="recibo-negocio">
+              Bodega línea amarilla
+            </div>
+
+            <div className="recibo-fecha">
+              {formatearFechaRecibo(
+                reciboOrden.fecha
+              )}
+            </div>
+
+            <div className="recibo-linea" />
+
+            {reciboOrden.ventas?.map((v) => (
+              <div
+                key={v.id}
+                className="recibo-item"
+              >
+                <span>
+                  {v.cantidad} ×{" "}
+                  {v.producto_nombre}
+                </span>
+
+                <span>
+                  $
+                  {Number(
+                    v.total
+                  ).toLocaleString("es-CO")}
+                </span>
+              </div>
+            ))}
+
+            <div className="recibo-linea" />
+
+            <div className="recibo-total">
+              <span>Total</span>
+
+              <span>
+                $
+                {Number(
+                  reciboOrden.total
+                ).toLocaleString("es-CO")}
+              </span>
+            </div>
+
+            <div className="recibo-detalle recibo-capitalize">
+              Método de pago:{" "}
+              {reciboOrden.metodo_pago}
+            </div>
+
+            <div className="recibo-detalle">
+              Atendido por:{" "}
+              {reciboOrden.trabajadora_nombre}
+            </div>
+
+            <div className="recibo-pedido">
+              Pedido #{reciboOrden.id}
+            </div>
+
+            <div className="recibo-footer">
+              ¡Gracias por su compra!
+            </div>
+          </div>
+
+          <div className="venta-recibo-botones">
+            <button
+              className="venta-btn-secundario"
+              onClick={() => window.print()}
+            >
+              <Printer size={16} />
+              Imprimir recibo
+            </button>
+
+            <button
+              className="venta-btn-primario"
+              onClick={nuevaVenta}
+            >
+              Nueva venta
             </button>
           </div>
         </div>
