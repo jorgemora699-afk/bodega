@@ -60,54 +60,40 @@ export default function RegistrarVenta() {
   }
 
   function agregarAlCarrito(producto) {
-    // No permitir agregar productos sin stock
     if (Number(producto.stock_actual) <= 0) {
       return;
     }
 
     setCarrito((actual) => {
-      const existente = actual.find((item) => item.id === producto.id);
+      const existente = actual.find((item) => item.producto_id === producto.id);
 
       if (existente) {
-        // No superar el stock disponible
         if (existente.cantidad >= Number(producto.stock_actual)) {
           return actual;
         }
-
         return actual.map((item) =>
-          item.id === producto.id
+          item.producto_id === producto.id
             ? { ...item, cantidad: item.cantidad + 1 }
             : item
         );
       }
 
-      return [...actual, { ...producto, cantidad: 1 }];
+      return [...actual, { ...producto, producto_id: producto.id, cantidad: 1 }];
     });
   }
 
   function ajustarCantidadCarrito(id, delta) {
     setCarrito((actual) =>
-      actual
-        .map((item) => {
-          if (item.id !== id) return item;
+      actual.map((item) => {
+        if (item.producto_id !== id) return item;
 
-          const nuevaCantidad = item.cantidad + delta;
+        const nuevaCantidad = item.cantidad + delta;
 
-          // No permitir menos de 1
-          if (nuevaCantidad < 1) {
-            return item;
-          }
+        if (nuevaCantidad < 1) return item;
+        if (nuevaCantidad > Number(item.stock_actual)) return item;
 
-          // No permitir superar el stock disponible
-          if (nuevaCantidad > Number(item.stock_actual)) {
-            return item;
-          }
-
-          return {
-            ...item,
-            cantidad: nuevaCantidad,
-          };
-        })
+        return { ...item, cantidad: nuevaCantidad };
+      })
     );
   }
 
