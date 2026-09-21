@@ -21,7 +21,7 @@ import Trabajadoras from "./pages/admin/trabajadoras/Trabajadoras";
 import RecetasAdmin from "./pages/admin/recetas/Recetas";
 import Insumos from "./pages/admin/insumos/Insumos";
 import InsumosTrabajadora from "./pages/trabajadoras/insumos/Insumos";
-import MiCuenta from "./pages/admin/micuenta/MiCuenta";
+import MiCuenta from "./pages/admin/cuenta/MiCuenta";
 
 export default function App() {
   return (
