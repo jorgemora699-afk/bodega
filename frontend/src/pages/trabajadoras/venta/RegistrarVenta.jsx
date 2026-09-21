@@ -22,27 +22,93 @@ const METODOS_PAGO = [
   { valor: "transferencia", label: "Transferencia", Icon: ArrowLeftRight },
 ];
 
+const CLAVE_CARRITO = "pa_venta_carrito";
+const CLAVE_TRABAJADORA = "pa_venta_trabajadora";
+const BILLETES = [5000, 10000, 20000, 50000, 100000];
+
+/* =========================
+   STORAGE (a prueba de fallos)
+   ========================= */
+
+function leerCarritoGuardado() {
+  try {
+    const raw = sessionStorage.getItem(CLAVE_CARRITO);
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function leerTrabajadoraGuardada() {
+  try {
+    return localStorage.getItem(CLAVE_TRABAJADORA) || "";
+  } catch {
+    return "";
+  }
+}
+
 export default function RegistrarVenta() {
   const [productos, setProductos] = useState([]);
   const [trabajadoras, setTrabajadoras] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
 
-  const [carrito, setCarrito] = useState([]);
+  const [carrito, setCarrito] = useState(leerCarritoGuardado);
   const [vista, setVista] = useState("catalogo");
 
   const [metodoPago, setMetodoPago] = useState("");
-  const [trabajadoraId, setTrabajadoraId] = useState("");
+  const [trabajadoraId, setTrabajadoraId] = useState(leerTrabajadoraGuardada);
+  const [recibido, setRecibido] = useState("");
 
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
 
   const [reciboOrden, setReciboOrden] = useState(null);
+  const [reciboEfectivo, setReciboEfectivo] = useState(null);
 
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  /* Guardar el carrito para que sobreviva a una recarga */
+  useEffect(() => {
+    try {
+      if (carrito.length > 0) {
+        sessionStorage.setItem(CLAVE_CARRITO, JSON.stringify(carrito));
+      } else {
+        sessionStorage.removeItem(CLAVE_CARRITO);
+      }
+    } catch {
+      /* si el storage no está disponible, se ignora */
+    }
+  }, [carrito]);
+
+  /* Sincronizar el carrito con el stock y precios más recientes */
+  useEffect(() => {
+    if (productos.length === 0) return;
+
+    setCarrito((actual) => {
+      if (actual.length === 0) return actual;
+
+      return actual.reduce((acc, item) => {
+        const p = productos.find((x) => x.id === item.producto_id);
+        if (!p) return acc;
+
+        const stock = Number(p.stock_actual);
+        if (stock <= 0) return acc;
+
+        acc.push({
+          ...p,
+          producto_id: p.id,
+          cantidad: Math.min(item.cantidad, stock),
+        });
+
+        return acc;
+      }, []);
+    });
+  }, [productos]);
 
   async function cargarDatos() {
     try {
@@ -53,8 +119,29 @@ export default function RegistrarVenta() {
 
       setProductos(productosData);
       setTrabajadoras(trabajadorasData);
+
+      /* Si la trabajadora recordada ya no existe, se limpia */
+      setTrabajadoraId((prev) =>
+        prev && trabajadorasData.some((t) => String(t.id) === String(prev))
+          ? prev
+          : ""
+      );
     } catch (err) {
       setError("No se pudieron cargar los datos. Revisa tu conexión.");
+    }
+  }
+
+  function elegirTrabajadora(id) {
+    setTrabajadoraId(id);
+
+    try {
+      if (id) {
+        localStorage.setItem(CLAVE_TRABAJADORA, id);
+      } else {
+        localStorage.removeItem(CLAVE_TRABAJADORA);
+      }
+    } catch {
+      /* se ignora */
     }
   }
 
@@ -93,6 +180,17 @@ export default function RegistrarVenta() {
         },
       ];
     });
+  }
+
+  /* Resta una unidad desde la tarjeta; si llega a 0, lo quita */
+  function restarDelCarrito(productoId) {
+    setCarrito((actual) =>
+      actual.flatMap((item) => {
+        if (item.producto_id !== productoId) return [item];
+        if (item.cantidad <= 1) return [];
+        return [{ ...item, cantidad: item.cantidad - 1 }];
+      })
+    );
   }
 
   function ajustarCantidadCarrito(id, delta) {
@@ -152,6 +250,10 @@ export default function RegistrarVenta() {
     setVista("catalogo");
   }
 
+  function cambiarRecibido(valor) {
+    setRecibido(valor.replace(/\D/g, "").slice(0, 9));
+  }
+
   function irAConfirmar() {
     if (carrito.length === 0) {
       setError("Agrega al menos un producto al carrito");
@@ -160,6 +262,15 @@ export default function RegistrarVenta() {
 
     if (!metodoPago || !trabajadoraId) {
       setError("Selecciona método de pago y quién realiza la venta");
+      return;
+    }
+
+    if (
+      metodoPago === "efectivo" &&
+      recibidoNum > 0 &&
+      recibidoNum < totalCarrito
+    ) {
+      setError("El efectivo recibido es menor al total de la venta");
       return;
     }
 
@@ -181,10 +292,15 @@ export default function RegistrarVenta() {
         })),
       });
 
+      setReciboEfectivo(
+        tieneRecibido
+          ? { recibido: recibidoNum, cambio: recibidoNum - totalCarrito }
+          : null
+      );
       setReciboOrden(orden);
       setCarrito([]);
       setMetodoPago("");
-      setTrabajadoraId("");
+      setRecibido("");
       setMensaje(null);
       setVista("recibo");
 
@@ -202,6 +318,8 @@ export default function RegistrarVenta() {
 
   function nuevaVenta() {
     setReciboOrden(null);
+    setReciboEfectivo(null);
+    setRecibido("");
     setMensaje(null);
     setError(null);
     setBusqueda("");
@@ -248,6 +366,12 @@ export default function RegistrarVenta() {
     (sum, i) => sum + i.cantidad,
     0
   );
+
+  /* Calculadora de efectivo */
+  const recibidoNum = Number(recibido) || 0;
+  const tieneRecibido = metodoPago === "efectivo" && recibidoNum > 0;
+  const cambio = recibidoNum - totalCarrito;
+  const billetesSugeridos = BILLETES.filter((b) => b > totalCarrito).slice(0, 3);
 
   return (
     <div className="venta-container">
@@ -379,9 +503,40 @@ export default function RegistrarVenta() {
                     )}
 
                     {enCarrito > 0 && (
-                      <span className="venta-prod-badge-carrito">
-                        {enCarrito}
-                      </span>
+                      <div
+                        className="venta-prod-stepper"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          className="venta-prod-stepper-btn"
+                          aria-label={`Quitar una unidad de ${producto.nombre}`}
+                          onClick={() =>
+                            restarDelCarrito(producto.id)
+                          }
+                        >
+                          <Minus size={16} />
+                        </button>
+
+                        <span className="venta-prod-stepper-valor">
+                          {enCarrito}
+                        </span>
+
+                        <button
+                          type="button"
+                          className="venta-prod-stepper-btn mas"
+                          aria-label={`Agregar una unidad de ${producto.nombre}`}
+                          disabled={
+                            enCarrito >=
+                            Number(producto.stock_actual)
+                          }
+                          onClick={() =>
+                            agregarAlCarrito(producto)
+                          }
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -553,6 +708,84 @@ export default function RegistrarVenta() {
             )}
           </div>
 
+          {/* =========================
+              CALCULADORA DE EFECTIVO
+              ========================= */}
+
+          {metodoPago === "efectivo" && (
+            <div className="venta-efectivo">
+              <label htmlFor="venta-recibido">
+                Efectivo recibido (opcional)
+              </label>
+
+              <div className="venta-efectivo-input">
+                <span>$</span>
+
+                <input
+                  id="venta-recibido"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="0"
+                  value={
+                    recibido
+                      ? Number(recibido).toLocaleString("es-CO")
+                      : ""
+                  }
+                  onChange={(e) =>
+                    cambiarRecibido(e.target.value)
+                  }
+                />
+              </div>
+
+              <div className="venta-efectivo-rapidos">
+                <button
+                  type="button"
+                  className={`venta-chip ${
+                    recibidoNum === totalCarrito ? "activo" : ""
+                  }`}
+                  onClick={() =>
+                    setRecibido(String(totalCarrito))
+                  }
+                >
+                  Exacto
+                </button>
+
+                {billetesSugeridos.map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    className={`venta-chip ${
+                      recibidoNum === b ? "activo" : ""
+                    }`}
+                    onClick={() => setRecibido(String(b))}
+                  >
+                    ${b.toLocaleString("es-CO")}
+                  </button>
+                ))}
+              </div>
+
+              {recibidoNum > 0 && (
+                <div
+                  className={`venta-cambio ${
+                    cambio >= 0 ? "ok" : "falta"
+                  }`}
+                >
+                  <span>
+                    {cambio >= 0
+                      ? "Cambio a devolver"
+                      : "Faltan"}
+                  </span>
+
+                  <strong>
+                    $
+                    {Math.abs(cambio).toLocaleString("es-CO")}
+                  </strong>
+                </div>
+              )}
+            </div>
+          )}
+
           <label>
             ¿Quién realiza la venta?
           </label>
@@ -560,7 +793,7 @@ export default function RegistrarVenta() {
           <select
             value={trabajadoraId}
             onChange={(e) =>
-              setTrabajadoraId(e.target.value)
+              elegirTrabajadora(e.target.value)
             }
           >
             <option value="">
@@ -666,6 +899,26 @@ export default function RegistrarVenta() {
             </span>
           </div>
 
+          {tieneRecibido && (
+            <>
+              <div className="venta-resumen-fila">
+                <span>Efectivo recibido</span>
+
+                <span>
+                  ${recibidoNum.toLocaleString("es-CO")}
+                </span>
+              </div>
+
+              <div className="venta-cambio ok">
+                <span>Cambio a devolver</span>
+
+                <strong>
+                  ${cambio.toLocaleString("es-CO")}
+                </strong>
+              </div>
+            </>
+          )}
+
           <div className="venta-confirmacion-botones">
             <button
               className="venta-btn-secundario"
@@ -706,6 +959,17 @@ export default function RegistrarVenta() {
           <p className="venta-recibo-numero">
             Pedido #{reciboOrden.id}
           </p>
+
+          {reciboEfectivo && (
+            <div className="venta-cambio ok">
+              <span>Cambio a devolver</span>
+
+              <strong>
+                $
+                {reciboEfectivo.cambio.toLocaleString("es-CO")}
+              </strong>
+            </div>
+          )}
 
           <div
             id="recibo-print"
@@ -759,6 +1023,20 @@ export default function RegistrarVenta() {
               Método de pago:{" "}
               {reciboOrden.metodo_pago}
             </div>
+
+            {reciboEfectivo && (
+              <>
+                <div className="recibo-detalle">
+                  Efectivo recibido: $
+                  {reciboEfectivo.recibido.toLocaleString("es-CO")}
+                </div>
+
+                <div className="recibo-detalle">
+                  Cambio: $
+                  {reciboEfectivo.cambio.toLocaleString("es-CO")}
+                </div>
+              </>
+            )}
 
             <div className="recibo-detalle">
               Atendido por:{" "}

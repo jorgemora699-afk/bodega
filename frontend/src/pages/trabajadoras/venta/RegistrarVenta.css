@@ -203,26 +203,64 @@
 }
 
 /* =========================
-   BADGE CARRITO
+   STEPPER EN LA TARJETA
    ========================= */
 
-.venta-prod-badge-carrito {
+.venta-prod-stepper {
   position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
+  left: 50%;
+  bottom: 0.5rem;
+  transform: translateX(-50%);
   z-index: 2;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  cursor: default;
+}
+
+.venta-prod-stepper-btn {
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
   border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.venta-prod-stepper-btn.mas {
   background: var(--color-primary);
   color: white;
-  font-size: 0.7rem;
-  font-weight: 700;
-  box-shadow: var(--shadow-sm);
+}
+
+.venta-prod-stepper-btn:active {
+  transform: scale(0.92);
+}
+
+.venta-prod-stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.venta-prod-stepper-valor {
+  min-width: 2.4ch;
+  padding: 0 0.2rem;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.venta-prod-stepper svg {
+  opacity: 1;
 }
 
 /* =========================
@@ -535,6 +573,91 @@
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
+}
+
+/* =========================
+   CALCULADORA DE EFECTIVO
+   ========================= */
+
+.venta-efectivo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: venta-aparecer 0.2s ease;
+}
+
+.venta-efectivo-input {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.venta-efectivo-input:focus-within {
+  border-color: var(--color-primary);
+}
+
+.venta-efectivo-input span {
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.venta-efectivo-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.venta-efectivo-rapidos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Cambio a devolver / faltante */
+
+.venta-cambio {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.venta-cambio strong {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.venta-cambio.ok {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+
+.venta-cambio.falta {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.venta-confirmacion .venta-cambio {
+  margin-top: 0.9rem;
+}
+
+.venta-recibo-pantalla .venta-cambio {
+  max-width: 360px;
+  margin: 0 auto 1rem;
 }
 
 /* =========================
@@ -852,12 +975,6 @@
 
   .venta-prod-info {
     padding: 0.7rem;
-  }
-
-  .venta-prod-agregar {
-    margin-left: 0.7rem;
-    margin-right: 0.7rem;
-    margin-bottom: 0.7rem;
   }
 
   .venta-prod-nombre {
