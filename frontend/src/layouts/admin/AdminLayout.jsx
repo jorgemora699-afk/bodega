@@ -42,8 +42,8 @@ export default function AdminLayout() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-top">
           <div className="admin-brand">
-            <span className="admin-brand-linea">Bodega</span>
-            <span className="admin-brand-nombre">línea amarilla</span>
+            <span className="admin-brand-linea">PUNTO</span>
+            <span className="admin-brand-nombre">AMARILLO</span>
           </div>
 
           <button

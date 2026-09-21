@@ -28,7 +28,7 @@ export default function TrabajadoraLayout() {
   return (
     <div className="trab-shell">
       <header className="trab-topbar">
-        <span className="trab-topbar-title">Bodega línea amarilla</span>
+        <span className="trab-topbar-title">PUNTO AMARILLO</span>
 
         {confirmandoSalida ? (
           <div className="trab-logout-confirm">
