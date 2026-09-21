@@ -109,12 +109,12 @@ function calcularMesAnterior() {
 }
 
 const PERIODOS = [
-  { valor: "semana", label: "Esta semana", calcular: calcularSemana },
-  { valor: "semana_pasada", label: "Semana pasada", calcular: calcularSemanaPasada },
-  { valor: "quincena", label: "Quincena actual", calcular: calcularQuincena },
-  { valor: "quincena_anterior", label: "Quincena anterior", calcular: calcularQuincenaAnterior },
-  { valor: "mes", label: "Este mes", calcular: calcularMes },
   { valor: "mes_anterior", label: "Mes anterior", calcular: calcularMesAnterior },
+  { valor: "quincena_anterior", label: "Quincena anterior", calcular: calcularQuincenaAnterior },
+  { valor: "semana_pasada", label: "Semana pasada", calcular: calcularSemanaPasada },
+  { valor: "semana", label: "Esta semana", calcular: calcularSemana },
+  { valor: "quincena", label: "Quincena actual", calcular: calcularQuincena },
+  { valor: "mes", label: "Este mes", calcular: calcularMes },
   { valor: "personalizado", label: "Personalizado", calcular: null },
 ];
 
