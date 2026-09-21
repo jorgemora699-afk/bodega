@@ -11,6 +11,8 @@ from calendar import monthrange
 from app.domain.periodos import rango_por_periodo
 from app.domain.periodos import rango_por_periodo as _rango_por_periodo
 from zoneinfo import ZoneInfo
+from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora, Orden
+from app.domain.periodos import rango_por_periodo, rango_periodo_anterior
 
 
 class AdminService:
@@ -224,3 +226,67 @@ class AdminService:
             "salario_calculado": salario_calculado,
             "nota": nota,
         }, None
+
+    @staticmethod
+    def dashboard_resumen(periodo="dia"):
+        inicio, fin = rango_por_periodo(periodo)
+        inicio_ant, fin_ant = rango_periodo_anterior(periodo)
+
+        def _totales(ini, fn):
+            total_ventas = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
+                Venta.fecha.between(ini, fn)
+            ).scalar()
+            cantidad_pedidos = db.session.query(func.count(Orden.id)).filter(
+                Orden.fecha.between(ini, fn)
+            ).scalar()
+            return float(total_ventas), cantidad_pedidos
+
+        def _variacion(actual, anterior):
+            if not anterior:
+                return None  # sin base de comparación (ej. periodo anterior sin ventas)
+            return round(((actual - anterior) / anterior) * 100, 1)
+
+        ventas_actual, pedidos_actual = _totales(inicio, fin)
+        ventas_anterior, pedidos_anterior = _totales(inicio_ant, fin_ant)
+
+        balance = AdminService.balance(periodo)
+
+        productos_activos = Producto.query.filter(Producto.activo == True).all()
+        from app.domain.inventario import UMBRAL_BAJO_STOCK_DEFAULT
+        stock_bajo_cantidad = sum(
+            1 for p in productos_activos if float(p.stock_actual) <= UMBRAL_BAJO_STOCK_DEFAULT
+        )
+
+        return {
+            "periodo": periodo,
+            "ventas_total": ventas_actual,
+            "ventas_variacion_pct": _variacion(ventas_actual, ventas_anterior),
+            "pedidos_total": pedidos_actual,
+            "pedidos_variacion_pct": _variacion(pedidos_actual, pedidos_anterior),
+            "balance_neto": balance["balance_neto"],
+            "total_ingresos": balance["total_ingresos"],
+            "total_egresos": balance["total_egresos"],
+            "stock_bajo_cantidad": stock_bajo_cantidad,
+        }
+
+    @staticmethod
+    def metodos_pago(periodo="dia"):
+        inicio, fin = rango_por_periodo(periodo)
+
+        resultados = db.session.query(
+            Venta.metodo_pago,
+            func.sum(Venta.total).label("total"),
+        ).filter(
+            Venta.fecha.between(inicio, fin)
+        ).group_by(Venta.metodo_pago).all()
+
+        total_general = sum(float(r.total) for r in resultados)
+
+        return [
+            {
+                "metodo_pago": r.metodo_pago,
+                "total": float(r.total),
+                "porcentaje": round((float(r.total) / total_general) * 100, 1) if total_general > 0 else 0,
+            }
+            for r in resultados
+        ]

@@ -5,7 +5,15 @@ ZONA_COLOMBIA = ZoneInfo("America/Bogota")
 ZONA_UTC = ZoneInfo("UTC")
 
 
-def rango_por_periodo(periodo):
+def _utc_desde_fecha_local(fecha_inicio, fecha_fin):
+    inicio_local = datetime.combine(fecha_inicio, datetime.min.time(), tzinfo=ZONA_COLOMBIA)
+    fin_local = datetime.combine(fecha_fin, datetime.max.time(), tzinfo=ZONA_COLOMBIA)
+    inicio_utc = inicio_local.astimezone(ZONA_UTC).replace(tzinfo=None)
+    fin_utc = fin_local.astimezone(ZONA_UTC).replace(tzinfo=None)
+    return inicio_utc, fin_utc
+
+
+def _fechas_por_periodo(periodo):
     hoy = datetime.now(ZONA_COLOMBIA).date()
 
     if periodo == "dia":
@@ -17,12 +25,23 @@ def rango_por_periodo(periodo):
     else:
         raise ValueError("periodo debe ser 'dia', 'semana' o 'mes'")
 
-    # límites del día en hora de Colombia...
-    inicio_local = datetime.combine(inicio, datetime.min.time(), tzinfo=ZONA_COLOMBIA)
-    fin_local = datetime.combine(hoy, datetime.max.time(), tzinfo=ZONA_COLOMBIA)
+    return inicio, hoy
 
-    # ...convertidos a UTC naive, para comparar contra columnas guardadas con datetime.utcnow()
-    inicio_utc = inicio_local.astimezone(ZONA_UTC).replace(tzinfo=None)
-    fin_utc = fin_local.astimezone(ZONA_UTC).replace(tzinfo=None)
 
-    return inicio_utc, fin_utc
+def rango_por_periodo(periodo):
+    inicio, fin = _fechas_por_periodo(periodo)
+    return _utc_desde_fecha_local(inicio, fin)
+
+
+def rango_periodo_anterior(periodo):
+    """Rango de fechas del mismo tamaño (en días) que el periodo actual,
+    inmediatamente anterior a él — para calcular variaciones porcentuales.
+    Ej: si 'semana' va de lunes a hoy (miércoles = 3 días), el periodo
+    anterior son los 3 días inmediatamente antes del lunes."""
+    inicio, fin = _fechas_por_periodo(periodo)
+    dias = (fin - inicio).days + 1
+
+    fin_anterior = inicio - timedelta(days=1)
+    inicio_anterior = fin_anterior - timedelta(days=dias - 1)
+
+    return _utc_desde_fecha_local(inicio_anterior, fin_anterior)

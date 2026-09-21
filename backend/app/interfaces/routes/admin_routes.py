@@ -169,3 +169,22 @@ def generar_pdf_reporte_general_endpoint():
     pdf_buffer = generar_pdf_reporte_general(desde, hasta, resultados, total_general)
     nombre_archivo = f"reporte_nomina_{desde.isoformat()}_{hasta.isoformat()}.pdf"
     return send_file(pdf_buffer, mimetype="application/pdf", as_attachment=True, download_name=nombre_archivo)
+
+@admin_bp.route("/dashboard-resumen", methods=["GET"])
+def dashboard_resumen():
+    periodo = request.args.get("periodo", default="dia")
+    try:
+        resumen = AdminService.dashboard_resumen(periodo)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(resumen), 200
+
+
+@admin_bp.route("/metodos-pago", methods=["GET"])
+def metodos_pago():
+    periodo = request.args.get("periodo", default="dia")
+    try:
+        resultado = AdminService.metodos_pago(periodo)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(resultado), 200
