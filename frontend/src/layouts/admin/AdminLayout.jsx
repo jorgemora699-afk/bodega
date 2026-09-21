@@ -15,6 +15,7 @@ import {
   X,
   Boxes,
   Wheat,
+  UserCircle,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -76,6 +77,11 @@ const LINKS = [
     to: "/admin/recetas",
     label: "Recetas",
     Icon: ChefHat,
+  },
+  {
+    to: "/admin/mi-cuenta",
+    label: "Mi cuenta",
+    Icon: UserCircle,
   },
 ];
 
@@ -169,12 +175,12 @@ export default function AdminLayout() {
 
           <div className="admin-user">
             <div className="admin-user-avatar">
-              {usuario.nombre?.charAt(0)?.toUpperCase() || "J"}
+              {usuario.username?.charAt(0)?.toUpperCase() || "J"}
             </div>
 
             <div className="admin-user-info">
               <strong>
-                {usuario.nombre || "Administrador"}
+                {usuario.username || "Administrador"}
               </strong>
 
               <span>

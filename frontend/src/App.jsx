@@ -21,6 +21,7 @@ import Trabajadoras from "./pages/admin/trabajadoras/Trabajadoras";
 import RecetasAdmin from "./pages/admin/recetas/Recetas";
 import Insumos from "./pages/admin/insumos/Insumos";
 import InsumosTrabajadora from "./pages/trabajadoras/insumos/Insumos";
+import MiCuenta from "./pages/admin/micuenta/MiCuenta";
 
 export default function App() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/admin/trabajadoras" element={<Trabajadoras />} />
             <Route path="/admin/insumos" element={<Insumos />} />
             <Route path="/admin/recetas" element={<RecetasAdmin />} />
+            <Route path="/admin/mi-cuenta" element={<MiCuenta />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
