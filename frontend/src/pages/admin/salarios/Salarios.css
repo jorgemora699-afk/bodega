@@ -2,7 +2,16 @@
   max-width: 640px;
 }
 
+/* =========================
+   HEADER
+   ========================= */
+
 .sal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
 
@@ -18,14 +27,45 @@
   color: var(--color-text-secondary);
 }
 
+.sal-btn-reporte {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sal-btn-reporte:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================
+   PERIODOS
+   ========================= */
+
 .sal-periodos {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1.1rem;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: none;
+}
+
+.sal-periodos::-webkit-scrollbar {
+  display: none;
 }
 
 .sal-periodo-btn {
+  flex-shrink: 0;
   padding: 0.5rem 0.9rem;
   border-radius: 20px;
   border: 1.5px solid var(--color-border);
@@ -34,6 +74,7 @@
   font-weight: 600;
   cursor: pointer;
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .sal-periodo-btn.activo {
@@ -68,45 +109,139 @@
   font-size: 0.85rem;
 }
 
-.sal-mensaje-error {
+/* =========================
+   MENSAJES
+   ========================= */
+
+.sal-mensaje-error,
+.sal-mensaje-exito {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.7rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   margin-bottom: 1rem;
+}
+
+.sal-mensaje-error {
   background: var(--color-danger-tint);
   color: var(--color-danger);
 }
 
-.sal-cargando,
-.sal-sin-datos {
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-}
-
-.sal-total-general {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--color-sidebar-bg);
-  color: white;
-  padding: 1rem 1.25rem;
-  border-radius: var(--radius-lg);
-  margin-bottom: 1.25rem;
-  font-size: 0.85rem;
+.sal-mensaje-exito {
+  background: var(--color-success-tint);
+  color: var(--color-success);
   font-weight: 600;
 }
 
-.sal-total-general-valor {
-  margin-left: auto;
-  font-size: 1.25rem;
+/* =========================
+   RESUMEN
+   ========================= */
+
+.sal-resumen {
+  background: var(--color-sidebar-bg);
+  color: white;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.25rem;
+  transition: opacity 0.2s ease;
+}
+
+.sal-resumen.atenuado {
+  opacity: 0.6;
+}
+
+.sal-resumen-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sal-resumen-principal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sal-resumen-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.sal-resumen-total {
+  font-size: 1.75rem;
   font-weight: 800;
+  line-height: 1.15;
   color: var(--color-brand);
 }
+
+.sal-resumen-rango {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.sal-resumen-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.sal-resumen-stats > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.sal-resumen-stats strong {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.sal-resumen-stats span {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.sal-resumen-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-brand);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.sal-resumen-alerta svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* =========================
+   LISTA Y TARJETAS
+   ========================= */
 
 .sal-lista {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  transition: opacity 0.2s ease;
+}
+
+.sal-lista.atenuada {
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .sal-tarjeta {
@@ -118,9 +253,10 @@
 
 .sal-tarjeta-header {
   width: 100%;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
+  gap: 0.8rem;
   padding: 1rem 1.1rem;
   background: transparent;
   border: none;
@@ -128,15 +264,32 @@
   text-align: left;
 }
 
+.sal-avatar {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 .sal-tarjeta-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 0;
 }
 
 .sal-nombre {
   font-weight: 700;
   font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sal-horas {
@@ -145,6 +298,22 @@
   gap: 0.3rem;
   font-size: 0.75rem;
   color: var(--color-text-secondary);
+}
+
+.sal-barra {
+  display: block;
+  height: 5px;
+  margin-top: 0.15rem;
+  border-radius: 20px;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.sal-barra-fill {
+  display: block;
+  height: 100%;
+  border-radius: 20px;
+  background: var(--color-brand);
 }
 
 .sal-tarjeta-derecha {
@@ -165,6 +334,44 @@
   font-weight: 600;
   color: var(--color-brand-dark);
 }
+
+/* Aviso "falta configurar" */
+
+.sal-configurar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 1.1rem 1rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.sal-configurar span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sal-configurar button {
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* =========================
+   DETALLE
+   ========================= */
 
 .sal-detalle {
   padding: 0 1.1rem 1.1rem;
@@ -198,12 +405,36 @@
   cursor: pointer;
 }
 
-.sal-valor-hora-input {
-  padding: 0.45rem 0.6rem;
+.sal-valor-input {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 150px;
+  padding: 0 0.6rem;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.sal-valor-input:focus-within {
+  border-color: var(--color-primary);
+}
+
+.sal-valor-input span {
   font-size: 0.82rem;
-  width: 130px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.sal-valor-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .sal-btn-guardar-mini,
@@ -221,10 +452,38 @@
   color: white;
 }
 
+.sal-btn-guardar-mini:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .sal-btn-cancelar-mini {
   background: transparent;
   border: 1px solid var(--color-border);
   color: var(--color-text-secondary);
+}
+
+.sal-hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.sal-nota-prorrateo {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  margin: 0.2rem 0 0.8rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.sal-detalle-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.5rem 0 0.6rem;
 }
 
 .sal-detalle-titulo {
@@ -233,7 +492,26 @@
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  margin: 0.5rem 0 0.6rem;
+  margin: 0;
+}
+
+.sal-btn-pdf-individual {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sal-btn-pdf-individual:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .sal-sin-turnos {
@@ -241,6 +519,64 @@
   color: var(--color-text-secondary);
   margin: 0;
 }
+
+.sal-detalle-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+  font-size: 0.8rem;
+}
+
+.sal-detalle-error button {
+  padding: 0.3rem 0.65rem;
+  border: 1.5px solid currentColor;
+  border-radius: 20px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* =========================
+   MINI GRÁFICA DE HORAS
+   ========================= */
+
+.sal-grafica {
+  margin-bottom: 0.75rem;
+}
+
+.sal-grafica .recharts-wrapper,
+.sal-grafica .recharts-surface {
+  outline: none;
+}
+
+.sal-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  font-size: 0.78rem;
+}
+
+.sal-tooltip span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* =========================
+   TURNOS
+   ========================= */
 
 .sal-dias-lista {
   display: flex;
@@ -259,6 +595,10 @@
   font-size: 0.8rem;
 }
 
+.sal-dia-fila.en-curso {
+  background: var(--color-brand-tint);
+}
+
 .sal-dia-fecha {
   color: var(--color-text-secondary);
   font-weight: 600;
@@ -269,16 +609,83 @@
   font-size: 0.78rem;
 }
 
+.sal-dia-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.sal-dia-total strong {
+  font-weight: 700;
+  color: var(--color-brand-dark);
+}
+
+.sal-dia-total small {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.sal-en-curso {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-brand-dark);
+}
+
+.sal-en-curso-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  animation: sal-pulso 1.4s ease-in-out infinite;
+}
+
+@keyframes sal-pulso {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+.sal-dia-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.sal-dia-cerrar-btn {
+  padding: 0.25rem 0.6rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .sal-dia-editar-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
   background: transparent;
   border: none;
   color: var(--color-text-secondary);
   cursor: pointer;
-  padding: 0.2rem;
 }
+
+/* Edición de turno */
 
 .sal-dia-fila-edit {
   display: flex;
@@ -315,8 +722,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
@@ -333,56 +740,139 @@
   color: var(--color-text-secondary);
 }
 
-.sal-dia-horas {
-  font-weight: 700;
-  color: var(--color-brand-dark);
+.sal-dia-edit-guardar:disabled,
+.sal-dia-edit-cancelar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.sal-nota-prorrateo {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  font-style: italic;
-  margin: 0.4rem 0 0.8rem;
-}
-
-.sal-header {
+.sal-dia-advertencia {
+  flex-basis: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-}
-
-.sal-btn-reporte {
-  display: flex;
-  align-items: center;
   gap: 0.4rem;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 0.55rem 1rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
+  line-height: 1.35;
 }
 
-.sal-detalle-header-row {
+.sal-dia-advertencia svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* Total del detalle */
+
+.sal-detalle-total {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin: 0.5rem 0 0.6rem;
+  align-items: baseline;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1.5px dashed var(--color-border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
 }
 
-.sal-btn-pdf-individual {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: transparent;
-  border: 1px solid var(--color-border);
+.sal-detalle-total strong {
   color: var(--color-primary);
-  padding: 0.3rem 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+/* =========================
+   ESTADO VACÍO
+   ========================= */
+
+.sal-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.sal-vacio p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* =========================
+   SKELETONS
+   ========================= */
+
+.sal-skeleton {
   border-radius: var(--radius-sm);
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg) 25%,
+    var(--color-border) 50%,
+    var(--color-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: sal-shimmer 1.3s linear infinite;
+}
+
+.sal-sk-resumen {
+  height: 112px;
+  margin-bottom: 1.25rem;
+  border-radius: var(--radius-lg);
+}
+
+.sal-sk-tarjeta {
+  height: 72px;
+  border-radius: var(--radius-lg);
+}
+
+.sal-sk-fila {
+  height: 34px;
+}
+
+@keyframes sal-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* =========================
+   MÓVIL
+   ========================= */
+
+@media (max-width: 430px) {
+  .sal-tarjeta-header {
+    padding: 0.9rem;
+    gap: 0.65rem;
+  }
+
+  .sal-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .sal-monto {
+    font-size: 0.95rem;
+  }
+
+  .sal-resumen-total {
+    font-size: 1.5rem;
+  }
+
+  .sal-resumen-stats {
+    gap: 1.1rem;
+  }
 }
