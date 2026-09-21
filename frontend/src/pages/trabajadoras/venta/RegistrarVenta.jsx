@@ -48,6 +48,92 @@ function leerTrabajadoraGuardada() {
   }
 }
 
+/* =========================
+   CONTROL DE CANTIDAD (botones + escribir)
+
+   Va FUERA de RegistrarVenta a propósito: si se define dentro,
+   React lo vuelve a crear en cada render y el campo pierde el
+   foco después de cada tecla.
+   ========================= */
+
+function CantidadControl({
+  cantidad,
+  max,
+  nombre,
+  onDecrementar,
+  onIncrementar,
+  onEscribir,
+  deshabilitarMenos = false,
+  className = "",
+}) {
+  // null = no se está editando; se muestra la cantidad real del carrito
+  const [borrador, setBorrador] = useState(null);
+
+  function manejarCambio(e) {
+    const limpio = e.target.value.replace(/\D/g, "").slice(0, 4);
+
+    if (limpio === "") {
+      setBorrador("");
+      return;
+    }
+
+    const numero = Math.min(Number(limpio), max);
+
+    if (numero < 1) {
+      setBorrador(limpio);
+      return;
+    }
+
+    setBorrador(String(numero));
+    onEscribir(numero);
+  }
+
+  return (
+    <div
+      className={`venta-cantidad ${className}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="venta-cantidad-btn"
+        aria-label={`Quitar una unidad de ${nombre}`}
+        disabled={deshabilitarMenos}
+        onClick={onDecrementar}
+      >
+        <Minus size={16} />
+      </button>
+
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        className="venta-cantidad-input"
+        aria-label={`Cantidad de ${nombre}`}
+        value={borrador ?? String(cantidad)}
+        onChange={manejarCambio}
+        onFocus={(e) => {
+          setBorrador(String(cantidad));
+          e.target.select();
+        }}
+        onBlur={() => setBorrador(null)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+      />
+
+      <button
+        type="button"
+        className="venta-cantidad-btn mas"
+        aria-label={`Agregar una unidad de ${nombre}`}
+        disabled={cantidad >= max}
+        onClick={onIncrementar}
+      >
+        <Plus size={16} />
+      </button>
+    </div>
+  );
+}
+
 export default function RegistrarVenta() {
   const [productos, setProductos] = useState([]);
   const [trabajadoras, setTrabajadoras] = useState([]);
@@ -207,6 +293,20 @@ export default function RegistrarVenta() {
           ...item,
           cantidad: nuevaCantidad,
         };
+      })
+    );
+  }
+
+  /* Fija una cantidad exacta (cuando la escriben con el teclado) */
+  function establecerCantidad(productoId, cantidad) {
+    setCarrito((actual) =>
+      actual.map((item) => {
+        if (item.producto_id !== productoId) return item;
+
+        const max = Number(item.stock_actual);
+        const nueva = Math.max(1, Math.min(cantidad, max));
+
+        return { ...item, cantidad: nueva };
       })
     );
   }
@@ -501,43 +601,6 @@ export default function RegistrarVenta() {
                         Agotado
                       </div>
                     )}
-
-                    {enCarrito > 0 && (
-                      <div
-                        className="venta-prod-stepper"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          type="button"
-                          className="venta-prod-stepper-btn"
-                          aria-label={`Quitar una unidad de ${producto.nombre}`}
-                          onClick={() =>
-                            restarDelCarrito(producto.id)
-                          }
-                        >
-                          <Minus size={16} />
-                        </button>
-
-                        <span className="venta-prod-stepper-valor">
-                          {enCarrito}
-                        </span>
-
-                        <button
-                          type="button"
-                          className="venta-prod-stepper-btn mas"
-                          aria-label={`Agregar una unidad de ${producto.nombre}`}
-                          disabled={
-                            enCarrito >=
-                            Number(producto.stock_actual)
-                          }
-                          onClick={() =>
-                            agregarAlCarrito(producto)
-                          }
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    )}
                   </div>
 
                   <div className="venta-prod-info">
@@ -558,6 +621,24 @@ export default function RegistrarVenta() {
                       <span className="venta-stock-dot"></span>
                       {stock.texto}
                     </span>
+
+                    {enCarrito > 0 && (
+                      <CantidadControl
+                        className="venta-cantidad-tarjeta"
+                        nombre={producto.nombre}
+                        cantidad={enCarrito}
+                        max={Number(producto.stock_actual)}
+                        onDecrementar={() =>
+                          restarDelCarrito(producto.id)
+                        }
+                        onIncrementar={() =>
+                          agregarAlCarrito(producto)
+                        }
+                        onEscribir={(n) =>
+                          establecerCantidad(producto.id, n)
+                        }
+                      />
+                    )}
                   </div>
                 </div>
               );
@@ -631,37 +712,22 @@ export default function RegistrarVenta() {
                   </span>
                 </div>
 
-                <div className="venta-stepper venta-stepper-chico">
-                  <button
-                    type="button"
-                    className="venta-stepper-btn"
-                    onClick={() =>
-                      ajustarCantidadCarrito(
-                        item.producto_id,
-                        -1
-                      )
-                    }
-                  >
-                    <Minus size={14} />
-                  </button>
-
-                  <span className="venta-stepper-valor">
-                    {item.cantidad}
-                  </span>
-
-                  <button
-                    type="button"
-                    className="venta-stepper-btn"
-                    onClick={() =>
-                      ajustarCantidadCarrito(
-                        item.producto_id,
-                        1
-                      )
-                    }
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
+                <CantidadControl
+                  className="venta-cantidad-carrito"
+                  nombre={item.nombre}
+                  cantidad={item.cantidad}
+                  max={Number(item.stock_actual)}
+                  deshabilitarMenos={item.cantidad <= 1}
+                  onDecrementar={() =>
+                    ajustarCantidadCarrito(item.producto_id, -1)
+                  }
+                  onIncrementar={() =>
+                    ajustarCantidadCarrito(item.producto_id, 1)
+                  }
+                  onEscribir={(n) =>
+                    establecerCantidad(item.producto_id, n)
+                  }
+                />
 
                 <span className="venta-carrito-item-subtotal">
                   $
@@ -976,7 +1042,7 @@ export default function RegistrarVenta() {
             className="recibo-imprimible"
           >
             <div className="recibo-negocio">
-              Bodega línea amarilla
+              PUNTO AMARILLO
             </div>
 
             <div className="recibo-fecha">
@@ -1043,9 +1109,6 @@ export default function RegistrarVenta() {
               {reciboOrden.trabajadora_nombre}
             </div>
 
-            <div className="recibo-pedido">
-              Pedido #{reciboOrden.id}
-            </div>
 
             <div className="recibo-footer">
               ¡Gracias por su compra!

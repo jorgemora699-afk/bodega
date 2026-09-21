@@ -203,64 +203,78 @@
 }
 
 /* =========================
-   STEPPER EN LA TARJETA
+   CONTROL DE CANTIDAD
    ========================= */
 
-.venta-prod-stepper {
-  position: absolute;
-  left: 50%;
-  bottom: 0.5rem;
-  transform: translateX(-50%);
-  z-index: 2;
+.venta-cantidad {
   display: flex;
   align-items: center;
-  gap: 0.1rem;
-  padding: 0.2rem;
-  border-radius: 999px;
-  border: 1.5px solid var(--color-primary);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-md);
+  gap: 0.35rem;
   cursor: default;
 }
 
-.venta-prod-stepper-btn {
+.venta-cantidad-btn {
   width: 34px;
   height: 34px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 50%;
+  border-radius: 8px;
   background: var(--color-bg);
   color: var(--color-primary);
   cursor: pointer;
 }
 
-.venta-prod-stepper-btn.mas {
+.venta-cantidad-btn.mas {
   background: var(--color-primary);
   color: white;
 }
 
-.venta-prod-stepper-btn:active {
+.venta-cantidad-btn:active {
   transform: scale(0.92);
 }
 
-.venta-prod-stepper-btn:disabled {
+.venta-cantidad-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.venta-prod-stepper-valor {
-  min-width: 2.4ch;
-  padding: 0 0.2rem;
+/* 1rem evita el zoom automático de iOS al enfocar el campo */
+.venta-cantidad-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 34px;
+  padding: 0;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 800;
   color: var(--color-primary);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  outline: none;
 }
 
-.venta-prod-stepper svg {
-  opacity: 1;
+.venta-cantidad-input:focus {
+  border-color: var(--color-primary);
+}
+
+.venta-cantidad-tarjeta {
+  margin-top: 0.45rem;
+}
+
+.venta-cantidad-carrito .venta-cantidad-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.venta-cantidad-carrito .venta-cantidad-input {
+  flex: none;
+  width: 3.2rem;
+  height: 32px;
 }
 
 /* =========================
@@ -1030,6 +1044,11 @@
    IMPRESIÓN
    ========================= */
 
+@page {
+  size: auto;
+  margin: 0;
+}
+
 @media print {
   body * {
     visibility: hidden;
@@ -1047,7 +1066,7 @@
     width: 100%;
     max-width: 320px;
     margin: 0;
-    padding: 0;
+    padding: 8mm 5mm; /* antes: 0 */
     border: none;
     box-shadow: none;
     border-radius: 0;
