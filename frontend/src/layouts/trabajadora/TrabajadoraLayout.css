@@ -46,23 +46,24 @@
 
 .trab-topbar {
   position: sticky;
-
   top: 0;
-
   z-index: 100;
 
-  height: 72px;
+  height: 70px;
+  min-height: 70px;
 
   display: flex;
   align-items: center;
 
-  padding: 0 28px;
+  padding: 0 24px;
 
-  background: var(--pa-white);
+  background: #171717;
 
-  border-bottom: 1px solid var(--pa-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.18);
+
+  box-sizing: border-box;
 }
 
 
@@ -71,17 +72,21 @@
    ========================================================= */
 
 .trab-brand {
+  height: 100%;
+
   display: flex;
   align-items: center;
 }
 
 .trab-logo {
-  width: 112px;
-  height: auto;
-
   display: block;
 
+  width: 105px;
+  height: 58px;
+
   object-fit: contain;
+
+  object-position: center;
 }
 
 
@@ -97,9 +102,8 @@
 
   gap: 10px;
 
-  margin-right: 20px;
+  margin-right: 18px;
 }
-
 
 .trab-user-info {
   display: flex;
@@ -110,24 +114,19 @@
   gap: 2px;
 }
 
-
 .trab-user-info strong {
   font-size: 12px;
 
   font-weight: 800;
 
-  color: var(--pa-text);
+  color: #ffffff;
 }
-
 
 .trab-user-info span {
   font-size: 10px;
 
-  color: var(--pa-text-soft);
+  color: #999999;
 }
-
-
-/* AVATAR */
 
 .trab-user-avatar {
   width: 36px;
@@ -139,12 +138,14 @@
 
   border-radius: 10px;
 
-  background: var(--pa-yellow);
+  background: #f5c400;
 
-  color: var(--pa-black);
+  color: #171717;
 
   font-size: 13px;
   font-weight: 900;
+
+  flex-shrink: 0;
 }
 
 
@@ -162,16 +163,15 @@
 
   border-radius: 9px;
 
-  border: 1px solid var(--pa-border);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 
-  background: var(--pa-white);
+  background: #222222;
 
-  color: #555;
+  color: #dddddd;
 
   font-family: inherit;
 
   font-size: 12px;
-
   font-weight: 700;
 
   cursor: pointer;
@@ -179,13 +179,12 @@
   transition: all 0.18s ease;
 }
 
-
 .trab-topbar-salir:hover {
-  background: #fff8d6;
+  background: #f5c400;
 
-  border-color: var(--pa-yellow);
+  border-color: #f5c400;
 
-  color: var(--pa-black);
+  color: #171717;
 }
 
 
@@ -407,85 +406,56 @@
 
   .trab-topbar {
     height: 62px;
+    min-height: 62px;
 
-    padding: 0 14px;
+    padding: 0 12px;
   }
-
 
   .trab-logo {
-    width: 94px;
+    width: 88px;
+    height: 50px;
   }
-
 
   .trab-user {
     margin-right: 8px;
-
     gap: 7px;
   }
-
 
   .trab-user-info {
     display: none;
   }
 
-
   .trab-user-avatar {
-    width: 34px;
-    height: 34px;
+    width: 33px;
+    height: 33px;
   }
-
 
   .trab-topbar-salir {
     padding: 8px 10px;
-
     gap: 5px;
   }
-
 
   .trab-topbar-salir span {
     display: none;
   }
 
-
-  .trab-logout-confirm {
-    gap: 5px;
-
-    padding: 4px 5px 4px 8px;
-  }
-
-
-  .trab-logout-confirm span {
-    font-size: 10px;
-  }
-
-
-  .trab-logout-confirm button {
-    padding: 6px 8px;
-  }
-
-
   .trab-content {
     padding: 20px 14px 100px;
   }
-
 
   .trab-tabbar {
     height: 68px;
   }
 
-
   .trab-tab {
     gap: 3px;
-
     font-size: 9px;
   }
-
 
   .trab-tab-icon {
     width: 32px;
     height: 27px;
   }
-
 }
 
 
