@@ -1,214 +1,603 @@
-.admin-shell {
-  display: flex;
-  min-height: 100vh;
+
+/* =========================================================
+   PUNTO AMARILLO - ADMIN LAYOUT
+   ========================================================= */
+
+:root {
+  --pa-yellow: #f5c400;
+  --pa-yellow-dark: #dcae00;
+  --pa-yellow-light: #fff8d6;
+
+  --pa-black: #171717;
+  --pa-black-soft: #222222;
+
+  --pa-white: #ffffff;
+
+  --pa-bg: #f7f7f5;
+  --pa-border: #e8e8e4;
+
+  --pa-text: #202020;
+  --pa-text-soft: #777777;
 }
+
+
+/* =========================================================
+   SHELL
+   ========================================================= */
+
+.admin-shell {
+  min-height: 100vh;
+  display: flex;
+
+  background: var(--pa-bg);
+  color: var(--pa-text);
+
+  font-family: "Inter", sans-serif;
+}
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
 
 .admin-sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  background: var(--color-sidebar-bg);
+  position: fixed;
+
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  width: 270px;
+
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1rem;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  box-sizing: border-box;
-  overflow-y: auto;
+
+  background: var(--pa-black);
+
+  color: var(--pa-white);
+
+  z-index: 1000;
+
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
 }
 
-.admin-sidebar-top {
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.admin-sidebar-header {
+  min-height: 110px;
+
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+
+  padding: 18px 22px;
+
+  position: relative;
 }
+
+
+/* LOGO */
 
 .admin-brand {
+  width: 150px;
+
   display: flex;
-  flex-direction: column;
-  padding: 0 0.6rem;
-  margin-bottom: 2rem;
+  align-items: center;
+  justify-content: center;
 }
 
-.admin-brand-linea {
-  color: white;
-  font-weight: 800;
-  font-size: 1.05rem;
+.admin-logo {
+  display: block;
+
+  width: 145px;
+  height: auto;
+
+  object-fit: contain;
 }
 
-.admin-brand-nombre {
-  color: var(--color-brand);
-  font-weight: 600;
-  font-size: 0.75rem;
-}
+
+/* =========================================================
+   BOTÓN MOBILE
+   ========================================================= */
 
 .admin-menu-toggle {
   display: none;
-  background: transparent;
+
   border: none;
-  color: white;
+  background: transparent;
+
+  color: var(--pa-white);
+
   cursor: pointer;
-  padding: 0.4rem;
+
+  padding: 8px;
 }
+
+
+/* =========================================================
+   DIVISOR
+   ========================================================= */
+
+.admin-sidebar-divider {
+  height: 1px;
+
+  background: rgba(255, 255, 255, 0.10);
+
+  margin: 0 18px;
+}
+
+
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
 
 .admin-nav {
+  flex: 1;
+
+  overflow-y: auto;
+
+  padding: 22px 14px 15px;
+}
+
+
+/* Scrollbar */
+
+.admin-nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.admin-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+}
+
+
+/* SECCIÓN */
+
+.admin-nav-section {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  flex: 1;
+  gap: 4px;
 }
+
+
+/* TÍTULO */
+
+.admin-nav-title {
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 1.4px;
+
+  color: #8f8f8f;
+
+  padding: 0 12px 10px;
+}
+
+
+/* =========================================================
+   LINK
+   ========================================================= */
 
 .admin-nav-link {
+  position: relative;
+
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.6rem 0.6rem;
-  border-radius: var(--radius-sm);
+
+  gap: 12px;
+
+  min-height: 45px;
+
+  padding: 0 12px;
+
+  border-radius: 10px;
+
+  color: #bdbdbd;
+
   text-decoration: none;
-  color: var(--color-sidebar-ink-muted);
-  font-size: 0.85rem;
-  font-weight: 500;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
+
+
+/* ICONO */
+
+.admin-nav-icon {
+  width: 20px;
+  height: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+
+/* HOVER */
+
+.admin-nav-link:hover {
+  background: rgba(245, 196, 0, 0.10);
+
+  color: var(--pa-white);
+
+  transform: translateX(2px);
+}
+
+
+/* =========================================================
+   LINK ACTIVO
+   ========================================================= */
 
 .admin-nav-link.activo {
-  background: var(--color-sidebar-active-bg);
-  color: var(--color-brand);
-  font-weight: 600;
+  background: var(--pa-yellow);
+
+  color: var(--pa-black);
+
+  font-weight: 800;
+
+  box-shadow:
+    0 5px 14px rgba(245, 196, 0, 0.20);
 }
 
-.admin-logout {
+
+.admin-nav-link.activo:hover {
+  background: var(--pa-yellow);
+
+  color: var(--pa-black);
+
+  transform: none;
+}
+
+
+/* =========================================================
+   PARTE INFERIOR
+   ========================================================= */
+
+.admin-sidebar-bottom {
+  padding: 14px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
+/* =========================================================
+   USUARIO
+   ========================================================= */
+
+.admin-user {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: transparent;
-  border: none;
-  color: var(--color-sidebar-ink-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0.6rem;
-  margin-top: 1rem;
+
+  gap: 10px;
+
+  padding: 8px 8px;
 }
 
-.admin-logout-movil {
-  display: none;
+
+/* AVATAR */
+
+.admin-user-avatar {
+  width: 34px;
+  height: 34px;
+
+  border-radius: 10px;
+
+  background: var(--pa-yellow);
+
+  color: var(--pa-black);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+  font-weight: 900;
+
+  flex-shrink: 0;
 }
 
-.admin-content {
-  flex: 1;
-  padding: 2rem;
+
+/* INFORMACIÓN */
+
+.admin-user-info {
   min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
 }
 
-/* Mobile: sidebar se convierte en topbar con menú desplegable */
-@media (max-width: 720px) {
-  .admin-shell {
-    flex-direction: column;
-  }
 
-  .admin-sidebar {
-    position: sticky;
-    top: 0;
-    width: 100%;
-    height: auto;
-    padding: 0.85rem 1rem;
-    z-index: 20;
-    overflow-y: visible;
-  }
+.admin-user-info strong {
+  color: var(--pa-white);
 
-  .admin-menu-toggle {
-    display: block;
-  }
+  font-size: 12px;
 
-  .admin-nav {
-    display: none;
-    flex-direction: column;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--color-sidebar-bg);
-    padding: 0.5rem 1rem 1rem;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
-  }
-
-  .admin-nav.admin-nav-abierto {
-    display: flex;
-  }
-
-  .admin-nav-link {
-    padding: 0.75rem 0.6rem;
-    font-size: 0.9rem;
-  }
-
-  .admin-logout-movil {
-    display: flex;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 0.5rem;
-    padding-top: 0.75rem;
-  }
-
-  .admin-logout-escritorio {
-    display: none;
-  }
-
-  .admin-content {
-    padding: 1.25rem;
-  }
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+
+.admin-user-info span {
+  color: #858585;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   LOGOUT
+   ========================================================= */
+
+.admin-logout {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  background: rgba(255, 255, 255, 0.04);
+
+  color: #bdbdbd;
+
+  border-radius: 9px;
+
+  padding: 10px 12px;
+
+  font-family: inherit;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+
+.admin-logout:hover {
+  background: rgba(255, 255, 255, 0.08);
+
+  color: var(--pa-white);
+
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+
+/* =========================================================
+   CONFIRMACIÓN LOGOUT
+   ========================================================= */
 
 .admin-logout-confirm {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.6rem;
-  margin-top: 1rem;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.06);
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  background: #242424;
+
+  border: 1px solid rgba(245, 196, 0, 0.25);
+
+  border-radius: 10px;
+
+  padding: 9px 10px;
 }
 
-.admin-logout-confirm span {
-  color: white;
-  font-size: 0.8rem;
-  font-weight: 600;
+
+.admin-logout-confirm > span {
+  font-size: 11px;
+
+  font-weight: 700;
+
+  color: #e4e4e4;
 }
+
 
 .admin-logout-confirm-botones {
   display: flex;
-  gap: 0.5rem;
+
+  gap: 5px;
 }
 
+
 .admin-logout-confirm-botones button {
-  flex: 1;
-  padding: 0.4rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: transparent;
-  color: var(--color-sidebar-ink-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
+  border: none;
+
+  padding: 6px 9px;
+
+  border-radius: 6px;
+
+  font-family: inherit;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
   cursor: pointer;
 }
 
+
+.admin-logout-confirm-botones button:first-child {
+  background: #333333;
+
+  color: #d1d1d1;
+}
+
+
 .admin-logout-confirm-si {
-  background: var(--color-danger) !important;
-  border-color: var(--color-danger) !important;
-  color: white !important;
+  background: var(--pa-yellow);
+
+  color: var(--pa-black);
 }
 
-.admin-logout-confirm-movil {
-  display: none;
+
+/* =========================================================
+   CONTENIDO
+   ========================================================= */
+
+.admin-content {
+  flex: 1;
+
+  min-width: 0;
+
+  margin-left: 270px;
+
+  min-height: 100vh;
+
+  background: var(--pa-bg);
+
+  padding: 28px;
 }
 
-@media (max-width: 720px) {
-  .admin-logout-confirm-movil {
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .admin-sidebar {
+    width: 235px;
+  }
+
+  .admin-content {
+    margin-left: 235px;
+
+    padding: 22px;
+  }
+
+  .admin-logo {
+    width: 125px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .admin-sidebar {
+    width: 100%;
+
+    height: 64px;
+
+    bottom: auto;
+
+    overflow: hidden;
+
+    transition: height 0.25s ease;
+  }
+
+
+  .admin-sidebar.sidebar-abierto {
+    height: 100vh;
+
+    overflow-y: auto;
+  }
+
+
+  .admin-sidebar-header {
+    min-height: 64px;
+
+    justify-content: flex-start;
+
+    padding: 10px 16px;
+  }
+
+
+  .admin-brand {
+    width: 105px;
+
+    justify-content: flex-start;
+  }
+
+
+  .admin-logo {
+    width: 100px;
+  }
+
+
+  .admin-menu-toggle {
     display: flex;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 0.5rem;
-    padding-top: 0.75rem;
+
+    align-items: center;
+    justify-content: center;
+
+    margin-left: auto;
   }
 
-  .admin-logout-confirm-escritorio {
-    display: none;
+
+  .admin-sidebar-divider {
+    margin: 0 16px;
   }
+
+
+  .admin-nav {
+    padding: 18px 14px;
+  }
+
+
+  .admin-nav-link {
+    min-height: 47px;
+
+    font-size: 13px;
+  }
+
+
+  .admin-sidebar-bottom {
+    padding-bottom: 20px;
+  }
+
+
+  .admin-content {
+    margin-left: 0;
+
+    padding: 84px 15px 25px;
+
+    width: 100%;
+  }
+
 }
+
+
+/* =========================================================
+   MOBILE PEQUEÑO
+   ========================================================= */
+
+@media (max-width: 400px) {
+
+  .admin-content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+}
+

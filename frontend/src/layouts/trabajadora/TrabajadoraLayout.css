@@ -1,97 +1,513 @@
+
+/* =========================================================
+   PUNTO AMARILLO
+   TRABAJADORA LAYOUT
+   ========================================================= */
+
+:root {
+  --pa-yellow: #f5c400;
+  --pa-yellow-dark: #dcae00;
+  --pa-yellow-light: #fff8d6;
+
+  --pa-black: #171717;
+  --pa-black-soft: #222222;
+
+  --pa-white: #ffffff;
+
+  --pa-bg: #f7f7f5;
+  --pa-border: #e8e8e4;
+
+  --pa-text: #202020;
+  --pa-text-soft: #777777;
+}
+
+
+/* =========================================================
+   SHELL
+   ========================================================= */
+
 .trab-shell {
   min-height: 100vh;
+
   display: flex;
   flex-direction: column;
+
+  background: var(--pa-bg);
+
+  color: var(--pa-text);
+
+  font-family: "Inter", sans-serif;
 }
+
+
+/* =========================================================
+   TOPBAR
+   ========================================================= */
 
 .trab-topbar {
   position: sticky;
+
   top: 0;
-  z-index: 10;
+
+  z-index: 100;
+
+  height: 72px;
+
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.9rem 1.25rem;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+
+  padding: 0 28px;
+
+  background: var(--pa-white);
+
+  border-bottom: 1px solid var(--pa-border);
+
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
-.trab-topbar-title {
-  font-weight: 700;
-  font-size: 0.95rem;
+
+/* =========================================================
+   LOGO
+   ========================================================= */
+
+.trab-brand {
+  display: flex;
+  align-items: center;
 }
+
+.trab-logo {
+  width: 112px;
+  height: auto;
+
+  display: block;
+
+  object-fit: contain;
+}
+
+
+/* =========================================================
+   USUARIO
+   ========================================================= */
+
+.trab-user {
+  margin-left: auto;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-right: 20px;
+}
+
+
+.trab-user-info {
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-end;
+
+  gap: 2px;
+}
+
+
+.trab-user-info strong {
+  font-size: 12px;
+
+  font-weight: 800;
+
+  color: var(--pa-text);
+}
+
+
+.trab-user-info span {
+  font-size: 10px;
+
+  color: var(--pa-text-soft);
+}
+
+
+/* AVATAR */
+
+.trab-user-avatar {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: var(--pa-yellow);
+
+  color: var(--pa-black);
+
+  font-size: 13px;
+  font-weight: 900;
+}
+
+
+/* =========================================================
+   BOTÓN SALIR
+   ========================================================= */
 
 .trab-topbar-salir {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
+
+  gap: 7px;
+
+  padding: 9px 13px;
+
+  border-radius: 9px;
+
+  border: 1px solid var(--pa-border);
+
+  background: var(--pa-white);
+
+  color: #555;
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
   cursor: pointer;
+
+  transition: all 0.18s ease;
 }
 
-.trab-content {
-  flex: 1;
-  padding-bottom: 5rem; /* deja espacio para la tabbar fija */
+
+.trab-topbar-salir:hover {
+  background: #fff8d6;
+
+  border-color: var(--pa-yellow);
+
+  color: var(--pa-black);
 }
 
-.trab-tabbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  box-shadow: 0 -8px 24px rgba(20, 20, 20, 0.06);
-}
 
-.trab-tab {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.6rem 0 0.75rem;
-  text-decoration: none;
-  color: var(--color-text-secondary);
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
-.trab-tab.activo {
-  color: var(--color-brand-dark);
-}
+/* =========================================================
+   CONFIRMACIÓN SALIDA
+   ========================================================= */
 
 .trab-logout-confirm {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+
+  gap: 7px;
+
+  padding: 5px 6px 5px 10px;
+
+  border-radius: 9px;
+
+  background: var(--pa-black);
+
+  color: var(--pa-white);
 }
+
 
 .trab-logout-confirm span {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-size: 11px;
+
+  font-weight: 700;
+
+  margin-right: 2px;
 }
 
-.trab-logout-confirm-no,
-.trab-logout-confirm-si {
-  padding: 0.4rem 0.7rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.78rem;
-  font-weight: 600;
+
+.trab-logout-confirm button {
+  border: none;
+
+  border-radius: 6px;
+
+  padding: 6px 9px;
+
+  font-family: inherit;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
   cursor: pointer;
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
 }
 
-.trab-logout-confirm-si {
-  background: var(--color-danger);
-  border-color: var(--color-danger);
-  color: white;
+
+.trab-logout-confirm-no {
+  background: #333;
+
+  color: #ddd;
 }
+
+
+.trab-logout-confirm-si {
+  background: var(--pa-yellow);
+
+  color: var(--pa-black);
+}
+
+
+/* =========================================================
+   CONTENIDO
+   ========================================================= */
+
+.trab-content {
+  flex: 1;
+
+  width: 100%;
+
+  max-width: 1100px;
+
+  margin: 0 auto;
+
+  padding: 30px 28px 105px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   TABBAR
+   ========================================================= */
+
+.trab-tabbar {
+  position: fixed;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  z-index: 200;
+
+  height: 72px;
+
+  display: flex;
+  align-items: stretch;
+
+  background: var(--pa-black);
+
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.10);
+}
+
+
+/* =========================================================
+   TAB
+   ========================================================= */
+
+.trab-tab {
+  flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  color: #8f8f8f;
+
+  text-decoration: none;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+
+.trab-tab-icon {
+  width: 35px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  transition: all 0.18s ease;
+}
+
+
+.trab-tab-label {
+  line-height: 1;
+}
+
+
+/* =========================================================
+   TAB HOVER
+   ========================================================= */
+
+.trab-tab:hover {
+  color: var(--pa-white);
+}
+
+
+/* =========================================================
+   TAB ACTIVO
+   ========================================================= */
+
+.trab-tab.activo {
+  color: var(--pa-yellow);
+}
+
+
+.trab-tab.activo .trab-tab-icon {
+  background: rgba(245, 196, 0, 0.13);
+
+  color: var(--pa-yellow);
+}
+
+
+/* =========================================================
+   TABLET / DESKTOP
+   ========================================================= */
+
+@media (min-width: 701px) {
+
+  .trab-tabbar {
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    width: min(700px, calc(100% - 40px));
+
+    bottom: 18px;
+
+    height: 68px;
+
+    border-radius: 18px;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    overflow: hidden;
+  }
+
+  .trab-content {
+    padding-bottom: 125px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .trab-topbar {
+    height: 62px;
+
+    padding: 0 14px;
+  }
+
+
+  .trab-logo {
+    width: 94px;
+  }
+
+
+  .trab-user {
+    margin-right: 8px;
+
+    gap: 7px;
+  }
+
+
+  .trab-user-info {
+    display: none;
+  }
+
+
+  .trab-user-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+
+  .trab-topbar-salir {
+    padding: 8px 10px;
+
+    gap: 5px;
+  }
+
+
+  .trab-topbar-salir span {
+    display: none;
+  }
+
+
+  .trab-logout-confirm {
+    gap: 5px;
+
+    padding: 4px 5px 4px 8px;
+  }
+
+
+  .trab-logout-confirm span {
+    font-size: 10px;
+  }
+
+
+  .trab-logout-confirm button {
+    padding: 6px 8px;
+  }
+
+
+  .trab-content {
+    padding: 20px 14px 100px;
+  }
+
+
+  .trab-tabbar {
+    height: 68px;
+  }
+
+
+  .trab-tab {
+    gap: 3px;
+
+    font-size: 9px;
+  }
+
+
+  .trab-tab-icon {
+    width: 32px;
+    height: 27px;
+  }
+
+}
+
+
+/* =========================================================
+   MÓVILES MUY PEQUEÑOS
+   ========================================================= */
+
+@media (max-width: 370px) {
+
+  .trab-logo {
+    width: 86px;
+  }
+
+
+  .trab-tab {
+    font-size: 8px;
+  }
+
+
+  .trab-tab-icon {
+    width: 30px;
+  }
+
+}
+
