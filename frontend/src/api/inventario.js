@@ -19,3 +19,8 @@ export async function listarMovimientos(params = {}) {
   const response = await apiClient.get("/inventario/movimientos", { params });
   return response.data;
 }
+
+export async function registrarSalida(data) {
+  const response = await apiClient.post("/inventario/salida", data);
+  return response.data;
+}

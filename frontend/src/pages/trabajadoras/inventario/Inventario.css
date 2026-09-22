@@ -641,3 +641,36 @@
 .inv-buscador:focus-within {
   border-color: #aaa;
 }
+
+.inv-tipos {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.inv-tipo-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.inv-tipo-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.inv-stock-referencia {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0.2rem 0 0.4rem;
+}

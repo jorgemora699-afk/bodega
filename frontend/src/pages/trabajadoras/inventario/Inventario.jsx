@@ -5,33 +5,46 @@ import {
   Phone,
   AlertTriangle,
   CheckCircle2,
-  Minus,
-  Plus,
   Search,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 
 import { listarProductos } from "../../../api/productos";
-import { registrarEntrada, listarBajoStock } from "../../../api/inventario";
+import { registrarEntrada, registrarSalida, listarBajoStock } from "../../../api/inventario";
 import { listarProveedoresDeProducto } from "../../../api/proveedores";
 import Sheet from "../../../components/Sheet";
-import "./Inventario.css";
 import VerificacionTrabajadora from "../../../components/VerificacionTrabajadora";
+import "./Inventario.css";
+
+const MOTIVOS_ENTRADA = [
+  { valor: "produccion", label: "Producción" },
+  { valor: "ajuste", label: "Ajuste de conteo" },
+];
+
+const MOTIVOS_SALIDA = [
+  { valor: "consumo", label: "Consumo interno" },
+  { valor: "merma", label: "Merma / dañado" },
+];
+
+function formVacio() {
+  return {
+    tipo: "entrada",
+    producto_id: "",
+    cantidad: "",
+    motivo: "produccion",
+  };
+}
 
 export default function Inventario() {
   const [productos, setProductos] = useState([]);
   const [bajoStock, setBajoStock] = useState([]);
 
   const [sheetAbierto, setSheetAbierto] = useState(false);
-  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [cantidad, setCantidad] = useState(1);
+  const [form, setForm] = useState(formVacio());
   const [enviando, setEnviando] = useState(false);
   const [trabajadoraVerificada, setTrabajadoraVerificada] = useState(null);
-  const [busquedaProducto, setBusquedaProducto] = useState("");
-  const productosProduccion = productos.filter((producto) =>
-    producto.nombre
-      .toLowerCase()
-      .includes(busquedaProducto.toLowerCase())
-  );
+  const [busquedaMovimiento, setBusquedaMovimiento] = useState("");
 
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
@@ -39,6 +52,14 @@ export default function Inventario() {
 
   const [proveedoresPorProducto, setProveedoresPorProducto] = useState({});
   const [expandido, setExpandido] = useState(null);
+
+  const productosParaMovimiento = productos.filter((producto) =>
+    producto.nombre.toLowerCase().includes(busquedaMovimiento.toLowerCase())
+  );
+
+  const productoSeleccionado = productos.find(
+    (p) => String(p.id) === String(form.producto_id)
+  );
 
   useEffect(() => {
     cargarDatos();
@@ -60,10 +81,9 @@ export default function Inventario() {
     }
   }
 
-  function abrirProduccion() {
-    setProductoSeleccionado(null);
-    setCantidad(1);
-    setBusquedaProducto("");
+  function abrirMovimiento() {
+    setForm(formVacio());
+    setBusquedaMovimiento("");
     setMensaje(null);
     setError(null);
     setTrabajadoraVerificada(null);
@@ -72,23 +92,34 @@ export default function Inventario() {
 
   function cerrarSheet(abierto) {
     setSheetAbierto(abierto);
+
     if (!abierto) {
-      setProductoSeleccionado(null);
-      setCantidad(1);
-      setBusquedaProducto("");
+      setForm(formVacio());
+      setBusquedaMovimiento("");
       setTrabajadoraVerificada(null);
     }
   }
 
-  function ajustarCantidad(delta) {
-    setCantidad((c) => Math.max(1, Number(c || 1) + delta));
+  function cambiarTipo(tipo) {
+    setForm((f) => ({
+      ...f,
+      tipo,
+      cantidad: "",
+      motivo: tipo === "entrada" ? "produccion" : "consumo",
+    }));
   }
 
-  async function registrarProduccion() {
-    if (!productoSeleccionado) return;
+  function ajustarCantidad(delta) {
+    setForm((f) => {
+      const actual = Number(f.cantidad || 0);
+      const siguiente = Math.max(0, actual + delta);
+      return { ...f, cantidad: siguiente };
+    });
+  }
 
-    if (!cantidad || Number(cantidad) < 1) {
-      setError("Ingresa una cantidad válida");
+  async function guardar() {
+    if (!form.producto_id || form.cantidad === "" || Number(form.cantidad) <= 0) {
+      setError("Selecciona un producto e ingresa una cantidad válida");
       return;
     }
 
@@ -96,24 +127,25 @@ export default function Inventario() {
     setError(null);
 
     try {
-      await registrarEntrada({
-        producto_id: productoSeleccionado.id,
-        cantidad: Number(cantidad),
-        motivo: "produccion",
+      const payload = {
+        producto_id: Number(form.producto_id),
+        cantidad: Number(form.cantidad),
+        motivo: form.motivo,
         trabajadora_id: trabajadoraVerificada.id,
-      });
+      };
 
-      setMensaje(
-        `Se agregaron ${cantidad} unidades de ${productoSeleccionado.nombre}`
-      );
+      if (form.tipo === "entrada") {
+        await registrarEntrada(payload);
+        setMensaje(`Se agregaron ${form.cantidad} unidades de ${productoSeleccionado.nombre}`);
+      } else {
+        await registrarSalida(payload);
+        setMensaje(`Se registró una salida de ${form.cantidad} unidades de ${productoSeleccionado.nombre}`);
+      }
 
       cerrarSheet(false);
       cargarDatos();
     } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          "No se pudo registrar la producción"
-      );
+      setError(err.response?.data?.error || "No se pudo registrar el movimiento");
     } finally {
       setEnviando(false);
     }
@@ -141,12 +173,10 @@ export default function Inventario() {
     }
   }
 
-  // Identificar productos que están bajos de stock
-  const idsBajoStock = new Set(
-    bajoStock.map((producto) => producto.id)
-  );
+  const motivosDisponibles = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
 
-  // Mostrar primero los productos con stock bajo
+  const idsBajoStock = new Set(bajoStock.map((producto) => producto.id));
+
   const productosOrdenados = [...productos].sort((a, b) => {
     const aBajo = idsBajoStock.has(a.id);
     const bBajo = idsBajoStock.has(b.id);
@@ -158,9 +188,7 @@ export default function Inventario() {
   });
 
   const productosFiltrados = productosOrdenados.filter((producto) =>
-    producto.nombre
-      .toLowerCase()
-      .includes(busqueda.toLowerCase())
+    producto.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
@@ -170,17 +198,13 @@ export default function Inventario() {
           <h1>Inventario</h1>
           <p>
             {productos.length} productos registrados
-            {bajoStock.length > 0 &&
-              ` · ${bajoStock.length} por acabarse`}
+            {bajoStock.length > 0 && ` · ${bajoStock.length} por acabarse`}
           </p>
         </div>
 
-        <button
-          className="inv-btn-produccion-header"
-          onClick={abrirProduccion}
-        >
+        <button className="inv-btn-produccion-header" onClick={abrirMovimiento}>
           <PackagePlus size={15} />
-          Registrar producción
+          Registrar movimiento
         </button>
       </header>
 
@@ -191,15 +215,10 @@ export default function Inventario() {
         </div>
       )}
 
-      {error && !sheetAbierto && (
-        <div className="inv-mensaje-error">
-          {error}
-        </div>
-      )}
+      {error && !sheetAbierto && <div className="inv-mensaje-error">{error}</div>}
 
       <div className="inv-buscador">
         <Search size={17} />
-
         <input
           type="text"
           placeholder="Buscar producto..."
@@ -223,36 +242,21 @@ export default function Inventario() {
           <div className="inv-lista-productos">
             {productosFiltrados.map((producto) => {
               const estaBajoStock = idsBajoStock.has(producto.id);
-
-              const proveedores =
-                proveedoresPorProducto[producto.id] || [];
+              const proveedores = proveedoresPorProducto[producto.id] || [];
 
               return (
-                <div
-                  key={producto.id}
-                  className={`inv-producto-card ${
-                    estaBajoStock ? "stock-bajo" : ""
-                  }`}
-                >
+                <div key={producto.id} className={`inv-producto-card ${estaBajoStock ? "stock-bajo" : ""}`}>
                   <div className="inv-producto-top">
                     <div className="inv-producto-info">
                       <div className="inv-producto-nombre-wrapper">
                         <span className="inv-producto-icono">
                           <Package size={16} />
                         </span>
-
-                        <span className="inv-prod-nombre">
-                          {producto.nombre}
-                        </span>
+                        <span className="inv-prod-nombre">{producto.nombre}</span>
                       </div>
 
-                      <span className="inv-producto-label">
-                        Stock actual
-                      </span>
-
-                      <span className="inv-producto-stock">
-                        {producto.stock_actual}
-                      </span>
+                      <span className="inv-producto-label">Stock actual</span>
+                      <span className="inv-producto-stock">{producto.stock_actual}</span>
                     </div>
 
                     <div className="inv-producto-estado">
@@ -271,46 +275,24 @@ export default function Inventario() {
                   </div>
 
                   <div className="inv-producto-acciones">
-
                     <button
-                      className={`inv-btn-secundario ${
-                        expandido === producto.id
-                          ? "activo"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        verProveedores(producto.id)
-                      }
+                      className={`inv-btn-secundario ${expandido === producto.id ? "activo" : ""}`}
+                      onClick={() => verProveedores(producto.id)}
                     >
                       <Phone size={14} />
-
-                      {expandido === producto.id
-                        ? "Ocultar proveedor"
-                        : "Ver proveedor"}
+                      {expandido === producto.id ? "Ocultar proveedor" : "Ver proveedor"}
                     </button>
                   </div>
 
                   {expandido === producto.id && (
                     <div className="inv-proveedores-lista">
                       {proveedores.length === 0 ? (
-                        <p className="inv-sin-proveedor">
-                          No hay proveedores registrados
-                          para este producto
-                        </p>
+                        <p className="inv-sin-proveedor">No hay proveedores registrados para este producto</p>
                       ) : (
                         proveedores.map((prov) => (
-                          <a
-                            key={prov.id}
-                            href={`tel:${prov.celular}`}
-                            className="inv-proveedor-fila"
-                          >
-                            <span>
-                              {prov.nombre}
-                            </span>
-
-                            <span className="inv-proveedor-numero">
-                              {prov.celular}
-                            </span>
+                          <a key={prov.id} href={`tel:${prov.celular}`} className="inv-proveedor-fila">
+                            <span>{prov.nombre}</span>
+                            <span className="inv-proveedor-numero">{prov.celular}</span>
                           </a>
                         ))
                       )}
@@ -323,66 +305,67 @@ export default function Inventario() {
         )}
       </section>
 
-      <Sheet
-        open={sheetAbierto}
-        onOpenChange={cerrarSheet}
-        title={
-          productoSeleccionado
-            ? productoSeleccionado.nombre
-            : "Registrar producción"
-        }
-      >
+      <Sheet open={sheetAbierto} onOpenChange={cerrarSheet} title="Movimiento de inventario">
         <div className="inv-sheet-body">
-          {error && (
-            <div className="inv-mensaje-error">
-              {error}
-            </div>
-          )}
+          {error && <div className="inv-mensaje-error">{error}</div>}
 
           {!trabajadoraVerificada ? (
             <VerificacionTrabajadora onVerificado={setTrabajadoraVerificada} />
           ) : (
             <>
-              <label>Buscar producto</label>
+              <label>Tipo de movimiento</label>
+              <div className="inv-tipos">
+                <button
+                  type="button"
+                  className={`inv-tipo-btn entrada ${form.tipo === "entrada" ? "activo" : ""}`}
+                  onClick={() => cambiarTipo("entrada")}
+                >
+                  <TrendingUp size={15} />
+                  Entrada
+                </button>
+                <button
+                  type="button"
+                  className={`inv-tipo-btn salida ${form.tipo === "salida" ? "activo" : ""}`}
+                  onClick={() => cambiarTipo("salida")}
+                >
+                  <TrendingDown size={15} />
+                  Salida
+                </button>
+              </div>
 
+              <label>Buscar producto</label>
               <div className="inv-producto-buscador">
                 <Search size={16} />
-
                 <input
                   type="text"
                   placeholder="Escribe el nombre del producto..."
-                  value={busquedaProducto}
+                  value={busquedaMovimiento}
                   onChange={(e) => {
-                    setBusquedaProducto(e.target.value);
-                    setProductoSeleccionado(null);
+                    setBusquedaMovimiento(e.target.value);
+                    setForm((f) => ({ ...f, producto_id: "" }));
                   }}
                 />
               </div>
 
-              {busquedaProducto && !productoSeleccionado && (
+              {busquedaMovimiento && !form.producto_id && (
                 <div className="inv-productos-resultados">
-                  {productosProduccion.length === 0 ? (
-                    <p className="inv-sin-productos">
-                      No se encontraron productos
-                    </p>
+                  {productosParaMovimiento.length === 0 ? (
+                    <p className="inv-sin-productos">No se encontraron productos</p>
                   ) : (
-                    productosProduccion.map((producto) => (
+                    productosParaMovimiento.map((producto) => (
                       <button
                         type="button"
                         key={producto.id}
                         className="inv-producto-resultado"
                         onClick={() => {
-                          setProductoSeleccionado(producto);
-                          setBusquedaProducto(producto.nombre);
-                          setCantidad(1);
+                          setForm((f) => ({ ...f, producto_id: String(producto.id) }));
+                          setBusquedaMovimiento(producto.nombre);
                           setError(null);
                         }}
                       >
                         <div>
                           <strong>{producto.nombre}</strong>
-                          <span>
-                            Stock actual: {producto.stock_actual}
-                          </span>
+                          <span>Stock actual: {producto.stock_actual}</span>
                         </div>
                       </button>
                     ))
@@ -390,59 +373,53 @@ export default function Inventario() {
                 </div>
               )}
 
-              {productoSeleccionado && (
-                <>
-                  <p className="inv-sheet-subtitulo">
-                    Stock actual: {productoSeleccionado.stock_actual}
-                  </p>
-
-                  <label>¿Cuántas unidades se hicieron?</label>
-
-                  <div className="inv-stepper">
-                    <button
-                      type="button"
-                      className="inv-stepper-btn"
-                      onClick={() => ajustarCantidad(-1)}
-                    >
-                      <Minus size={16} />
-                    </button>
-
-                    <input
-                      type="number"
-                      min="1"
-                      value={cantidad}
-                      onChange={(e) => {
-                        const valor = e.target.value;
-
-                        if (valor === "") {
-                          setCantidad("");
-                          return;
-                        }
-
-                        setCantidad(Math.max(1, Number(valor)));
-                      }}
-                      className="inv-stepper-input"
-                    />
-
-                    <button
-                      type="button"
-                      className="inv-stepper-btn"
-                      onClick={() => ajustarCantidad(1)}
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                </>
+              {form.tipo === "salida" && productoSeleccionado && (
+                <p className="inv-stock-referencia">Stock actual: {productoSeleccionado.stock_actual}</p>
               )}
+
+              <label>
+                {form.tipo === "entrada" ? "¿Cuántas unidades se hicieron?" : "¿Cuántas unidades salieron?"}
+              </label>
+
+              <div className="inv-stepper">
+                <button type="button" className="inv-stepper-btn" onClick={() => ajustarCantidad(-1)}>
+                  −
+                </button>
+
+                <input
+                  type="number"
+                  min="0"
+                  value={form.cantidad}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    setForm((f) => ({ ...f, cantidad: valor === "" ? "" : Math.max(0, Number(valor)) }));
+                  }}
+                  className="inv-stepper-input"
+                />
+
+                <button type="button" className="inv-stepper-btn" onClick={() => ajustarCantidad(1)}>
+                  +
+                </button>
+              </div>
+
+              <label>Motivo</label>
+              <select
+                value={form.motivo}
+                onChange={(e) => setForm((f) => ({ ...f, motivo: e.target.value }))}
+              >
+                {motivosDisponibles.map((m) => (
+                  <option key={m.valor} value={m.valor}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
 
               <button
                 className="inv-btn-primario inv-btn-guardar-sheet"
-                onClick={registrarProduccion}
-                disabled={enviando || !productoSeleccionado}
+                onClick={guardar}
+                disabled={enviando || !form.producto_id}
               >
-                {enviando
-                  ? "Registrando..."
-                  : "Registrar producción"}
+                {enviando ? "Guardando..." : "Guardar movimiento"}
               </button>
             </>
           )}
