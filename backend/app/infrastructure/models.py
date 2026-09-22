@@ -23,6 +23,9 @@ class Producto(db.Model):
     categoria = db.Column(db.String(50), nullable=True)
     precio_unitario = db.Column(db.Numeric(10, 2), nullable=False)
     stock_actual = db.Column(db.Numeric(10, 3), nullable=False, default=0)
+    es_paquete = db.Column(db.Boolean, nullable=False, default=False)
+    producto_base_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=True)
+    unidades_por_paquete = db.Column(db.Integer, nullable=True)
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -30,14 +33,23 @@ class Producto(db.Model):
     movimientos = db.relationship("MovimientoInventario", back_populates="producto")
     proveedores = db.relationship("Proveedor", secondary=proveedor_productos, back_populates="productos")
     receta = db.relationship("Receta", back_populates="producto", uselist=False)
+    producto_base = db.relationship("Producto", remote_side=[id], backref="paquetes")
 
     def to_dict(self):
+        stock_mostrado = float(self.stock_actual)
+        if self.es_paquete and self.producto_base and self.unidades_por_paquete:
+            stock_mostrado = float(int(float(self.producto_base.stock_actual) // self.unidades_por_paquete))
+
         return {
                 "id": self.id,
                 "nombre": self.nombre,
                 "categoria": self.categoria,
                 "precio_unitario": float(self.precio_unitario),
-                "stock_actual": float(self.stock_actual),
+                "stock_actual": stock_mostrado,
+                "es_paquete": self.es_paquete,
+                "producto_base_id": self.producto_base_id,
+                "producto_base_nombre": self.producto_base.nombre if self.producto_base else None,
+                "unidades_por_paquete": self.unidades_por_paquete,
                 "activo": self.activo,
         }
 
