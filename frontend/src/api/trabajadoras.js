@@ -22,16 +22,16 @@ export async function eliminarTrabajadora(trabajadoraId) {
 
 // api/trabajadoras.js — agregar
 export async function establecerCodigoTrabajadora(id, codigo) {
-  const { data } = await api.put(`/trabajadoras/${id}/codigo`, { codigo });
-  return data;
+  const response = await apiClient.put(`/trabajadoras/${id}/codigo`, { codigo });
+  return response.data;
 }
 
 export async function eliminarCodigoTrabajadora(id) {
-  const { data } = await api.delete(`/trabajadoras/${id}/codigo`);
-  return data;
+  const response = await apiClient.delete(`/trabajadoras/${id}/codigo`);
+  return response.data;
 }
 
 export async function verificarCodigoTrabajadora(id, codigo) {
-  const { data } = await api.post(`/trabajadoras/${id}/verificar-codigo`, { codigo });
-  return data;
+  const response = await apiClient.post(`/trabajadoras/${id}/verificar-codigo`, { codigo });
+  return response.data;
 }
