@@ -89,6 +89,9 @@ class InsumoService:
 
     @staticmethod
     def registrar_salida(data):
+        """Salida por cantidad gastada (directa). Se conserva para el panel
+        del jefe u otros usos; la pantalla de trabajadoras ahora usa
+        reportar_nivel en su lugar."""
         insumo = Insumo.query.get(data["insumo_id"])
         if not insumo:
             return None, "Insumo no encontrado"
@@ -105,6 +108,55 @@ class InsumoService:
             tipo="salida",
             motivo=data.get("motivo", "uso"),
             cantidad=cantidad,
+        )
+        db.session.add(movimiento)
+        db.session.commit()
+        return movimiento, None
+
+    @staticmethod
+    def reportar_nivel(data):
+        """Salida por nivel restante: la trabajadora dice cuánto QUEDA,
+        no cuánto se gastó. Se calcula la diferencia contra el stock
+        guardado y se registra el movimiento correspondiente.
+
+        - Si lo reportado es menor al stock guardado: es una salida por
+          la diferencia (se usa el motivo que envíe el frontend).
+        - Si lo reportado es mayor: el stock guardado estaba desactualizado
+          (por ejemplo, faltó registrar una entrada). Se corrige con un
+          ajuste hacia arriba, sin importar el motivo enviado.
+        - Si es igual: no hay cambios que registrar.
+        """
+        insumo = Insumo.query.get(data["insumo_id"])
+        if not insumo:
+            return None, "Insumo no encontrado"
+
+        cantidad_restante = float(data["cantidad_restante"])
+        if cantidad_restante < 0:
+            return None, "La cantidad no puede ser negativa"
+
+        stock_previo = float(insumo.stock_actual)
+        diferencia = round(stock_previo - cantidad_restante, 3)
+
+        if diferencia == 0:
+            return {"sin_cambios": True, "stock_actual": stock_previo}, None
+
+        if diferencia > 0:
+            tipo = "salida"
+            motivo = data.get("motivo", "uso")
+            cantidad_movimiento = diferencia
+        else:
+            tipo = "entrada"
+            motivo = "ajuste"
+            cantidad_movimiento = abs(diferencia)
+
+        insumo.stock_actual = cantidad_restante
+
+        movimiento = MovimientoInsumo(
+            insumo_id=insumo.id,
+            trabajadora_id=data.get("trabajadora_id"),
+            tipo=tipo,
+            motivo=motivo,
+            cantidad=cantidad_movimiento,
         )
         db.session.add(movimiento)
         db.session.commit()

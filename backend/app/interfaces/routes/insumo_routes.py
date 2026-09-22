@@ -8,7 +8,7 @@ insumo_bp = Blueprint("insumos", __name__, url_prefix="/api/insumos")
 def _proteger_insumos():
     if request.method == "GET":
         return exigir_rol("jefe", "trabajadora")
-    if request.path.endswith("/entrada") or request.path.endswith("/salida"):
+    if request.path.endswith("/entrada") or request.path.endswith("/salida") or request.path.endswith("/reportar-nivel"):
         return exigir_rol("jefe", "trabajadora")
     return exigir_rol("jefe")
 
@@ -86,6 +86,26 @@ def registrar_salida():
     if error:
         return jsonify({"error": error}), 400
     return jsonify(movimiento.to_dict()), 201
+
+
+@insumo_bp.route("/reportar-nivel", methods=["POST"])
+def reportar_nivel():
+    data = request.get_json()
+
+    if data.get("insumo_id") is None or data.get("cantidad_restante") is None:
+        return jsonify({"error": "insumo_id y cantidad_restante son obligatorios"}), 400
+
+    resultado, error = InsumoService.reportar_nivel(data)
+    if error:
+        return jsonify({"error": error}), 400
+
+    if isinstance(resultado, dict):
+        return jsonify({
+            "mensaje": "El nivel reportado coincide con el registrado, no hubo cambios",
+            **resultado,
+        }), 200
+
+    return jsonify(resultado.to_dict()), 201
 
 
 @insumo_bp.route("/bajo-stock", methods=["GET"])
