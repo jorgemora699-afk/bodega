@@ -8,6 +8,8 @@ trabajadora_bp = Blueprint("trabajadoras", __name__, url_prefix="/api/trabajador
 def _proteger_trabajadoras():
     if request.method == "GET":
         return exigir_rol("jefe", "trabajadora")
+    if request.path.endswith("/verificar-codigo"):
+        return exigir_rol("jefe", "trabajadora")
     return exigir_rol("jefe")
 
 
@@ -51,3 +53,39 @@ def eliminar_trabajadora(trabajadora_id):
     if not exito:
         return jsonify({"error": "Trabajadora no encontrada"}), 404
     return jsonify({"mensaje": "Trabajadora eliminada"}), 200
+
+
+@trabajadora_bp.route("/<int:trabajadora_id>/codigo", methods=["PUT"])
+def establecer_codigo(trabajadora_id):
+    data = request.get_json()
+    codigo = data.get("codigo")
+
+    trabajadora, error = TrabajadoraService.establecer_codigo(trabajadora_id, codigo)
+    if error:
+        status = 404 if error == "Trabajadora no encontrada" else 400
+        return jsonify({"error": error}), status
+
+    return jsonify({"mensaje": "Código actualizado", "tiene_codigo": True}), 200
+
+
+@trabajadora_bp.route("/<int:trabajadora_id>/codigo", methods=["DELETE"])
+def eliminar_codigo(trabajadora_id):
+    exito = TrabajadoraService.quitar_codigo(trabajadora_id)
+    if not exito:
+        return jsonify({"error": "Trabajadora no encontrada"}), 404
+    return jsonify({"mensaje": "Código eliminado"}), 200
+
+
+@trabajadora_bp.route("/<int:trabajadora_id>/verificar-codigo", methods=["POST"])
+def verificar_codigo(trabajadora_id):
+    data = request.get_json()
+    codigo = data.get("codigo")
+
+    if not codigo:
+        return jsonify({"error": "codigo es obligatorio"}), 400
+
+    valido, error = TrabajadoraService.verificar_codigo(trabajadora_id, codigo)
+    if not valido:
+        return jsonify({"error": error}), 401
+
+    return jsonify({"valido": True}), 200

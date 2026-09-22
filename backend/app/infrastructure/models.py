@@ -65,6 +65,7 @@ class Trabajadora(db.Model):
     tipo_pago = db.Column(db.String(10), nullable=False, default="hora")  # "hora" o "mensual"
     valor_hora = db.Column(db.Numeric(10, 2), nullable=True)
     salario_mensual = db.Column(db.Numeric(10, 2), nullable=True)
+    codigo_hash = db.Column(db.String(255), nullable=True)
     activa = db.Column(db.Boolean, nullable=False, default=True)
     incluye_nomina = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
@@ -73,6 +74,14 @@ class Trabajadora(db.Model):
     movimientos = db.relationship("MovimientoInventario", back_populates="trabajadora")
     turnos = db.relationship("Horario", back_populates="trabajadora")
 
+    def set_codigo(self, codigo):
+        self.codigo_hash = generate_password_hash(str(codigo))
+
+    def check_codigo(self, codigo):
+        if not self.codigo_hash or not codigo:
+            return False
+        return check_password_hash(self.codigo_hash, str(codigo))
+
     def to_dict(self):
         return {
                 "id": self.id,
@@ -80,6 +89,7 @@ class Trabajadora(db.Model):
                 "tipo_pago": self.tipo_pago,
                 "valor_hora": float(self.valor_hora) if self.valor_hora is not None else None,
                 "salario_mensual": float(self.salario_mensual) if self.salario_mensual is not None else None,
+                "tiene_codigo": self.codigo_hash is not None,
                 "activa": self.activa,
                 "incluye_nomina": self.incluye_nomina,
         }

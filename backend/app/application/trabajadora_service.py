@@ -58,3 +58,42 @@ class TrabajadoraService:
         trabajadora.activa = False  # borrado lógico — conserva ventas/horarios históricos
         db.session.commit()
         return True
+
+    @staticmethod
+    def establecer_codigo(trabajadora_id, codigo):
+        trabajadora = Trabajadora.query.get(trabajadora_id)
+        if not trabajadora:
+            return None, "Trabajadora no encontrada"
+
+        if not codigo or len(str(codigo).strip()) < 4:
+            return None, "El código debe tener al menos 4 dígitos"
+
+        trabajadora.set_codigo(str(codigo).strip())
+        db.session.commit()
+        return trabajadora, None
+
+    @staticmethod
+    def quitar_codigo(trabajadora_id):
+        trabajadora = Trabajadora.query.get(trabajadora_id)
+        if not trabajadora:
+            return False
+        trabajadora.codigo_hash = None
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def verificar_codigo(trabajadora_id, codigo):
+        trabajadora = Trabajadora.query.get(trabajadora_id)
+        if not trabajadora:
+            return False, "Trabajadora no encontrada"
+
+        if not trabajadora.activa:
+            return False, "Esta trabajadora no está activa"
+
+        if not trabajadora.codigo_hash:
+            return False, "Esta trabajadora no tiene un código configurado"
+
+        if not trabajadora.check_codigo(codigo):
+            return False, "Código incorrecto"
+
+        return True, None
