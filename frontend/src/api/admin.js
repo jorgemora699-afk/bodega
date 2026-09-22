@@ -59,3 +59,13 @@ export async function generarReporteGeneralPdf(desde, hasta) {
   });
   return response.data;
 }
+
+export async function dashboardResumen(periodo = "dia") {
+  const response = await apiClient.get("/admin/dashboard-resumen", { params: { periodo } });
+  return response.data;
+}
+
+export async function metodosPago(periodo = "dia") {
+  const response = await apiClient.get("/admin/metodos-pago", { params: { periodo } });
+  return response.data;
+}
