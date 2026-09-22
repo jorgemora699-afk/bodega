@@ -600,3 +600,82 @@
   font-weight: 500;
   font-size: 0.68rem;
 }
+
+.dash-columnas-graficas {
+  margin-bottom: 1rem;
+}
+
+.dash-grafica-contenedor {
+  margin: 0 -0.4rem;
+}
+
+.dash-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  font-size: 0.75rem;
+}
+
+.dash-tooltip strong {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.dash-tooltip span {
+  font-weight: 800;
+}
+
+.dash-donut-layout {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.dash-donut-leyenda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-donut-leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dash-donut-punto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dash-donut-leyenda-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.dash-donut-leyenda-pct {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 720px) {
+  .dash-columnas-graficas {
+    grid-template-columns: 1fr;
+  }
+}

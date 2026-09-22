@@ -7,8 +7,22 @@ import {
   CheckCircle2,
   Award,
   Package,
+  BarChart3,
+  Wallet,
 } from "lucide-react";
-import { dashboardResumen, productosMasVendidos } from "../../../api/admin";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { dashboardResumen, productosMasVendidos, ventasPorDia, metodosPago } from "../../../api/admin";
 import { listarBajoStock } from "../../../api/inventario";
 import "./Dashboard.css";
 
@@ -18,8 +32,20 @@ const PERIODOS = [
   { valor: "mes", label: "Este mes" },
 ];
 
+const COLORES_METODO = {
+  efectivo: "#f5c400",
+  transferencia: "#222222",
+  datafono: "#9c7a3c",
+};
+const COLOR_METODO_DEFAULT = "#bdbdbd";
+
 function formatearMoneda(valor) {
   return `$${Number(valor).toLocaleString("es-CO")}`;
+}
+
+function formatearFechaCorta(isoString) {
+  const [, mes, dia] = isoString.split("-");
+  return `${dia}/${mes}`;
 }
 
 function Variacion({ valor }) {
@@ -34,11 +60,23 @@ function Variacion({ valor }) {
   );
 }
 
+function TooltipVentas({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="dash-tooltip">
+      <strong>{formatearFechaCorta(label)}</strong>
+      <span>{formatearMoneda(payload[0].value)}</span>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [periodo, setPeriodo] = useState("dia");
   const [resumen, setResumen] = useState(null);
   const [bajoStock, setBajoStock] = useState([]);
   const [topProductos, setTopProductos] = useState([]);
+  const [porDia, setPorDia] = useState([]);
+  const [porMetodo, setPorMetodo] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
@@ -51,15 +89,19 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      const [resumenData, stock, top] = await Promise.all([
+      const [resumenData, stock, top, dia, metodo] = await Promise.all([
         dashboardResumen(periodoActual),
         listarBajoStock(),
         productosMasVendidos(periodoActual, 3),
+        ventasPorDia(periodoActual === "dia" ? "semana" : periodoActual),
+        metodosPago(periodoActual),
       ]);
 
       setResumen(resumenData);
       setBajoStock(stock);
       setTopProductos(top);
+      setPorDia(dia);
+      setPorMetodo(metodo);
     } catch (err) {
       setError("No se pudieron cargar los datos del panel");
     } finally {
@@ -175,6 +217,117 @@ export default function Dashboard() {
               </span>
             </div>
           </section>
+
+          {/* ==================== GRÁFICAS ==================== */}
+
+          <div className="dash-columnas dash-columnas-graficas">
+            <section className="dash-seccion">
+              <div className="dash-seccion-header">
+                <div>
+                  <h2>
+                    <BarChart3 size={16} />
+                    Ventas por día
+                  </h2>
+                  <p>
+                    {periodo === "dia" ? "Esta semana" : periodoLabel}
+                  </p>
+                </div>
+              </div>
+
+              {porDia.length === 0 ? (
+                <div className="dash-sin-datos">
+                  <BarChart3 size={18} />
+                  <span>No hay ventas registradas en este rango</span>
+                </div>
+              ) : (
+                <div className="dash-grafica-contenedor">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={porDia} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="ventasGradiente" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f5c400" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="#f5c400" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                      <XAxis
+                        dataKey="fecha"
+                        tickFormatter={formatearFechaCorta}
+                        tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis hide />
+                      <Tooltip content={<TooltipVentas />} />
+                      <Area
+                        type="monotone"
+                        dataKey="total"
+                        stroke="#dcae00"
+                        strokeWidth={2}
+                        fill="url(#ventasGradiente)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </section>
+
+            <section className="dash-seccion">
+              <div className="dash-seccion-header">
+                <div>
+                  <h2>
+                    <Wallet size={16} />
+                    Métodos de pago
+                  </h2>
+                  <p>{periodoLabel}</p>
+                </div>
+              </div>
+
+              {porMetodo.length === 0 ? (
+                <div className="dash-sin-datos">
+                  <Wallet size={18} />
+                  <span>No hay ventas en este periodo</span>
+                </div>
+              ) : (
+                <div className="dash-donut-layout">
+                  <ResponsiveContainer width={140} height={140}>
+                    <PieChart>
+                      <Pie
+                        data={porMetodo}
+                        dataKey="total"
+                        nameKey="metodo_pago"
+                        innerRadius={42}
+                        outerRadius={62}
+                        paddingAngle={2}
+                        strokeWidth={0}
+                      >
+                        {porMetodo.map((entrada, index) => (
+                          <Cell
+                            key={entrada.metodo_pago}
+                            fill={COLORES_METODO[entrada.metodo_pago] || COLOR_METODO_DEFAULT}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatearMoneda(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  <div className="dash-donut-leyenda">
+                    {porMetodo.map((m) => (
+                      <div key={m.metodo_pago} className="dash-donut-leyenda-item">
+                        <span
+                          className="dash-donut-punto"
+                          style={{ background: COLORES_METODO[m.metodo_pago] || COLOR_METODO_DEFAULT }}
+                        />
+                        <span className="dash-donut-leyenda-nombre">{m.metodo_pago}</span>
+                        <span className="dash-donut-leyenda-pct">{m.porcentaje}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
 
           {/* ==================== CONTENIDO ==================== */}
 
