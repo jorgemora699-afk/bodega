@@ -401,6 +401,43 @@ export default function Trabajadoras() {
             Incluir en horarios y nómina
           </label>
 
+          {editandoId && (
+            <div className="trabad-codigo-bloque">
+              <div className="trabad-codigo-header">
+                <span className="trabad-codigo-titulo">
+                  <KeyRound size={14} />
+                  Código de acceso
+                </span>
+                <span className={`trabad-codigo-estado ${trabajadoraActual?.tiene_codigo ? "trabad-codigo-ok" : "trabad-codigo-falta"}`}>
+                  {trabajadoraActual?.tiene_codigo ? "Configurado" : "Sin código"}
+                </span>
+              </div>
+
+              {mensajeCodigo && <p className="trabad-codigo-mensaje">{mensajeCodigo}</p>}
+              {errorCodigo && <div className="trabad-mensaje-error">{errorCodigo}</div>}
+
+              <div className="trabad-codigo-fila">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={8}
+                  placeholder={trabajadoraActual?.tiene_codigo ? "Nuevo código (opcional)" : "Ej: 1234"}
+                  value={codigoInput}
+                  onChange={(e) => setCodigoInput(e.target.value.replace(/\D/g, ""))}
+                />
+                <button type="button" className="trabad-btn-secundario" onClick={guardarCodigo} disabled={guardandoCodigo}>
+                  {trabajadoraActual?.tiene_codigo ? "Cambiar" : "Asignar"}
+                </button>
+              </div>
+
+              {trabajadoraActual?.tiene_codigo && (
+                <button type="button" className="trabad-codigo-quitar" onClick={quitarCodigo} disabled={guardandoCodigo}>
+                  Quitar código
+                </button>
+              )}
+            </div>
+          )}
+
           <button
             className="trabad-btn-primario trabad-btn-guardar-sheet"
             onClick={guardar}
