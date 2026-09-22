@@ -22,7 +22,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { dashboardResumen, productosMasVendidos, ventasPorDia, metodosPago } from "../../src/api/admin";
+import { dashboardResumen, productosMasVendidos, ventasPorDia, metodosPago } from "../../../api/admin";
 import { listarBajoStock } from "../../../api/inventario";
 import "./Dashboard.css";
 
