@@ -703,3 +703,39 @@
     max-width: 100%;
   }
 }
+
+.tins-stock-referencia {
+  margin: 0.3rem 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.tins-previa {
+  margin: 0.5rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tins-previa-salida {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.tins-previa-entrada {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+
+.tins-previa-igual {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+.tins-hint-motivo {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}

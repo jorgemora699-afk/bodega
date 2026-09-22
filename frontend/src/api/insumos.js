@@ -35,6 +35,11 @@ export async function registrarSalidaInsumo(data) {
   return response.data;
 }
 
+export async function reportarNivelInsumo(data) {
+  const response = await apiClient.post("/insumos/reportar-nivel", data);
+  return response.data;
+}
+
 export async function listarBajoStockInsumo() {
   const response = await apiClient.get("/insumos/bajo-stock");
   return response.data;

@@ -11,7 +11,7 @@ import {
 import {
   listarInsumos,
   registrarEntradaInsumo,
-  registrarSalidaInsumo,
+  reportarNivelInsumo,
   listarBajoStockInsumo,
   listarProveedoresDeInsumo,
 } from "../../../api/insumos";
@@ -26,7 +26,6 @@ const MOTIVOS_ENTRADA = [
 const MOTIVOS_SALIDA = [
   { valor: "uso", label: "Uso en cocina" },
   { valor: "merma", label: "Merma / dañado" },
-  { valor: "ajuste", label: "Ajuste de conteo" },
 ];
 
 function formVacio() {
@@ -57,8 +56,12 @@ export default function Insumos() {
 
   const insumosParaMovimiento = insumos.filter((insumo) =>
     insumo.nombre
-        .toLowerCase()
-        .includes(busquedaMovimiento.toLowerCase())
+      .toLowerCase()
+      .includes(busquedaMovimiento.toLowerCase())
+  );
+
+  const insumoSeleccionado = insumos.find(
+    (i) => String(i.id) === String(form.insumo_id)
   );
 
   useEffect(() => {
@@ -93,8 +96,8 @@ export default function Insumos() {
     setSheetAbierto(abierto);
 
     if (!abierto) {
-        setForm(formVacio());
-        setBusquedaMovimiento("");
+      setForm(formVacio());
+      setBusquedaMovimiento("");
     }
   }
 
@@ -102,44 +105,70 @@ export default function Insumos() {
     setForm((f) => ({
       ...f,
       tipo,
+      cantidad: "",
       motivo: tipo === "entrada" ? "compra" : "uso",
     }));
   }
 
   function ajustarCantidad(delta) {
-    setForm((f) => {
-        const actual = Number(f.cantidad || 0);
+    const minimo = form.tipo === "entrada" ? 0.01 : 0;
 
-        return {
+    setForm((f) => {
+      const actual = Number(f.cantidad || 0);
+      const siguiente = actual + delta;
+
+      return {
         ...f,
-        cantidad: Math.max(0.01, actual + delta),
-        };
+        cantidad: Math.max(minimo, siguiente),
+      };
     });
   }
 
   async function guardar() {
-    if (!form.insumo_id || !form.cantidad) {
+    if (!form.insumo_id || form.cantidad === "" || form.cantidad === null) {
       setError("Selecciona un insumo e ingresa la cantidad");
+      return;
+    }
+
+    if (form.tipo === "salida" && Number(form.cantidad) < 0) {
+      setError("La cantidad no puede ser negativa");
       return;
     }
 
     setEnviando(true);
     setError(null);
 
-    const payload = {
-      insumo_id: Number(form.insumo_id),
-      cantidad: Number(form.cantidad),
-      motivo: form.motivo,
-    };
-
     try {
       if (form.tipo === "entrada") {
-        await registrarEntradaInsumo(payload);
+        await registrarEntradaInsumo({
+          insumo_id: Number(form.insumo_id),
+          cantidad: Number(form.cantidad),
+          motivo: form.motivo,
+        });
+
+        setMensaje("Entrada registrada correctamente");
       } else {
-        await registrarSalidaInsumo(payload);
+        const unidad = insumoSeleccionado?.unidad_medida || "";
+
+        const resultado = await reportarNivelInsumo({
+          insumo_id: Number(form.insumo_id),
+          cantidad_restante: Number(form.cantidad),
+          motivo: form.motivo,
+        });
+
+        if (resultado.sin_cambios) {
+          setMensaje("El nivel reportado coincide con el registrado, no hubo cambios");
+        } else if (resultado.tipo === "entrada") {
+          setMensaje(
+            `Había menos registrado de lo real: se corrigió agregando ${resultado.cantidad} ${unidad}`
+          );
+        } else {
+          setMensaje(
+            `Salida registrada: se consumieron ${resultado.cantidad} ${unidad}`
+          );
+        }
       }
 
-      setMensaje("Movimiento registrado correctamente");
       cerrarSheet(false);
       cargarDatos();
     } catch (err) {
@@ -175,9 +204,38 @@ export default function Insumos() {
   }
 
   const motivosDisponibles =
-    form.tipo === "entrada"
-      ? MOTIVOS_ENTRADA
-      : MOTIVOS_SALIDA;
+    form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
+
+  /* Vista previa de lo que se va a registrar, antes de guardar */
+  let previa = null;
+  if (
+    form.tipo === "salida" &&
+    insumoSeleccionado &&
+    form.cantidad !== "" &&
+    form.cantidad !== null
+  ) {
+    const stockActual = Number(insumoSeleccionado.stock_actual);
+    const restante = Number(form.cantidad);
+    const diferencia = Math.round((stockActual - restante) * 100) / 100;
+    const unidad = insumoSeleccionado.unidad_medida;
+
+    if (diferencia > 0) {
+      previa = {
+        tipo: "salida",
+        texto: `Se registrará una salida de ${diferencia} ${unidad}`,
+      };
+    } else if (diferencia < 0) {
+      previa = {
+        tipo: "entrada",
+        texto: `Había menos registrado: se agregarán ${Math.abs(diferencia)} ${unidad}`,
+      };
+    } else {
+      previa = {
+        tipo: "igual",
+        texto: "Sin cambios respecto al stock actual",
+      };
+    }
+  }
 
   /*
    * Creamos un conjunto con los IDs que están bajo de stock.
@@ -204,8 +262,8 @@ export default function Insumos() {
 
   const insumosFiltrados = insumosOrdenados.filter(
     (insumo) =>
-        insumo.categoria === categoriaActiva &&
-        insumo.nombre
+      insumo.categoria === categoriaActiva &&
+      insumo.nombre
         .toLowerCase()
         .includes(busqueda.toLowerCase())
   );
@@ -259,27 +317,27 @@ export default function Insumos() {
 
       <div className="tins-categorias">
         <button
-            className={`tins-categoria-btn ${
+          className={`tins-categoria-btn ${
             categoriaActiva === "cocina" ? "activo" : ""
-            }`}
-            onClick={() => {
+          }`}
+          onClick={() => {
             setCategoriaActiva("cocina");
             setExpandido(null);
-            }}
+          }}
         >
-            🍳 Cocina
+          🍳 Cocina
         </button>
 
         <button
-            className={`tins-categoria-btn ${
+          className={`tins-categoria-btn ${
             categoriaActiva === "empaques_aseo" ? "activo" : ""
-            }`}
-            onClick={() => {
+          }`}
+          onClick={() => {
             setCategoriaActiva("empaques_aseo");
             setExpandido(null);
-            }}
+          }}
         >
-            📦 Empaques y aseo
+          📦 Empaques y aseo
         </button>
       </div>
 
@@ -287,10 +345,10 @@ export default function Insumos() {
         <Search size={17} />
 
         <input
-            type="text"
-            placeholder="Buscar insumo..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+          type="text"
+          placeholder="Buscar insumo..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
         />
       </div>
 
@@ -304,7 +362,11 @@ export default function Insumos() {
         {insumosFiltrados.length === 0 ? (
           <div className="tins-sin-alertas">
             <CheckCircle2 size={18} />
-            <span>No hay insumos registrados</span>
+            <span>
+              {insumos.length === 0
+                ? "No hay insumos registrados"
+                : "Ningún insumo coincide con tu búsqueda"}
+            </span>
           </div>
         ) : (
           <div className="tins-lista-insumos">
@@ -450,13 +512,9 @@ export default function Insumos() {
             <button
               type="button"
               className={`tins-tipo-btn entrada ${
-                form.tipo === "entrada"
-                  ? "activo"
-                  : ""
+                form.tipo === "entrada" ? "activo" : ""
               }`}
-              onClick={() =>
-                cambiarTipo("entrada")
-              }
+              onClick={() => cambiarTipo("entrada")}
             >
               <TrendingUp size={15} />
               Entrada
@@ -465,13 +523,9 @@ export default function Insumos() {
             <button
               type="button"
               className={`tins-tipo-btn salida ${
-                form.tipo === "salida"
-                  ? "activo"
-                  : ""
+                form.tipo === "salida" ? "activo" : ""
               }`}
-              onClick={() =>
-                cambiarTipo("salida")
-              }
+              onClick={() => cambiarTipo("salida")}
             >
               <TrendingDown size={15} />
               Salida
@@ -484,97 +538,114 @@ export default function Insumos() {
           <label>Buscar insumo</label>
 
           <div className="tins-buscador-movimiento">
-          <Search size={16} />
+            <Search size={16} />
 
-          <input
-            type="text"
-            placeholder="Escribe el nombre del insumo..."
-            value={busquedaMovimiento}
-            onChange={(e) => {
-            setBusquedaMovimiento(e.target.value);
+            <input
+              type="text"
+              placeholder="Escribe el nombre del insumo..."
+              value={busquedaMovimiento}
+              onChange={(e) => {
+                setBusquedaMovimiento(e.target.value);
 
-            setForm((f) => ({
-                ...f,
-                insumo_id: "",
-            }));
-            }}
-          />
+                setForm((f) => ({
+                  ...f,
+                  insumo_id: "",
+                }));
+              }}
+            />
           </div>
 
           {busquedaMovimiento && !form.insumo_id && (
-          <div className="tins-resultados-movimiento">
-            {insumosParaMovimiento.length === 0 ? (
-            <p className="tins-sin-resultados">
-                No se encontraron insumos
-            </p>
-            ) : (
-            insumosParaMovimiento.map((insumo) => (
-                <button
-                type="button"
-                key={insumo.id}
-                className="tins-resultado-movimiento"
-                onClick={() => {
-                    setForm((f) => ({
-                    ...f,
-                    insumo_id: String(insumo.id),
-                    }));
+            <div className="tins-resultados-movimiento">
+              {insumosParaMovimiento.length === 0 ? (
+                <p className="tins-sin-resultados">
+                  No se encontraron insumos
+                </p>
+              ) : (
+                insumosParaMovimiento.map((insumo) => (
+                  <button
+                    type="button"
+                    key={insumo.id}
+                    className="tins-resultado-movimiento"
+                    onClick={() => {
+                      setForm((f) => ({
+                        ...f,
+                        insumo_id: String(insumo.id),
+                      }));
 
-                    setBusquedaMovimiento(insumo.nombre);
-                    setError(null);
-                }}
-                >
-                <div>
-                    <strong>{insumo.nombre}</strong>
+                      setBusquedaMovimiento(insumo.nombre);
+                      setError(null);
+                    }}
+                  >
+                    <div>
+                      <strong>{insumo.nombre}</strong>
 
-                    <span>
-                    Stock actual: {insumo.stock_actual}{" "}
-                    {insumo.unidad_medida}
-                    </span>
-                </div>
-                </button>
-              ))
+                      <span>
+                        Stock actual: {insumo.stock_actual}{" "}
+                        {insumo.unidad_medida}
+                      </span>
+                    </div>
+                  </button>
+                ))
               )}
-          </div>
+            </div>
           )}
 
           {/* CANTIDAD */}
 
-          <label>Cantidad</label>
+          <label>
+            {form.tipo === "entrada"
+              ? "Cantidad"
+              : "¿Cuánto queda actualmente?"}
+          </label>
+
+          {form.tipo === "salida" && insumoSeleccionado && (
+            <p className="tins-stock-referencia">
+              Stock registrado: {insumoSeleccionado.stock_actual}{" "}
+              {insumoSeleccionado.unidad_medida}
+            </p>
+          )}
 
           <div className="tins-stepper">
-          <button
-            type="button"
-            className="tins-stepper-btn"
-            onClick={() => ajustarCantidad(-1)}
-          >
+            <button
+              type="button"
+              className="tins-stepper-btn"
+              onClick={() => ajustarCantidad(-1)}
+            >
               −
-          </button>
+            </button>
 
-          <input
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={form.cantidad}
-            onChange={(e) => {
-            const valor = e.target.value;
+            <input
+              type="number"
+              min={form.tipo === "entrada" ? "0.01" : "0"}
+              step="0.01"
+              value={form.cantidad}
+              onChange={(e) => {
+                const valor = e.target.value;
 
-            setForm((f) => ({
-                ...f,
-                cantidad: valor,
-            }));
-            }}
-            placeholder="Ej: 5"
-            className="tins-stepper-input"
-          />
+                setForm((f) => ({
+                  ...f,
+                  cantidad: valor,
+                }));
+              }}
+              placeholder={form.tipo === "entrada" ? "Ej: 5" : "Ej: 3"}
+              className="tins-stepper-input"
+            />
 
-        <button
-            type="button"
-            className="tins-stepper-btn"
-            onClick={() => ajustarCantidad(1)}
-        >
-            +
-        </button>
-        </div>
+            <button
+              type="button"
+              className="tins-stepper-btn"
+              onClick={() => ajustarCantidad(1)}
+            >
+              +
+            </button>
+          </div>
+
+          {previa && (
+            <p className={`tins-previa tins-previa-${previa.tipo}`}>
+              {previa.texto}
+            </p>
+          )}
 
           {/* MOTIVO */}
 
@@ -590,14 +661,18 @@ export default function Insumos() {
             }
           >
             {motivosDisponibles.map((m) => (
-              <option
-                key={m.valor}
-                value={m.valor}
-              >
+              <option key={m.valor} value={m.valor}>
                 {m.label}
               </option>
             ))}
           </select>
+
+          {form.tipo === "salida" && (
+            <p className="tins-hint-motivo">
+              Si resulta que había más stock del registrado, se corrige
+              automáticamente como un ajuste, sin importar el motivo elegido.
+            </p>
+          )}
 
           {/* GUARDAR */}
 
@@ -606,9 +681,7 @@ export default function Insumos() {
             onClick={guardar}
             disabled={enviando}
           >
-            {enviando
-              ? "Guardando..."
-              : "Guardar movimiento"}
+            {enviando ? "Guardando..." : "Guardar movimiento"}
           </button>
 
         </div>
