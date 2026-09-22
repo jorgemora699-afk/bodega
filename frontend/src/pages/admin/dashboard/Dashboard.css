@@ -568,3 +568,35 @@
     font-size: 0.62rem;
   }
 }
+
+.dash-periodo-select {
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+}
+
+.dash-variacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-weight: 700;
+}
+
+.dash-variacion.positivo {
+  color: var(--color-success);
+}
+
+.dash-variacion.negativo {
+  color: var(--color-danger);
+}
+
+.dash-variacion.sin-datos {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.68rem;
+}
