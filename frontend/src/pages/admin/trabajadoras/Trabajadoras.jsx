@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Search, DollarSign, AlertTriangle, Clock, Wallet } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, DollarSign, AlertTriangle, Clock, Wallet, KeyRound  } from "lucide-react";
 import {
   listarTrabajadoras,
   crearTrabajadora,
   actualizarTrabajadora,
   eliminarTrabajadora,
+  establecerCodigoTrabajadora,
+  eliminarCodigoTrabajadora,
 } from "../../../api/trabajadoras";
 import Sheet from "../../../components/Sheet";
 import "./Trabajadoras.css";
@@ -40,6 +42,11 @@ export default function Trabajadoras() {
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(formVacio());
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(null);
+  const [trabajadoraActual, setTrabajadoraActual] = useState(null);
+  const [codigoInput, setCodigoInput] = useState("");
+  const [guardandoCodigo, setGuardandoCodigo] = useState(false);
+  const [mensajeCodigo, setMensajeCodigo] = useState(null);
+  const [errorCodigo, setErrorCodigo] = useState(null);
 
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -60,6 +67,7 @@ export default function Trabajadoras() {
 
   function iniciarCreacion() {
     setEditandoId(null);
+    setTrabajadoraActual(null);
     setForm(formVacio());
     setMensaje(null);
     setError(null);
@@ -68,8 +76,12 @@ export default function Trabajadoras() {
 
   function iniciarEdicion(trabajadora) {
     setEditandoId(trabajadora.id);
+    setTrabajadoraActual(trabajadora);
     setMensaje(null);
     setError(null);
+    setCodigoInput("");
+    setMensajeCodigo(null);
+    setErrorCodigo(null);
     setForm({
       nombre: trabajadora.nombre,
       tipo_pago: trabajadora.tipo_pago || "hora",
@@ -84,7 +96,11 @@ export default function Trabajadoras() {
     setSheetAbierto(abierto);
     if (!abierto) {
       setEditandoId(null);
+      setTrabajadoraActual(null);
       setForm(formVacio());
+      setCodigoInput("");
+      setMensajeCodigo(null);
+      setErrorCodigo(null);
     }
   }
 
@@ -135,6 +151,41 @@ export default function Trabajadoras() {
       setError("No se pudo desactivar la trabajadora");
     } finally {
       setGuardando(false);
+    }
+  }
+
+  async function guardarCodigo() {
+    if (!codigoInput || codigoInput.trim().length < 4) {
+      setErrorCodigo("El código debe tener al menos 4 dígitos");
+      return;
+    }
+    setGuardandoCodigo(true);
+    setErrorCodigo(null);
+    try {
+      await establecerCodigoTrabajadora(editandoId, codigoInput.trim());
+      setMensajeCodigo("Código guardado");
+      setCodigoInput("");
+      setTrabajadoraActual((t) => ({ ...t, tiene_codigo: true }));
+      cargarDatos();
+    } catch (err) {
+      setErrorCodigo(err.response?.data?.error || "No se pudo guardar el código");
+    } finally {
+      setGuardandoCodigo(false);
+    }
+  }
+
+  async function quitarCodigo() {
+    setGuardandoCodigo(true);
+    setErrorCodigo(null);
+    try {
+      await eliminarCodigoTrabajadora(editandoId);
+      setMensajeCodigo("Código eliminado");
+      setTrabajadoraActual((t) => ({ ...t, tiene_codigo: false }));
+      cargarDatos();
+    } catch (err) {
+      setErrorCodigo("No se pudo eliminar el código");
+    } finally {
+      setGuardandoCodigo(false);
     }
   }
 
@@ -200,6 +251,12 @@ export default function Trabajadoras() {
                       {esMensual ? <Wallet size={11} /> : <Clock size={11} />}
                       {esMensual ? "Sueldo fijo" : "Por hora"}
                     </span>
+                    {t.tiene_codigo && (
+                      <span className="trabad-tipo-badge trabad-badge-codigo">
+                        <KeyRound size={11} />
+                        Código activo
+                      </span>
+                    )}
                   </div>
                 </div>
 

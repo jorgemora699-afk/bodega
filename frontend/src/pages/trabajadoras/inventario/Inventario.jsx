@@ -15,6 +15,7 @@ import { registrarEntrada, listarBajoStock } from "../../../api/inventario";
 import { listarProveedoresDeProducto } from "../../../api/proveedores";
 import Sheet from "../../../components/Sheet";
 import "./Inventario.css";
+import VerificacionTrabajadora from "../../../components/VerificacionTrabajadora";
 
 export default function Inventario() {
   const [productos, setProductos] = useState([]);
@@ -24,6 +25,7 @@ export default function Inventario() {
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [enviando, setEnviando] = useState(false);
+  const [trabajadoraVerificada, setTrabajadoraVerificada] = useState(null);
   const [busquedaProducto, setBusquedaProducto] = useState("");
   const productosProduccion = productos.filter((producto) =>
     producto.nombre
@@ -64,16 +66,17 @@ export default function Inventario() {
     setBusquedaProducto("");
     setMensaje(null);
     setError(null);
+    setTrabajadoraVerificada(null);
     setSheetAbierto(true);
   }
 
   function cerrarSheet(abierto) {
     setSheetAbierto(abierto);
-
     if (!abierto) {
       setProductoSeleccionado(null);
       setCantidad(1);
       setBusquedaProducto("");
+      setTrabajadoraVerificada(null);
     }
   }
 
@@ -97,6 +100,7 @@ export default function Inventario() {
         producto_id: productoSeleccionado.id,
         cantidad: Number(cantidad),
         motivo: "produccion",
+        trabajadora_id: trabajadoraVerificada.id,
       });
 
       setMensaje(
@@ -335,107 +339,113 @@ export default function Inventario() {
             </div>
           )}
 
-          <label>Buscar producto</label>
-
-          <div className="inv-producto-buscador">
-            <Search size={16} />
-
-            <input
-              type="text"
-              placeholder="Escribe el nombre del producto..."
-              value={busquedaProducto}
-              onChange={(e) => {
-                setBusquedaProducto(e.target.value);
-                setProductoSeleccionado(null);
-              }}
-            />
-          </div>
-
-          {busquedaProducto && !productoSeleccionado && (
-            <div className="inv-productos-resultados">
-              {productosProduccion.length === 0 ? (
-                <p className="inv-sin-productos">
-                  No se encontraron productos
-                </p>
-              ) : (
-                productosProduccion.map((producto) => (
-                  <button
-                    type="button"
-                    key={producto.id}
-                    className="inv-producto-resultado"
-                    onClick={() => {
-                      setProductoSeleccionado(producto);
-                      setBusquedaProducto(producto.nombre);
-                      setCantidad(1);
-                      setError(null);
-                    }}
-                  >
-                    <div>
-                      <strong>{producto.nombre}</strong>
-                      <span>
-                        Stock actual: {producto.stock_actual}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-
-          {productoSeleccionado && (
+          {!trabajadoraVerificada ? (
+            <VerificacionTrabajadora onVerificado={setTrabajadoraVerificada} />
+          ) : (
             <>
-              <p className="inv-sheet-subtitulo">
-                Stock actual: {productoSeleccionado.stock_actual}
-              </p>
+              <label>Buscar producto</label>
 
-              <label>¿Cuántas unidades se hicieron?</label>
-
-              <div className="inv-stepper">
-                <button
-                  type="button"
-                  className="inv-stepper-btn"
-                  onClick={() => ajustarCantidad(-1)}
-                >
-                  <Minus size={16} />
-                </button>
+              <div className="inv-producto-buscador">
+                <Search size={16} />
 
                 <input
-                  type="number"
-                  min="1"
-                  value={cantidad}
+                  type="text"
+                  placeholder="Escribe el nombre del producto..."
+                  value={busquedaProducto}
                   onChange={(e) => {
-                    const valor = e.target.value;
-
-                    if (valor === "") {
-                      setCantidad("");
-                      return;
-                    }
-
-                    setCantidad(Math.max(1, Number(valor)));
+                    setBusquedaProducto(e.target.value);
+                    setProductoSeleccionado(null);
                   }}
-                  className="inv-stepper-input"
                 />
-
-                <button
-                  type="button"
-                  className="inv-stepper-btn"
-                  onClick={() => ajustarCantidad(1)}
-                >
-                  <Plus size={16} />
-                </button>
               </div>
+
+              {busquedaProducto && !productoSeleccionado && (
+                <div className="inv-productos-resultados">
+                  {productosProduccion.length === 0 ? (
+                    <p className="inv-sin-productos">
+                      No se encontraron productos
+                    </p>
+                  ) : (
+                    productosProduccion.map((producto) => (
+                      <button
+                        type="button"
+                        key={producto.id}
+                        className="inv-producto-resultado"
+                        onClick={() => {
+                          setProductoSeleccionado(producto);
+                          setBusquedaProducto(producto.nombre);
+                          setCantidad(1);
+                          setError(null);
+                        }}
+                      >
+                        <div>
+                          <strong>{producto.nombre}</strong>
+                          <span>
+                            Stock actual: {producto.stock_actual}
+                          </span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {productoSeleccionado && (
+                <>
+                  <p className="inv-sheet-subtitulo">
+                    Stock actual: {productoSeleccionado.stock_actual}
+                  </p>
+
+                  <label>¿Cuántas unidades se hicieron?</label>
+
+                  <div className="inv-stepper">
+                    <button
+                      type="button"
+                      className="inv-stepper-btn"
+                      onClick={() => ajustarCantidad(-1)}
+                    >
+                      <Minus size={16} />
+                    </button>
+
+                    <input
+                      type="number"
+                      min="1"
+                      value={cantidad}
+                      onChange={(e) => {
+                        const valor = e.target.value;
+
+                        if (valor === "") {
+                          setCantidad("");
+                          return;
+                        }
+
+                        setCantidad(Math.max(1, Number(valor)));
+                      }}
+                      className="inv-stepper-input"
+                    />
+
+                    <button
+                      type="button"
+                      className="inv-stepper-btn"
+                      onClick={() => ajustarCantidad(1)}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <button
+                className="inv-btn-primario inv-btn-guardar-sheet"
+                onClick={registrarProduccion}
+                disabled={enviando || !productoSeleccionado}
+              >
+                {enviando
+                  ? "Registrando..."
+                  : "Registrar producción"}
+              </button>
             </>
           )}
-
-          <button
-            className="inv-btn-primario inv-btn-guardar-sheet"
-            onClick={registrarProduccion}
-            disabled={enviando || !productoSeleccionado}
-          >
-            {enviando
-              ? "Registrando..."
-              : "Registrar producción"}
-          </button>
         </div>
       </Sheet>
     </div>

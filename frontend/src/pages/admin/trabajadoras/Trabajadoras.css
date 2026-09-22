@@ -316,3 +316,77 @@
   width: 100%;
   margin-top: 1rem;
 }
+
+.trabad-badge-codigo {
+  color: #1B6A5C;
+}
+
+.trabad-codigo-bloque {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.trabad-codigo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.trabad-codigo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.trabad-codigo-estado {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 20px;
+}
+
+.trabad-codigo-ok {
+  background: #DCEFE9;
+  color: #1B6A5C;
+}
+
+.trabad-codigo-falta {
+  background: var(--color-brand);
+  color: var(--color-brand-dark);
+}
+
+.trabad-codigo-mensaje {
+  font-size: 0.78rem;
+  color: #1B6A5C;
+  margin: 0 0 0.5rem;
+}
+
+.trabad-codigo-fila {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trabad-codigo-fila input {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+}
+
+.trabad-codigo-quitar {
+  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--color-danger);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}

@@ -17,6 +17,7 @@ import {
 } from "../../../api/insumos";
 import Sheet from "../../../components/Sheet";
 import "./Insumos.css";
+import VerificacionTrabajadora from "../../../components/VerificacionTrabajadora";
 
 const MOTIVOS_ENTRADA = [
   { valor: "compra", label: "Compra" },
@@ -44,6 +45,7 @@ export default function Insumos() {
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [form, setForm] = useState(formVacio());
   const [enviando, setEnviando] = useState(false);
+  const [trabajadoraVerificada, setTrabajadoraVerificada] = useState(null);
 
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
@@ -89,6 +91,7 @@ export default function Insumos() {
     setBusquedaMovimiento("");
     setMensaje(null);
     setError(null);
+    setTrabajadoraVerificada(null);
     setSheetAbierto(true);
   }
 
@@ -98,6 +101,7 @@ export default function Insumos() {
     if (!abierto) {
       setForm(formVacio());
       setBusquedaMovimiento("");
+      setTrabajadoraVerificada(null);
     }
   }
 
@@ -144,6 +148,7 @@ export default function Insumos() {
           insumo_id: Number(form.insumo_id),
           cantidad: Number(form.cantidad),
           motivo: form.motivo,
+          trabajadora_id: trabajadoraVerificada.id,
         });
 
         setMensaje("Entrada registrada correctamente");
@@ -154,6 +159,7 @@ export default function Insumos() {
           insumo_id: Number(form.insumo_id),
           cantidad_restante: Number(form.cantidad),
           motivo: form.motivo,
+          trabajadora_id: trabajadoraVerificada.id,
         });
 
         if (resultado.sin_cambios) {
@@ -458,6 +464,7 @@ export default function Insumos() {
                         </p>
                       ) : (
                         proveedores.map((prov) => (
+                          
                           <a
                             key={prov.id}
                             href={`tel:${prov.celular}`}
@@ -503,186 +510,192 @@ export default function Insumos() {
             </div>
           )}
 
-          {/* TIPO */}
+          {!trabajadoraVerificada ? (
+            <VerificacionTrabajadora onVerificado={setTrabajadoraVerificada} />
+          ) : (
+            <>
+              {/* TIPO */}
 
-          <label>Tipo de movimiento</label>
+              <label>Tipo de movimiento</label>
 
-          <div className="tins-tipos">
+              <div className="tins-tipos">
 
-            <button
-              type="button"
-              className={`tins-tipo-btn entrada ${
-                form.tipo === "entrada" ? "activo" : ""
-              }`}
-              onClick={() => cambiarTipo("entrada")}
-            >
-              <TrendingUp size={15} />
-              Entrada
-            </button>
+                <button
+                  type="button"
+                  className={`tins-tipo-btn entrada ${
+                    form.tipo === "entrada" ? "activo" : ""
+                  }`}
+                  onClick={() => cambiarTipo("entrada")}
+                >
+                  <TrendingUp size={15} />
+                  Entrada
+                </button>
 
-            <button
-              type="button"
-              className={`tins-tipo-btn salida ${
-                form.tipo === "salida" ? "activo" : ""
-              }`}
-              onClick={() => cambiarTipo("salida")}
-            >
-              <TrendingDown size={15} />
-              Salida
-            </button>
+                <button
+                  type="button"
+                  className={`tins-tipo-btn salida ${
+                    form.tipo === "salida" ? "activo" : ""
+                  }`}
+                  onClick={() => cambiarTipo("salida")}
+                >
+                  <TrendingDown size={15} />
+                  Salida
+                </button>
 
-          </div>
+              </div>
 
-          {/* INSUMO */}
+              {/* INSUMO */}
 
-          <label>Buscar insumo</label>
+              <label>Buscar insumo</label>
 
-          <div className="tins-buscador-movimiento">
-            <Search size={16} />
+              <div className="tins-buscador-movimiento">
+                <Search size={16} />
 
-            <input
-              type="text"
-              placeholder="Escribe el nombre del insumo..."
-              value={busquedaMovimiento}
-              onChange={(e) => {
-                setBusquedaMovimiento(e.target.value);
+                <input
+                  type="text"
+                  placeholder="Escribe el nombre del insumo..."
+                  value={busquedaMovimiento}
+                  onChange={(e) => {
+                    setBusquedaMovimiento(e.target.value);
 
-                setForm((f) => ({
-                  ...f,
-                  insumo_id: "",
-                }));
-              }}
-            />
-          </div>
+                    setForm((f) => ({
+                      ...f,
+                      insumo_id: "",
+                    }));
+                  }}
+                />
+              </div>
 
-          {busquedaMovimiento && !form.insumo_id && (
-            <div className="tins-resultados-movimiento">
-              {insumosParaMovimiento.length === 0 ? (
-                <p className="tins-sin-resultados">
-                  No se encontraron insumos
-                </p>
-              ) : (
-                insumosParaMovimiento.map((insumo) => (
-                  <button
-                    type="button"
-                    key={insumo.id}
-                    className="tins-resultado-movimiento"
-                    onClick={() => {
-                      setForm((f) => ({
-                        ...f,
-                        insumo_id: String(insumo.id),
-                      }));
+              {busquedaMovimiento && !form.insumo_id && (
+                <div className="tins-resultados-movimiento">
+                  {insumosParaMovimiento.length === 0 ? (
+                    <p className="tins-sin-resultados">
+                      No se encontraron insumos
+                    </p>
+                  ) : (
+                    insumosParaMovimiento.map((insumo) => (
+                      <button
+                        type="button"
+                        key={insumo.id}
+                        className="tins-resultado-movimiento"
+                        onClick={() => {
+                          setForm((f) => ({
+                            ...f,
+                            insumo_id: String(insumo.id),
+                          }));
 
-                      setBusquedaMovimiento(insumo.nombre);
-                      setError(null);
-                    }}
-                  >
-                    <div>
-                      <strong>{insumo.nombre}</strong>
+                          setBusquedaMovimiento(insumo.nombre);
+                          setError(null);
+                        }}
+                      >
+                        <div>
+                          <strong>{insumo.nombre}</strong>
 
-                      <span>
-                        Stock actual: {insumo.stock_actual}{" "}
-                        {insumo.unidad_medida}
-                      </span>
-                    </div>
-                  </button>
-                ))
+                          <span>
+                            Stock actual: {insumo.stock_actual}{" "}
+                            {insumo.unidad_medida}
+                          </span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
               )}
-            </div>
+
+              {/* CANTIDAD */}
+
+              <label>
+                {form.tipo === "entrada"
+                  ? "Cantidad"
+                  : "¿Cuánto queda actualmente?"}
+              </label>
+
+              {form.tipo === "salida" && insumoSeleccionado && (
+                <p className="tins-stock-referencia">
+                  Stock registrado: {insumoSeleccionado.stock_actual}{" "}
+                  {insumoSeleccionado.unidad_medida}
+                </p>
+              )}
+
+              <div className="tins-stepper">
+                <button
+                  type="button"
+                  className="tins-stepper-btn"
+                  onClick={() => ajustarCantidad(-1)}
+                >
+                  −
+                </button>
+
+                <input
+                  type="number"
+                  min={form.tipo === "entrada" ? "0.01" : "0"}
+                  step="0.01"
+                  value={form.cantidad}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+
+                    setForm((f) => ({
+                      ...f,
+                      cantidad: valor,
+                    }));
+                  }}
+                  placeholder={form.tipo === "entrada" ? "Ej: 5" : "Ej: 3"}
+                  className="tins-stepper-input"
+                />
+
+                <button
+                  type="button"
+                  className="tins-stepper-btn"
+                  onClick={() => ajustarCantidad(1)}
+                >
+                  +
+                </button>
+              </div>
+
+              {previa && (
+                <p className={`tins-previa tins-previa-${previa.tipo}`}>
+                  {previa.texto}
+                </p>
+              )}
+
+              {/* MOTIVO */}
+
+              <label>Motivo</label>
+
+              <select
+                value={form.motivo}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    motivo: e.target.value,
+                  }))
+                }
+              >
+                {motivosDisponibles.map((m) => (
+                  <option key={m.valor} value={m.valor}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+
+              {form.tipo === "salida" && (
+                <p className="tins-hint-motivo">
+                  Si resulta que había más stock del registrado, se corrige
+                  automáticamente como un ajuste, sin importar el motivo elegido.
+                </p>
+              )}
+
+              {/* GUARDAR */}
+
+              <button
+                className="tins-btn-primario tins-btn-guardar-sheet"
+                onClick={guardar}
+                disabled={enviando}
+              >
+                {enviando ? "Guardando..." : "Guardar movimiento"}
+              </button>
+            </>
           )}
-
-          {/* CANTIDAD */}
-
-          <label>
-            {form.tipo === "entrada"
-              ? "Cantidad"
-              : "¿Cuánto queda actualmente?"}
-          </label>
-
-          {form.tipo === "salida" && insumoSeleccionado && (
-            <p className="tins-stock-referencia">
-              Stock registrado: {insumoSeleccionado.stock_actual}{" "}
-              {insumoSeleccionado.unidad_medida}
-            </p>
-          )}
-
-          <div className="tins-stepper">
-            <button
-              type="button"
-              className="tins-stepper-btn"
-              onClick={() => ajustarCantidad(-1)}
-            >
-              −
-            </button>
-
-            <input
-              type="number"
-              min={form.tipo === "entrada" ? "0.01" : "0"}
-              step="0.01"
-              value={form.cantidad}
-              onChange={(e) => {
-                const valor = e.target.value;
-
-                setForm((f) => ({
-                  ...f,
-                  cantidad: valor,
-                }));
-              }}
-              placeholder={form.tipo === "entrada" ? "Ej: 5" : "Ej: 3"}
-              className="tins-stepper-input"
-            />
-
-            <button
-              type="button"
-              className="tins-stepper-btn"
-              onClick={() => ajustarCantidad(1)}
-            >
-              +
-            </button>
-          </div>
-
-          {previa && (
-            <p className={`tins-previa tins-previa-${previa.tipo}`}>
-              {previa.texto}
-            </p>
-          )}
-
-          {/* MOTIVO */}
-
-          <label>Motivo</label>
-
-          <select
-            value={form.motivo}
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                motivo: e.target.value,
-              }))
-            }
-          >
-            {motivosDisponibles.map((m) => (
-              <option key={m.valor} value={m.valor}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-
-          {form.tipo === "salida" && (
-            <p className="tins-hint-motivo">
-              Si resulta que había más stock del registrado, se corrige
-              automáticamente como un ajuste, sin importar el motivo elegido.
-            </p>
-          )}
-
-          {/* GUARDAR */}
-
-          <button
-            className="tins-btn-primario tins-btn-guardar-sheet"
-            onClick={guardar}
-            disabled={enviando}
-          >
-            {enviando ? "Guardando..." : "Guardar movimiento"}
-          </button>
 
         </div>
       </Sheet>
