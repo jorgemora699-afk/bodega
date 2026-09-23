@@ -1528,17 +1528,17 @@ export default function RegistrarVenta() {
                 key={v.id}
                 className="recibo-item"
               >
-                <span>
-                  {v.cantidad} ×{" "}
-                  {v.producto_nombre}
-                </span>
-
-                <span>
-                  $
-                  {Number(
-                    v.total
-                  ).toLocaleString("es-CO")}
-                </span>
+                <div className="recibo-item-nombre">
+                  {v.cantidad} × {v.producto_nombre}
+                </div>
+                <div className="recibo-item-detalle">
+                  <span className="recibo-item-precio">
+                    ${Number(v.precio_unitario).toLocaleString("es-CO")} c/u
+                  </span>
+                  <span className="recibo-item-subtotal">
+                    ${Number(v.total).toLocaleString("es-CO")}
+                  </span>
+                </div>
               </div>
             ))}
 
@@ -1559,18 +1559,6 @@ export default function RegistrarVenta() {
               Método de pago: {etiquetaMetodoPago(reciboOrden.metodo_pago)}
             </div>
 
-            {reciboOrden.metodo_pago === "credito" && (
-              <div className="recibo-detalle">
-                Estado: {reciboOrden.pagada ? "Pagada" : "Pendiente por cobrar"}
-              </div>
-            )}
-
-            {reciboOrden.cliente_nombre && (
-              <div className="recibo-detalle">
-                Cliente: {reciboOrden.cliente_nombre}
-              </div>
-            )}
-
             {reciboEfectivo && (
               <>
                 <div className="recibo-detalle">
@@ -1585,17 +1573,33 @@ export default function RegistrarVenta() {
               </>
             )}
 
-            {reciboOrden.descripcion && (
-              <div className="recibo-detalle">
-                Nota: {reciboOrden.descripcion}
+            {reciboOrden.cliente_nombre && !reciboOrden.cliente_es_predeterminado && (
+              <div className="recibo-cliente">
+                <div className="recibo-cliente-titulo">Datos del cliente</div>
+
+                <div className="recibo-detalle recibo-cliente-nombre">
+                  {reciboOrden.cliente_nombre}
+                </div>
+
+                {reciboOrden.cliente_documento && (
+                  <div className="recibo-detalle">
+                    {reciboOrden.cliente_tipo === "juridica" ? "NIT" : "Cédula"}: {reciboOrden.cliente_documento}
+                  </div>
+                )}
+
+                {reciboOrden.cliente_celular && (
+                  <div className="recibo-detalle">
+                    Celular: {reciboOrden.cliente_celular}
+                  </div>
+                )}
+
+                {reciboOrden.cliente_direccion && (
+                  <div className="recibo-detalle">
+                    Dirección: {reciboOrden.cliente_direccion}
+                  </div>
+                )}
               </div>
             )}
-
-            <div className="recibo-detalle">
-              Atendido por:{" "}
-              {reciboOrden.trabajadora_nombre}
-            </div>
-
 
             <div className="recibo-footer">
               ¡Gracias por su compra!

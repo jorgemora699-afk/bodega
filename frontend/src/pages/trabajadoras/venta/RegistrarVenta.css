@@ -1353,3 +1353,62 @@
   resize: vertical;
   min-height: 44px;
 }
+
+/* =========================
+   ITEM CON PRECIO UNITARIO
+   ========================= */
+
+.recibo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.35rem 0;
+}
+
+.recibo-item-nombre {
+  font-weight: 600;
+}
+
+.recibo-item-detalle {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  color: #666;
+  font-size: 0.72rem;
+}
+
+.recibo-item-precio {
+  color: #777;
+}
+
+.recibo-item-subtotal {
+  font-weight: 700;
+  color: #222;
+  white-space: nowrap;
+}
+
+/* =========================
+   DATOS DEL CLIENTE
+   ========================= */
+
+.recibo-cliente {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #cfcfcf;
+}
+
+.recibo-cliente-titulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #888;
+  margin-bottom: 0.35rem;
+}
+
+.recibo-cliente-nombre {
+  font-weight: 700;
+  color: #222;
+  margin-top: 0;
+}
