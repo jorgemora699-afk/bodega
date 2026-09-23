@@ -60,3 +60,52 @@ class InventarioService:
     def productos_bajo_stock(umbral=UMBRAL_BAJO_STOCK_DEFAULT):
         productos = Producto.query.filter(Producto.activo == True).all()
         return [p for p in productos if esta_bajo_stock(float(p.stock_actual), umbral)]
+
+
+    @staticmethod
+    def reportar_nivel(data):
+        """Salida por nivel restante: la trabajadora dice cuánto QUEDA,
+        no cuánto se produjo o salió. Se calcula la diferencia contra el
+        stock guardado y se registra el movimiento correspondiente.
+
+        - Si lo reportado es menor al stock guardado: es una salida por
+        la diferencia (se usa el motivo que envíe el frontend).
+        - Si lo reportado es mayor: el stock guardado estaba desactualizado.
+        Se corrige con un ajuste hacia arriba, sin importar el motivo enviado.
+        - Si es igual: no hay cambios que registrar.
+        """
+        producto = Producto.query.get(data["producto_id"])
+        if not producto:
+            return None, "Producto no encontrado"
+
+        cantidad_restante = float(data["cantidad_restante"])
+        if cantidad_restante < 0:
+            return None, "La cantidad no puede ser negativa"
+
+        stock_previo = float(producto.stock_actual)
+        diferencia = round(stock_previo - cantidad_restante, 3)
+
+        if diferencia == 0:
+            return {"sin_cambios": True, "stock_actual": stock_previo}, None
+
+        if diferencia > 0:
+            tipo = "salida"
+            motivo = data.get("motivo", "consumo")
+            cantidad_movimiento = diferencia
+        else:
+            tipo = "entrada"
+            motivo = "ajuste"
+            cantidad_movimiento = abs(diferencia)
+
+        producto.stock_actual = cantidad_restante
+
+        movimiento = MovimientoInventario(
+            producto_id=producto.id,
+            trabajadora_id=data.get("trabajadora_id"),
+            tipo=tipo,
+            motivo=motivo,
+            cantidad=cantidad_movimiento,
+        )
+        db.session.add(movimiento)
+        db.session.commit()
+        return movimiento, None

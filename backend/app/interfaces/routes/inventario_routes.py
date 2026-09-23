@@ -47,3 +47,22 @@ def productos_bajo_stock():
     umbral = request.args.get("umbral", default=5, type=int)
     productos = InventarioService.productos_bajo_stock(umbral)
     return jsonify([p.to_dict() for p in productos]), 200
+
+@inventario_bp.route("/reportar-nivel", methods=["POST"])
+def reportar_nivel():
+    data = request.get_json()
+
+    if data.get("producto_id") is None or data.get("cantidad_restante") is None:
+        return jsonify({"error": "producto_id y cantidad_restante son obligatorios"}), 400
+
+    resultado, error = InventarioService.reportar_nivel(data)
+    if error:
+        return jsonify({"error": error}), 400
+
+    if isinstance(resultado, dict):
+        return jsonify({
+            "mensaje": "El nivel reportado coincide con el registrado, no hubo cambios",
+            **resultado,
+        }), 200
+
+    return jsonify(resultado.to_dict()), 201
