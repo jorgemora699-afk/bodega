@@ -8,6 +8,7 @@ import {
   ChefHat,
   LogOut,
   Wheat,
+  Receipt,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -18,6 +19,10 @@ const TABS = [
     to: "/venta",
     label: "Venta",
     Icon: ShoppingCart,
+  },
+  { to: "/ventas-hoy", 
+    label: "Ventas", 
+    Icon: Receipt 
   },
   {
     to: "/inventario",

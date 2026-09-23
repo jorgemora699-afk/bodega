@@ -22,6 +22,7 @@ import RecetasAdmin from "./pages/admin/recetas/Recetas";
 import Insumos from "./pages/admin/insumos/Insumos";
 import InsumosTrabajadora from "./pages/trabajadoras/insumos/Insumos";
 import MiCuenta from "./pages/admin/cuenta/MiCuenta";
+import VentasTrabajadora from "./pages/trabajadoras/venta/Ventas";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
 
           <Route element={<TrabajadoraLayout />}>
             <Route path="/venta" element={<RegistrarVenta />} />
+            <Route path="/ventas-hoy" element={<VentasTrabajadora />} />
             <Route path="/inventario" element={<Inventariotrabajadora />} />
             <Route path="/insumos" element={<InsumosTrabajadora />} />
             <Route path="/horario" element={<Horario />} />
