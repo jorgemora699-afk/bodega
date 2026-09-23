@@ -108,6 +108,7 @@ class Cliente(db.Model):
     contacto = db.Column(db.String(100), nullable=True)  # solo aplica a jurídica
     celular = db.Column(db.String(20), nullable=True)
     direccion = db.Column(db.String(200), nullable=True)
+    es_predeterminado = db.Column(db.Boolean, nullable=False, default=False)
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -122,6 +123,7 @@ class Cliente(db.Model):
             "contacto": self.contacto,
             "celular": self.celular,
             "direccion": self.direccion,
+            "es_predeterminado": self.es_predeterminado,
             "activo": self.activo,
         }
 
@@ -153,6 +155,7 @@ class Orden(db.Model):
             "trabajadora_nombre": self.trabajadora.nombre if self.trabajadora else None,
             "cliente_id": self.cliente_id,
             "cliente_nombre": self.cliente.nombre if self.cliente else None,
+            "cliente_es_predeterminado": self.cliente.es_predeterminado if self.cliente else False,
             "metodo_pago": self.metodo_pago,
             "total": float(self.total),
             "descripcion": self.descripcion,

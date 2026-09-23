@@ -26,6 +26,10 @@ class ClienteService:
         return Cliente.query.get(cliente_id)
 
     @staticmethod
+    def obtener_predeterminado():
+        return Cliente.query.filter_by(es_predeterminado=True).first()
+
+    @staticmethod
     def crear(data):
         tipo = data.get("tipo")
         nombre = data.get("nombre", "").strip()
@@ -82,7 +86,10 @@ class ClienteService:
             cliente.celular = data["celular"]
         if "direccion" in data:
             cliente.direccion = data["direccion"]
-        if "activo" in data:
+
+        # El estado activo y la marca de predeterminado del cliente predeterminado
+        # no se pueden cambiar por esta vía — siempre debe existir uno usable.
+        if "activo" in data and not cliente.es_predeterminado:
             cliente.activo = data["activo"]
 
         # Si pasa a ser natural, el contacto (dato exclusivo de jurídica) no aplica
@@ -96,7 +103,10 @@ class ClienteService:
     def eliminar(cliente_id):
         cliente = Cliente.query.get(cliente_id)
         if not cliente:
-            return False
+            return False, "Cliente no encontrado"
+        if cliente.es_predeterminado:
+            return False, "El cliente predeterminado no se puede eliminar"
+
         cliente.activo = False  # borrado lógico — conserva historial de órdenes
         db.session.commit()
-        return True
+        return True, None

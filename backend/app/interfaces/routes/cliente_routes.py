@@ -7,7 +7,7 @@ cliente_bp = Blueprint("clientes", __name__, url_prefix="/api/clientes")
 @cliente_bp.before_request
 def _proteger_clientes():
     # Jefe y trabajadora pueden ver y crear clientes (se crean sobre la marcha
-    # durante una venta a crédito). Editar y eliminar queda solo para el jefe.
+    # durante una venta). Editar y eliminar queda solo para el jefe.
     if request.method in ("GET", "POST"):
         return exigir_rol("jefe", "trabajadora")
     return exigir_rol("jefe")
@@ -18,6 +18,14 @@ def listar_clientes():
     buscar = request.args.get("buscar")
     clientes = ClienteService.listar_todos(buscar=buscar)
     return jsonify([c.to_dict() for c in clientes]), 200
+
+
+@cliente_bp.route("/predeterminado", methods=["GET"])
+def obtener_cliente_predeterminado():
+    cliente = ClienteService.obtener_predeterminado()
+    if not cliente:
+        return jsonify({"error": "No hay un cliente predeterminado configurado"}), 404
+    return jsonify(cliente.to_dict()), 200
 
 
 @cliente_bp.route("/<int:cliente_id>", methods=["GET"])
@@ -49,7 +57,8 @@ def actualizar_cliente(cliente_id):
 
 @cliente_bp.route("/<int:cliente_id>", methods=["DELETE"])
 def eliminar_cliente(cliente_id):
-    exito = ClienteService.eliminar(cliente_id)
+    exito, error = ClienteService.eliminar(cliente_id)
     if not exito:
-        return jsonify({"error": "Cliente no encontrado"}), 404
+        status = 404 if error == "Cliente no encontrado" else 400
+        return jsonify({"error": error}), status
     return jsonify({"mensaje": "Cliente eliminado"}), 200

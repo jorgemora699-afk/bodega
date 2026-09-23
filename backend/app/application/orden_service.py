@@ -2,6 +2,7 @@ from collections import defaultdict
 from app import db
 from app.infrastructure.models import Orden, Venta, Producto, Cliente, MovimientoInventario
 from app.domain.inventario import hay_stock_suficiente
+from app.application.cliente_service import ClienteService
 
 
 def _resolver_stock(producto, cantidad):
@@ -35,13 +36,38 @@ class OrdenService:
         )
 
     @staticmethod
-    def _validar_cliente_credito(data, cliente_actual_id=None):
-        """Para el método 'credito', el cliente es obligatorio y debe existir
-        y estar activo. Devuelve (cliente_id, error)."""
+    def _resolver_cliente(data, metodo_pago, cliente_actual_id=None):
+        """Determina el cliente_id final para la orden, según el método de pago.
+
+        - Para 'credito': el cliente es obligatorio, debe existir, estar activo
+          y NO ser el cliente predeterminado (una deuda necesita un responsable real).
+        - Para los demás métodos: el cliente es opcional. Si no se envía uno,
+          se usa el cliente predeterminado automáticamente.
+
+        Devuelve (cliente_id, error).
+        """
         cliente_id = data.get("cliente_id", cliente_actual_id)
 
+        if metodo_pago == "credito":
+            if not cliente_id:
+                return None, "cliente_id es obligatorio para ventas a crédito"
+
+            cliente = Cliente.query.get(cliente_id)
+            if not cliente:
+                return None, f"Cliente no encontrado (id {cliente_id})"
+            if not cliente.activo:
+                return None, f"El cliente {cliente.nombre} no está activo"
+            if cliente.es_predeterminado:
+                return None, "No puedes registrar una cuenta por cobrar a nombre del cliente predeterminado; selecciona o crea un cliente real"
+
+            return cliente_id, None
+
+        # Métodos distintos a crédito: el cliente es opcional
         if not cliente_id:
-            return None, "cliente_id es obligatorio para ventas a crédito"
+            predeterminado = ClienteService.obtener_predeterminado()
+            if not predeterminado:
+                return None, "No hay un cliente predeterminado configurado; crea uno o selecciona un cliente"
+            return predeterminado.id, None
 
         cliente = Cliente.query.get(cliente_id)
         if not cliente:
@@ -63,14 +89,11 @@ class OrdenService:
         if not items:
             return None, "La orden debe tener al menos un producto"
 
-        cliente_id = None
-        pagada = True
+        cliente_id, error = OrdenService._resolver_cliente(data, metodo_pago)
+        if error:
+            return None, error
 
-        if metodo_pago == "credito":
-            cliente_id, error = OrdenService._validar_cliente_credito(data)
-            if error:
-                return None, error
-            pagada = False
+        pagada = metodo_pago != "credito"
 
         productos_vendidos = {}
         cantidad_efectiva_por_stock = defaultdict(float)
@@ -154,21 +177,17 @@ class OrdenService:
         if not items:
             return None, "La orden debe tener al menos un producto"
 
-        cliente_id = orden.cliente_id
-        pagada = orden.pagada
+        cliente_id, error = OrdenService._resolver_cliente(
+            data, metodo_pago, cliente_actual_id=orden.cliente_id
+        )
+        if error:
+            return None, error
 
         if metodo_pago == "credito":
-            cliente_id, error = OrdenService._validar_cliente_credito(data, cliente_actual_id=orden.cliente_id)
-            if error:
-                return None, error
-            # Si la orden no era de crédito antes, ahora nace como deuda pendiente.
-            # Si ya era de crédito, se respeta el estado de pago que ya tenía.
-            if orden.metodo_pago != "credito":
-                pagada = False
+            # Si ya era a crédito, se respeta el estado de pago que tenía.
+            # Si nace como crédito ahora (antes era otro método), queda pendiente.
+            pagada = orden.pagada if orden.metodo_pago == "credito" else False
         else:
-            # Deja de ser una venta a crédito: se considera pagada de inmediato,
-            # como cualquier otro método de pago.
-            cliente_id = None
             pagada = True
 
         # 1. Stock "hipotético" — como si las líneas viejas no hubieran existido,
