@@ -1014,6 +1014,10 @@
     font-size: 0.75rem;
   }
 
+  .vad-filtro-fecha {
+    flex-wrap: wrap;
+  }
+
   .vad-form {
     padding: 1rem;
   }
@@ -1100,5 +1104,140 @@
   .vad-orden-edit-agregar {
     gap: 0.35rem;
   }
+}
+
+/* =========================================================
+   FILTRO DE FECHA
+   ========================================================= */
+
+.vad-filtro-fecha {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0.4rem 0.75rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.vad-filtro-fecha input[type="date"] {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.vad-filtro-fecha-hoy {
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.vad-filtro-fecha-hoy:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+
+/* =========================================================
+   CUENTA POR COBRAR — FILA DE ESTADO
+   ========================================================= */
+
+.vad-fila-credito {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.vad-badge-credito {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 750;
+}
+
+.vad-badge-credito.pendiente {
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.vad-badge-credito.pagada {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+
+.vad-cliente-nombre {
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+
+/* =========================================================
+   BOTÓN MARCAR COMO PAGADA
+   ========================================================= */
+
+.vad-btn-pagar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  min-width: 100px;
+  min-height: 38px;
+  box-sizing: border-box;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--color-success);
+  border-radius: 9px;
+  background: var(--color-success);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.vad-btn-pagar:hover {
+  opacity: 0.9;
+}
+
+.vad-btn-pagar:active {
+  transform: scale(0.98);
+}
+
+.vad-btn-pagar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 

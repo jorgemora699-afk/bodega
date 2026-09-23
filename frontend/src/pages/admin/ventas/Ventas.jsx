@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, ShoppingBag, Plus, Minus, X } from "lucide-react";
+import { Pencil, Trash2, ShoppingBag, Plus, Minus, X, Check, Calendar, Clock3 } from "lucide-react";
 import { listarVentas, actualizarVenta, eliminarVenta } from "../../../api/ventas";
-import { listarOrdenes, actualizarOrden, anularOrden } from "../../../api/ordenes";
+import { listarOrdenes, actualizarOrden, anularOrden, marcarOrdenPagada } from "../../../api/ordenes";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import "./Ventas.css";
@@ -25,6 +25,22 @@ function formOrdenVacio() {
   return { metodo_pago: "", trabajadora_id: "", items: [] };
 }
 
+/* Fecha local de hoy en formato yyyy-mm-dd, para el input type="date" */
+function hoyISO() {
+  const hoy = new Date();
+  const offset = hoy.getTimezoneOffset();
+  const local = new Date(hoy.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 10);
+}
+
+/* Compara si una fecha ISO (con hora, en UTC) cae en el día local elegido */
+function esMismoDiaLocal(isoString, fechaISO) {
+  const fecha = new Date(isoString);
+  const offset = fecha.getTimezoneOffset();
+  const local = new Date(fecha.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 10) === fechaISO;
+}
+
 export default function Ventas() {
   const [ordenes, setOrdenes] = useState([]);
   const [ventasSueltas, setVentasSueltas] = useState([]);
@@ -39,6 +55,9 @@ export default function Ventas() {
   const [productoParaAgregar, setProductoParaAgregar] = useState("");
 
   const [confirmandoAnular, setConfirmandoAnular] = useState(null); // { tipo: 'orden'|'venta', id }
+  const [marcandoPagadaId, setMarcandoPagadaId] = useState(null);
+
+  const [fechaFiltro, setFechaFiltro] = useState(hoyISO);
 
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -220,6 +239,22 @@ export default function Ventas() {
     }
   }
 
+  // --- marcar como pagada (venta a crédito) ---
+
+  async function marcarPagada(ordenId) {
+    setMarcandoPagadaId(ordenId);
+    setError(null);
+    try {
+      await marcarOrdenPagada(ordenId);
+      setMensaje("Pedido marcado como pagado");
+      cargarDatos();
+    } catch (err) {
+      setError(err.response?.data?.error || "No se pudo marcar el pedido como pagado");
+    } finally {
+      setMarcandoPagadaId(null);
+    }
+  }
+
   // --- anular (orden completa o venta suelta) ---
 
   async function confirmarAnular() {
@@ -243,12 +278,14 @@ export default function Ventas() {
     }
   }
 
-  // --- combinar órdenes + ventas sueltas en una sola línea de tiempo ---
+  // --- combinar órdenes + ventas sueltas en una sola línea de tiempo, filtradas por día ---
 
   const entradas = [
     ...ordenes.map((o) => ({ tipo: "orden", fecha: o.fecha, data: o })),
     ...ventasSueltas.map((v) => ({ tipo: "venta", fecha: v.fecha, data: v })),
-  ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  ]
+    .filter((entrada) => !fechaFiltro || esMismoDiaLocal(entrada.fecha, fechaFiltro))
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   const totalFormOrden = formOrden.items.reduce(
     (sum, i) => sum + Number(i.precio_unitario) * i.cantidad,
@@ -264,6 +301,24 @@ export default function Ventas() {
         </div>
       </header>
 
+      <div className="vad-filtro-fecha">
+        <Calendar size={15} />
+        <input
+          type="date"
+          value={fechaFiltro}
+          onChange={(e) => setFechaFiltro(e.target.value)}
+        />
+        {fechaFiltro !== hoyISO() && (
+          <button
+            type="button"
+            className="vad-filtro-fecha-hoy"
+            onClick={() => setFechaFiltro(hoyISO())}
+          >
+            Hoy
+          </button>
+        )}
+      </div>
+
       {mensaje && <div className="vad-mensaje-exito">{mensaje}</div>}
       {error && <div className="vad-mensaje-error">{error}</div>}
 
@@ -271,9 +326,12 @@ export default function Ventas() {
         {entradas.map((entrada) => {
           if (entrada.tipo === "orden") {
             const orden = entrada.data;
+            const esCredito = orden.metodo_pago === "credito";
+            const pendientePorCobrar = esCredito && !orden.pagada;
             const anulandoEsta =
               confirmandoAnular?.tipo === "orden" && confirmandoAnular.id === orden.id;
             const editandoEsta = editandoOrdenId === orden.id;
+            const marcandoEsta = marcandoPagadaId === orden.id;
 
             return (
               <div key={`orden-${orden.id}`} className="vad-tarjeta">
@@ -398,6 +456,31 @@ export default function Ventas() {
                       <span className="vad-total">{formatearMoneda(orden.total)}</span>
                     </div>
 
+                    {esCredito && (
+                      <div className="vad-fila-credito">
+                        <span
+                          className={`vad-badge-credito ${
+                            pendientePorCobrar ? "pendiente" : "pagada"
+                          }`}
+                        >
+                          {pendientePorCobrar ? (
+                            <>
+                              <Clock3 size={11} />
+                              Pendiente por cobrar
+                            </>
+                          ) : (
+                            <>
+                              <Check size={11} />
+                              Pagada
+                            </>
+                          )}
+                        </span>
+                        {orden.cliente_nombre && (
+                          <span className="vad-cliente-nombre">{orden.cliente_nombre}</span>
+                        )}
+                      </div>
+                    )}
+
                     <div className="vad-orden-items">
                       {orden.ventas.map((v) => (
                         <div key={v.id} className="vad-orden-item">
@@ -410,7 +493,9 @@ export default function Ventas() {
                     </div>
 
                     <div className="vad-detalle">
-                      <span className="vad-capitalize">{orden.metodo_pago}</span>
+                      <span className="vad-capitalize">
+                        {esCredito ? "Cuenta por cobrar" : orden.metodo_pago}
+                      </span>
                       <span>·</span>
                       <span>{orden.trabajadora_nombre}</span>
                     </div>
@@ -439,6 +524,16 @@ export default function Ventas() {
                       </div>
                     ) : (
                       <div className="vad-acciones">
+                        {pendientePorCobrar && (
+                          <button
+                            className="vad-btn-pagar"
+                            onClick={() => marcarPagada(orden.id)}
+                            disabled={marcandoEsta}
+                          >
+                            <Check size={13} />
+                            {marcandoEsta ? "Marcando..." : "Marcar como pagada"}
+                          </button>
+                        )}
                         <button className="vad-btn-secundario" onClick={() => iniciarEdicionOrden(orden)}>
                           <Pencil size={13} />
                           Editar
@@ -603,7 +698,11 @@ export default function Ventas() {
         })}
 
         {entradas.length === 0 && (
-          <p className="vad-sin-ventas">Todavía no hay ventas registradas</p>
+          <p className="vad-sin-ventas">
+            {fechaFiltro
+              ? "No hay ventas registradas en la fecha seleccionada"
+              : "Todavía no hay ventas registradas"}
+          </p>
         )}
       </div>
     </div>
