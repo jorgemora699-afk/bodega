@@ -17,6 +17,12 @@ def listar_ordenes():
     return jsonify([o.to_dict() for o in ordenes]), 200
 
 
+@orden_bp.route("/pendientes", methods=["GET"])
+def listar_ordenes_pendientes():
+    ordenes = OrdenService.listar_pendientes()
+    return jsonify([o.to_dict() for o in ordenes]), 200
+
+
 @orden_bp.route("/<int:orden_id>", methods=["GET"])
 def obtener_orden(orden_id):
     orden = OrdenService.obtener_por_id(orden_id)
@@ -38,6 +44,15 @@ def crear_orden():
 def actualizar_orden(orden_id):
     data = request.get_json()
     orden, error = OrdenService.actualizar(orden_id, data)
+    if error:
+        status = 404 if error == "Orden no encontrada" else 400
+        return jsonify({"error": error}), status
+    return jsonify(orden.to_dict()), 200
+
+
+@orden_bp.route("/<int:orden_id>/marcar-pagada", methods=["PUT"])
+def marcar_pagada(orden_id):
+    orden, error = OrdenService.marcar_pagada(orden_id)
     if error:
         status = 404 if error == "Orden no encontrada" else 400
         return jsonify({"error": error}), status

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from app import db
-from app.infrastructure.models import Orden, Venta, Producto, MovimientoInventario
+from app.infrastructure.models import Orden, Venta, Producto, Cliente, MovimientoInventario
 from app.domain.inventario import hay_stock_suficiente
 
 
@@ -26,15 +26,51 @@ class OrdenService:
         return Orden.query.get(orden_id)
 
     @staticmethod
+    def listar_pendientes():
+        return (
+            Orden.query
+            .filter_by(metodo_pago="credito", pagada=False)
+            .order_by(Orden.fecha.asc())
+            .all()
+        )
+
+    @staticmethod
+    def _validar_cliente_credito(data, cliente_actual_id=None):
+        """Para el método 'credito', el cliente es obligatorio y debe existir
+        y estar activo. Devuelve (cliente_id, error)."""
+        cliente_id = data.get("cliente_id", cliente_actual_id)
+
+        if not cliente_id:
+            return None, "cliente_id es obligatorio para ventas a crédito"
+
+        cliente = Cliente.query.get(cliente_id)
+        if not cliente:
+            return None, f"Cliente no encontrado (id {cliente_id})"
+        if not cliente.activo:
+            return None, f"El cliente {cliente.nombre} no está activo"
+
+        return cliente_id, None
+
+    @staticmethod
     def crear(data):
         trabajadora_id = data.get("trabajadora_id")
         metodo_pago = data.get("metodo_pago")
         items = data.get("items", [])
+        descripcion = data.get("descripcion")
 
         if not trabajadora_id or not metodo_pago:
             return None, "trabajadora_id y metodo_pago son obligatorios"
         if not items:
             return None, "La orden debe tener al menos un producto"
+
+        cliente_id = None
+        pagada = True
+
+        if metodo_pago == "credito":
+            cliente_id, error = OrdenService._validar_cliente_credito(data)
+            if error:
+                return None, error
+            pagada = False
 
         productos_vendidos = {}
         cantidad_efectiva_por_stock = defaultdict(float)
@@ -57,7 +93,14 @@ class OrdenService:
             if not hay_stock_suficiente(float(producto_stock.stock_actual), cantidad_total):
                 return None, f"Stock insuficiente: quedan {float(producto_stock.stock_actual)} de {producto_stock.nombre}"
 
-        orden = Orden(trabajadora_id=trabajadora_id, metodo_pago=metodo_pago, total=0)
+        orden = Orden(
+            trabajadora_id=trabajadora_id,
+            cliente_id=cliente_id,
+            metodo_pago=metodo_pago,
+            descripcion=descripcion,
+            pagada=pagada,
+            total=0,
+        )
         db.session.add(orden)
         db.session.flush()
 
@@ -105,10 +148,28 @@ class OrdenService:
 
         metodo_pago = data.get("metodo_pago", orden.metodo_pago)
         trabajadora_id = data.get("trabajadora_id", orden.trabajadora_id)
+        descripcion = data.get("descripcion", orden.descripcion)
         items = data.get("items")
 
         if not items:
             return None, "La orden debe tener al menos un producto"
+
+        cliente_id = orden.cliente_id
+        pagada = orden.pagada
+
+        if metodo_pago == "credito":
+            cliente_id, error = OrdenService._validar_cliente_credito(data, cliente_actual_id=orden.cliente_id)
+            if error:
+                return None, error
+            # Si la orden no era de crédito antes, ahora nace como deuda pendiente.
+            # Si ya era de crédito, se respeta el estado de pago que ya tenía.
+            if orden.metodo_pago != "credito":
+                pagada = False
+        else:
+            # Deja de ser una venta a crédito: se considera pagada de inmediato,
+            # como cualquier otro método de pago.
+            cliente_id = None
+            pagada = True
 
         # 1. Stock "hipotético" — como si las líneas viejas no hubieran existido,
         #    usando lo que de verdad se descontó (guardado en cada movimiento),
@@ -194,9 +255,28 @@ class OrdenService:
 
         orden.metodo_pago = metodo_pago
         orden.trabajadora_id = trabajadora_id
+        orden.cliente_id = cliente_id
+        orden.descripcion = descripcion
+        orden.pagada = pagada
         orden.total = total_orden
         orden.editado = True
 
+        db.session.commit()
+        return orden, None
+
+    @staticmethod
+    def marcar_pagada(orden_id):
+        orden = Orden.query.get(orden_id)
+        if not orden:
+            return None, "Orden no encontrada"
+
+        if orden.metodo_pago != "credito":
+            return None, "Esta orden no es una venta a crédito"
+
+        if orden.pagada:
+            return None, "Esta orden ya está marcada como pagada"
+
+        orden.pagada = True
         db.session.commit()
         return orden, None
 

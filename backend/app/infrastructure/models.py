@@ -97,33 +97,6 @@ class Trabajadora(db.Model):
     def __repr__(self):
         return f"<Trabajadora {self.nombre}>"
 
-class Orden(db.Model):
-    __tablename__ = "ordenes"
-
-    id = db.Column(db.Integer, primary_key=True)
-    trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=False)
-    metodo_pago = db.Column(db.String(30), nullable=False)
-    total = db.Column(db.Numeric(10, 2), nullable=False)
-    fecha = db.Column(db.DateTime, default=datetime.utcnow)
-    editado = db.Column(db.Boolean, nullable=False, default=False)
-
-    trabajadora = db.relationship("Trabajadora")
-    ventas = db.relationship("Venta", back_populates="orden", order_by="Venta.id")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "trabajadora_id": self.trabajadora_id,
-            "trabajadora_nombre": self.trabajadora.nombre if self.trabajadora else None,
-            "metodo_pago": self.metodo_pago,
-            "total": float(self.total),
-            "fecha": self.fecha.isoformat() + "Z",
-            "editado": self.editado,
-            "ventas": [v.to_dict() for v in self.ventas],
-        }
-
-    def __repr__(self):
-        return f"<Orden {self.id} - {self.trabajadora_id}>"
 
 class Cliente(db.Model):
     __tablename__ = "clientes"
@@ -137,6 +110,8 @@ class Cliente(db.Model):
     direccion = db.Column(db.String(200), nullable=True)
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    ordenes = db.relationship("Orden", back_populates="cliente")
 
     def to_dict(self):
         return {
@@ -152,6 +127,43 @@ class Cliente(db.Model):
 
     def __repr__(self):
         return f"<Cliente {self.nombre}>"
+
+
+class Orden(db.Model):
+    __tablename__ = "ordenes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=False)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=True)
+    metodo_pago = db.Column(db.String(30), nullable=False)
+    total = db.Column(db.Numeric(10, 2), nullable=False)
+    descripcion = db.Column(db.Text, nullable=True)
+    pagada = db.Column(db.Boolean, nullable=False, default=True)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    editado = db.Column(db.Boolean, nullable=False, default=False)
+
+    trabajadora = db.relationship("Trabajadora")
+    cliente = db.relationship("Cliente", back_populates="ordenes")
+    ventas = db.relationship("Venta", back_populates="orden", order_by="Venta.id")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "trabajadora_id": self.trabajadora_id,
+            "trabajadora_nombre": self.trabajadora.nombre if self.trabajadora else None,
+            "cliente_id": self.cliente_id,
+            "cliente_nombre": self.cliente.nombre if self.cliente else None,
+            "metodo_pago": self.metodo_pago,
+            "total": float(self.total),
+            "descripcion": self.descripcion,
+            "pagada": self.pagada,
+            "fecha": self.fecha.isoformat() + "Z",
+            "editado": self.editado,
+            "ventas": [v.to_dict() for v in self.ventas],
+        }
+
+    def __repr__(self):
+        return f"<Orden {self.id} - {self.trabajadora_id}>"
 
 class Venta(db.Model):
     __tablename__ = "ventas"

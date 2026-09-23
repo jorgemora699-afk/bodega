@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import func
+from sqlalchemy import func, exists, and_, or_
 from app import db
 from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora
 from app.domain.salario import (
@@ -15,6 +15,25 @@ from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, T
 from app.domain.periodos import rango_por_periodo, rango_periodo_anterior
 
 
+def _venta_excluye_credito_pendiente():
+    """Condición para usar en .filter() sobre consultas que parten de Venta.
+    Excluye las ventas cuya orden es a crédito y aún no ha sido pagada —
+    esas no deben sumar en ningún reporte hasta que se marquen como pagadas.
+    Una venta sin orden asociada (orden_id nulo) nunca se excluye."""
+    return ~exists().where(
+        and_(
+            Orden.id == Venta.orden_id,
+            Orden.metodo_pago == "credito",
+            Orden.pagada == False,
+        )
+    )
+
+
+def _orden_excluye_credito_pendiente():
+    """Misma exclusión, para consultas que parten directamente de Orden."""
+    return or_(Orden.metodo_pago != "credito", Orden.pagada == True)
+
+
 class AdminService:
 
     @staticmethod
@@ -22,11 +41,13 @@ class AdminService:
         inicio, fin = _rango_por_periodo(periodo)
 
         total = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
-            Venta.fecha.between(inicio, fin)
+            Venta.fecha.between(inicio, fin),
+            _venta_excluye_credito_pendiente(),
         ).scalar()
 
         cantidad_ventas = db.session.query(func.count(Venta.id)).filter(
-            Venta.fecha.between(inicio, fin)
+            Venta.fecha.between(inicio, fin),
+            _venta_excluye_credito_pendiente(),
         ).scalar()
 
         return {
@@ -47,7 +68,8 @@ class AdminService:
             func.sum(Venta.cantidad).label("cantidad_vendida"),
             func.sum(Venta.total).label("total_generado"),
         ).join(Venta, Venta.producto_id == Producto.id).filter(
-            Venta.fecha.between(inicio, fin)
+            Venta.fecha.between(inicio, fin),
+            _venta_excluye_credito_pendiente(),
         ).group_by(Producto.id, Producto.nombre).order_by(
             func.sum(Venta.cantidad).desc()
         ).limit(limite).all()
@@ -67,7 +89,8 @@ class AdminService:
         inicio, fin = _rango_por_periodo(periodo)
 
         ingresos_ventas = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
-            Venta.fecha.between(inicio, fin)
+            Venta.fecha.between(inicio, fin),
+            _venta_excluye_credito_pendiente(),
         ).scalar()
 
         ingresos_manuales = db.session.query(func.coalesce(func.sum(IngresoEgreso.monto), 0)).filter(
@@ -104,7 +127,8 @@ class AdminService:
             func.sum(Venta.total).label("total_vendido"),
             func.count(Venta.id).label("cantidad_ventas"),
         ).join(Venta, Venta.trabajadora_id == Trabajadora.id).filter(
-            Venta.fecha.between(inicio, fin)
+            Venta.fecha.between(inicio, fin),
+            _venta_excluye_credito_pendiente(),
         ).group_by(Trabajadora.id, Trabajadora.nombre).order_by(
             func.sum(Venta.total).desc()
         ).all()
@@ -129,7 +153,8 @@ class AdminService:
             fecha_colombia.label("fecha"),
             func.sum(Venta.total).label("total"),
         ).filter(
-            Venta.fecha.between(inicio, fin)
+            Venta.fecha.between(inicio, fin),
+            _venta_excluye_credito_pendiente(),
         ).group_by(fecha_colombia).order_by(fecha_colombia).all()
 
         return [
@@ -163,7 +188,8 @@ class AdminService:
             fin_dt = fin_local.astimezone(zona_utc).replace(tzinfo=None)
 
             total_ventas = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
-                Venta.fecha.between(inicio_dt, fin_dt)
+                Venta.fecha.between(inicio_dt, fin_dt),
+                _venta_excluye_credito_pendiente(),
             ).scalar()
 
             resultado.append({
@@ -234,10 +260,12 @@ class AdminService:
 
         def _totales(ini, fn):
             total_ventas = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
-                Venta.fecha.between(ini, fn)
+                Venta.fecha.between(ini, fn),
+                _venta_excluye_credito_pendiente(),
             ).scalar()
             cantidad_pedidos = db.session.query(func.count(Orden.id)).filter(
-                Orden.fecha.between(ini, fn)
+                Orden.fecha.between(ini, fn),
+                _orden_excluye_credito_pendiente(),
             ).scalar()
             return float(total_ventas), cantidad_pedidos
 
@@ -277,7 +305,8 @@ class AdminService:
             Venta.metodo_pago,
             func.sum(Venta.total).label("total"),
         ).filter(
-            Venta.fecha.between(inicio, fin)
+            Venta.fecha.between(inicio, fin),
+            _venta_excluye_credito_pendiente(),
         ).group_by(Venta.metodo_pago).all()
 
         total_general = sum(float(r.total) for r in resultados)
