@@ -6,6 +6,8 @@ orden_bp = Blueprint("ordenes", __name__, url_prefix="/api/ordenes")
 
 @orden_bp.before_request
 def _proteger_ordenes():
+    if request.method == "PUT" and request.path.endswith("/marcar-pagada"):
+        return exigir_rol("jefe", "trabajadora")
     if request.method == "PUT":
         return exigir_rol("jefe")
     return exigir_rol("jefe", "trabajadora")
