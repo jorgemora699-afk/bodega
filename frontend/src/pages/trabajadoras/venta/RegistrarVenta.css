@@ -1098,3 +1098,258 @@
     margin: 7px 0;
   }
 }
+
+/* =========================
+   CUENTA POR COBRAR
+   ========================= */
+
+.venta-credito {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.venta-credito-aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.venta-credito-aviso-confirmacion {
+  margin-top: 0.4rem;
+}
+
+.venta-credito-aviso-recibo {
+  max-width: 360px;
+  margin: 0 auto 0.75rem;
+  justify-content: center;
+}
+
+.venta-sin-resultados-inline {
+  padding: 0.75rem 0;
+}
+
+/* Cliente ya elegido */
+
+.venta-cliente-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-surface);
+}
+
+.venta-cliente-icono {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.venta-cliente-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.venta-cliente-info strong {
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.venta-cliente-info span {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+}
+
+.venta-cliente-cambiar {
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Búsqueda de cliente */
+
+.venta-cliente-buscando {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.venta-cliente-resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.venta-cliente-resultado {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.venta-cliente-resultado:hover {
+  border-color: var(--color-primary);
+}
+
+.venta-cliente-resultado-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.venta-cliente-resultado-info strong {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.venta-cliente-resultado-info small {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.venta-cliente-nuevo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Formulario de cliente nuevo */
+
+.venta-cliente-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.venta-cliente-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.venta-cliente-form-cerrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.venta-cliente-form label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-top: 0.3rem;
+}
+
+.venta-cliente-form input {
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.85rem;
+  background: var(--color-bg);
+}
+
+.venta-cliente-form-guardar {
+  margin-top: 0.75rem;
+}
+
+.venta-tipo-cliente {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.venta-tipo-cliente-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.venta-tipo-cliente-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.venta-mensaje-error-chico {
+  margin-bottom: 0.2rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+/* Nota de la venta */
+
+.venta-descripcion {
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+  min-height: 44px;
+}

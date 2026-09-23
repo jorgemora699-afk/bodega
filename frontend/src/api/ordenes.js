@@ -10,8 +10,18 @@ export async function listarOrdenes() {
   return response.data;
 }
 
+export async function listarOrdenesPendientes() {
+  const response = await apiClient.get("/ordenes/pendientes");
+  return response.data;
+}
+
 export async function actualizarOrden(ordenId, data) {
   const response = await apiClient.put(`/ordenes/${ordenId}`, data);
+  return response.data;
+}
+
+export async function marcarOrdenPagada(ordenId) {
+  const response = await apiClient.put(`/ordenes/${ordenId}/marcar-pagada`);
   return response.data;
 }
 

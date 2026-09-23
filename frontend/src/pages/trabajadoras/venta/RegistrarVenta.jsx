@@ -7,24 +7,41 @@ import {
   Trash2,
   Banknote,
   ArrowLeftRight,
+  Receipt,
   Check,
   Search,
   ChevronLeft,
   Printer,
+  UserPlus,
+  User,
+  Building2,
+  X,
+  Clock3,
 } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import { crearOrden } from "../../../api/ordenes";
+import { listarClientes, crearCliente } from "../../../api/clientes";
 import "./RegistrarVenta.css";
 
 const METODOS_PAGO = [
   { valor: "efectivo", label: "Efectivo", Icon: Banknote },
   { valor: "transferencia", label: "Transferencia", Icon: ArrowLeftRight },
+  { valor: "credito", label: "Cuenta por cobrar", Icon: Receipt },
 ];
 
 const CLAVE_CARRITO = "pa_venta_carrito";
 const CLAVE_TRABAJADORA = "pa_venta_trabajadora";
 const BILLETES = [5000, 10000, 20000, 50000, 100000];
+
+const CLIENTE_VACIO = {
+  tipo: "natural",
+  nombre: "",
+  documento: "",
+  contacto: "",
+  celular: "",
+  direccion: "",
+};
 
 /* =========================
    STORAGE (a prueba de fallos)
@@ -146,6 +163,19 @@ export default function RegistrarVenta() {
   const [metodoPago, setMetodoPago] = useState("");
   const [trabajadoraId, setTrabajadoraId] = useState(leerTrabajadoraGuardada);
   const [recibido, setRecibido] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [mostrarSelectorCliente, setMostrarSelectorCliente] = useState(false);
+
+  /* Cuenta por cobrar: selección/creación de cliente */
+  const [clienteId, setClienteId] = useState("");
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  const [busquedaCliente, setBusquedaCliente] = useState("");
+  const [clientesResultados, setClientesResultados] = useState([]);
+  const [buscandoClientes, setBuscandoClientes] = useState(false);
+  const [mostrarFormCliente, setMostrarFormCliente] = useState(false);
+  const [formCliente, setFormCliente] = useState(CLIENTE_VACIO);
+  const [creandoCliente, setCreandoCliente] = useState(false);
+  const [errorCliente, setErrorCliente] = useState(null);
 
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -195,6 +225,37 @@ export default function RegistrarVenta() {
       }, []);
     });
   }, [productos]);
+
+  /* Buscar clientes con un pequeño debounce, solo si no hay uno ya elegido */
+  useEffect(() => {
+    if (metodoPago !== "credito" || clienteSeleccionado) return undefined;
+
+    const termino = busquedaCliente.trim();
+
+    if (termino.length < 2) {
+      setClientesResultados([]);
+      return undefined;
+    }
+
+    let activo = true;
+    setBuscandoClientes(true);
+
+    const temporizador = setTimeout(async () => {
+      try {
+        const data = await listarClientes({ buscar: termino });
+        if (activo) setClientesResultados(data);
+      } catch (err) {
+        if (activo) setClientesResultados([]);
+      } finally {
+        if (activo) setBuscandoClientes(false);
+      }
+    }, 350);
+
+    return () => {
+      activo = false;
+      clearTimeout(temporizador);
+    };
+  }, [busquedaCliente, metodoPago, clienteSeleccionado]);
 
   async function cargarDatos() {
     try {
@@ -354,6 +415,101 @@ export default function RegistrarVenta() {
     setRecibido(valor.replace(/\D/g, "").slice(0, 9));
   }
 
+  /* ---------- Método de pago ---------- */
+
+  function cambiarMetodoPago(valor) {
+    setMetodoPago(valor);
+    setError(null);
+
+    if (valor !== "efectivo") {
+      setRecibido("");
+    }
+  }
+
+  /* ---------- Cliente (cuenta por cobrar) ---------- */
+
+  function limpiarCliente() {
+    setClienteId("");
+    setClienteSeleccionado(null);
+    setBusquedaCliente("");
+    setClientesResultados([]);
+    setMostrarFormCliente(false);
+    setFormCliente(CLIENTE_VACIO);
+    setErrorCliente(null);
+    setMostrarSelectorCliente(false); // ← agregar
+  }
+
+  function elegirCliente(cliente) {
+    setClienteId(String(cliente.id));
+    setClienteSeleccionado(cliente);
+    setBusquedaCliente("");
+    setClientesResultados([]);
+    setMostrarFormCliente(false);
+  }
+
+  function cambiarClienteSeleccionado() {
+    setClienteId("");
+    setClienteSeleccionado(null);
+  }
+
+  function abrirFormCliente() {
+    setMostrarFormCliente(true);
+    setFormCliente({ ...CLIENTE_VACIO, nombre: busquedaCliente });
+    setErrorCliente(null);
+  }
+
+  function cerrarFormCliente() {
+    setMostrarFormCliente(false);
+    setFormCliente(CLIENTE_VACIO);
+    setErrorCliente(null);
+  }
+
+  function cambiarTipoCliente(tipo) {
+    setFormCliente((f) => ({
+      ...f,
+      tipo,
+      contacto: tipo === "natural" ? "" : f.contacto,
+    }));
+  }
+
+  async function guardarNuevoCliente() {
+    const nombre = formCliente.nombre.trim();
+    const documento = formCliente.documento.trim();
+
+    if (!nombre || !documento) {
+      setErrorCliente(
+        formCliente.tipo === "juridica"
+          ? "Ingresa la razón social y el NIT"
+          : "Ingresa el nombre y la cédula"
+      );
+      return;
+    }
+
+    setCreandoCliente(true);
+    setErrorCliente(null);
+
+    try {
+      const cliente = await crearCliente({
+        tipo: formCliente.tipo,
+        nombre,
+        documento,
+        contacto: formCliente.tipo === "juridica" ? formCliente.contacto.trim() || null : null,
+        celular: formCliente.celular.trim() || null,
+        direccion: formCliente.direccion.trim() || null,
+      });
+
+      elegirCliente(cliente);
+    } catch (err) {
+      setErrorCliente(
+        err.response?.data?.error || "No se pudo crear el cliente"
+      );
+    } finally {
+      setCreandoCliente(false);
+    }
+  }
+
+  /* ---------- Confirmar / enviar ---------- */
+
   function irAConfirmar() {
     if (carrito.length === 0) {
       setError("Agrega al menos un producto al carrito");
@@ -362,6 +518,11 @@ export default function RegistrarVenta() {
 
     if (!metodoPago || !trabajadoraId) {
       setError("Selecciona método de pago y quién realiza la venta");
+      return;
+    }
+
+    if (metodoPago === "credito" && !clienteId) {
+      setError("Selecciona o crea el cliente para la cuenta por cobrar");
       return;
     }
 
@@ -386,6 +547,8 @@ export default function RegistrarVenta() {
       const orden = await crearOrden({
         trabajadora_id: Number(trabajadoraId),
         metodo_pago: metodoPago,
+        cliente_id: clienteId ? Number(clienteId) : undefined,
+        descripcion: descripcion.trim() || undefined,
         items: carrito.map((i) => ({
           producto_id: i.producto_id,
           cantidad: i.cantidad,
@@ -401,6 +564,8 @@ export default function RegistrarVenta() {
       setCarrito([]);
       setMetodoPago("");
       setRecibido("");
+      setDescripcion("");
+      limpiarCliente();
       setMensaje(null);
       setVista("recibo");
 
@@ -420,6 +585,8 @@ export default function RegistrarVenta() {
     setReciboOrden(null);
     setReciboEfectivo(null);
     setRecibido("");
+    setDescripcion("");
+    limpiarCliente();
     setMensaje(null);
     setError(null);
     setBusqueda("");
@@ -437,6 +604,13 @@ export default function RegistrarVenta() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function etiquetaMetodoPago(valor) {
+    if (valor === "credito") return "Cuenta por cobrar";
+    if (valor === "efectivo") return "Efectivo";
+    if (valor === "transferencia") return "Transferencia";
+    return valor;
   }
 
   const categorias = [
@@ -472,6 +646,8 @@ export default function RegistrarVenta() {
   const tieneRecibido = metodoPago === "efectivo" && recibidoNum > 0;
   const cambio = recibidoNum - totalCarrito;
   const billetesSugeridos = BILLETES.filter((b) => b > totalCarrito).slice(0, 3);
+
+  const esCredito = metodoPago === "credito";
 
   return (
     <div className="venta-container">
@@ -764,7 +940,7 @@ export default function RegistrarVenta() {
                       : ""
                   }`}
                   onClick={() =>
-                    setMetodoPago(valor)
+                    cambiarMetodoPago(valor)
                   }
                 >
                   <Icon size={18} />
@@ -852,6 +1028,271 @@ export default function RegistrarVenta() {
             </div>
           )}
 
+          {/* =========================
+              CUENTA POR COBRAR — CLIENTE
+              ========================= */}
+
+          <label>Cliente {esCredito ? "" : "(opcional)"}</label>
+
+          {esCredito && (
+            <div className="venta-credito-aviso">
+              <Clock3 size={14} />
+              Esta venta queda pendiente por cobrar hasta que se marque como pagada.
+            </div>
+          )}
+
+          {!esCredito && !clienteSeleccionado && !mostrarSelectorCliente && (
+            <button
+              type="button"
+              className="venta-cliente-nuevo-btn"
+              onClick={() => setMostrarSelectorCliente(true)}
+            >
+              <UserPlus size={15} />
+              Asociar cliente (opcional)
+            </button>
+          )}
+
+          {(esCredito || mostrarSelectorCliente || clienteSeleccionado) && (
+            <div className="venta-credito">
+              {clienteSeleccionado ? (
+                <div className="venta-cliente-card">
+                  <span className="venta-cliente-icono">
+                    {clienteSeleccionado.tipo === "juridica" ? (
+                      <Building2 size={18} />
+                    ) : (
+                      <User size={18} />
+                    )}
+                  </span>
+
+                  <div className="venta-cliente-info">
+                    <strong>{clienteSeleccionado.nombre}</strong>
+                    <span>
+                      {clienteSeleccionado.tipo === "juridica" ? "NIT" : "Cédula"}:{" "}
+                      {clienteSeleccionado.documento}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="venta-cliente-cambiar"
+                    onClick={cambiarClienteSeleccionado}
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="venta-buscador">
+                    <Search size={16} />
+
+                    <input
+                      type="text"
+                      placeholder="Buscar cliente por nombre o documento..."
+                      value={busquedaCliente}
+                      onChange={(e) => {
+                        setBusquedaCliente(e.target.value);
+                        setMostrarFormCliente(false);
+                      }}
+                    />
+                  </div>
+
+                  {!mostrarFormCliente && (
+                    <>
+                      {buscandoClientes && (
+                        <p className="venta-cliente-buscando">Buscando...</p>
+                      )}
+
+                      {!buscandoClientes && busquedaCliente.trim().length >= 2 && (
+                        <div className="venta-cliente-resultados">
+                          {clientesResultados.length === 0 ? (
+                            <p className="venta-sin-resultados venta-sin-resultados-inline">
+                              Ningún cliente coincide con "{busquedaCliente}"
+                            </p>
+                          ) : (
+                            clientesResultados.map((cliente) => (
+                              <button
+                                type="button"
+                                key={cliente.id}
+                                className="venta-cliente-resultado"
+                                onClick={() => elegirCliente(cliente)}
+                              >
+                                <span className="venta-cliente-icono">
+                                  {cliente.tipo === "juridica" ? (
+                                    <Building2 size={16} />
+                                  ) : (
+                                    <User size={16} />
+                                  )}
+                                </span>
+
+                                <span className="venta-cliente-resultado-info">
+                                  <strong>{cliente.nombre}</strong>
+                                  <small>{cliente.documento}</small>
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        className="venta-cliente-nuevo-btn"
+                        onClick={abrirFormCliente}
+                      >
+                        <UserPlus size={15} />
+                        Crear nuevo cliente
+                      </button>
+                    </>
+                  )}
+
+                  {mostrarFormCliente && (
+                    <div className="venta-cliente-form">
+                      <div className="venta-cliente-form-header">
+                        <span>Nuevo cliente</span>
+
+                        <button
+                          type="button"
+                          className="venta-cliente-form-cerrar"
+                          aria-label="Cancelar creación de cliente"
+                          onClick={cerrarFormCliente}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      <div className="venta-tipo-cliente">
+                        <button
+                          type="button"
+                          className={`venta-tipo-cliente-btn ${
+                            formCliente.tipo === "natural" ? "activo" : ""
+                          }`}
+                          onClick={() => cambiarTipoCliente("natural")}
+                        >
+                          <User size={15} />
+                          Persona natural
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`venta-tipo-cliente-btn ${
+                            formCliente.tipo === "juridica" ? "activo" : ""
+                          }`}
+                          onClick={() => cambiarTipoCliente("juridica")}
+                        >
+                          <Building2 size={15} />
+                          Persona jurídica
+                        </button>
+                      </div>
+
+                      {errorCliente && (
+                        <div className="venta-mensaje-error venta-mensaje-error-chico">
+                          {errorCliente}
+                        </div>
+                      )}
+
+                      <label>
+                        {formCliente.tipo === "juridica" ? "Razón social" : "Nombre completo"}
+                      </label>
+
+                      <input
+                        type="text"
+                        value={formCliente.nombre}
+                        onChange={(e) =>
+                          setFormCliente((f) => ({ ...f, nombre: e.target.value }))
+                        }
+                        placeholder={
+                          formCliente.tipo === "juridica" ? "Ej: Arte Frío" : "Ej: Juan Pérez"
+                        }
+                      />
+
+                      <label>
+                        {formCliente.tipo === "juridica" ? "NIT" : "Cédula"}
+                      </label>
+
+                      <input
+                        type="text"
+                        value={formCliente.documento}
+                        onChange={(e) =>
+                          setFormCliente((f) => ({ ...f, documento: e.target.value }))
+                        }
+                        placeholder={
+                          formCliente.tipo === "juridica" ? "Ej: 900123456-1" : "Ej: 123456789"
+                        }
+                      />
+
+                      {formCliente.tipo === "juridica" && (
+                        <>
+                          <label>Persona de contacto</label>
+
+                          <input
+                            type="text"
+                            value={formCliente.contacto}
+                            onChange={(e) =>
+                              setFormCliente((f) => ({ ...f, contacto: e.target.value }))
+                            }
+                            placeholder="Ej: María Gómez"
+                          />
+                        </>
+                      )}
+
+                      <label>Celular (opcional)</label>
+
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formCliente.celular}
+                        onChange={(e) =>
+                          setFormCliente((f) => ({ ...f, celular: e.target.value }))
+                        }
+                        placeholder="Ej: 3001234567"
+                      />
+
+                      <label>Dirección (opcional)</label>
+
+                      <input
+                        type="text"
+                        value={formCliente.direccion}
+                        onChange={(e) =>
+                          setFormCliente((f) => ({ ...f, direccion: e.target.value }))
+                        }
+                        placeholder="Ej: Cll 10 #5-20"
+                      />
+
+                      <button
+                        type="button"
+                        className="venta-btn-primario venta-cliente-form-guardar"
+                        onClick={guardarNuevoCliente}
+                        disabled={creandoCliente}
+                      >
+                        {creandoCliente ? "Creando..." : "Crear cliente y continuar"}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* =========================
+              NOTA / DESCRIPCIÓN
+              ========================= */}
+
+          {metodoPago && (
+            <>
+              <label htmlFor="venta-descripcion">Nota (opcional)</label>
+
+              <textarea
+                id="venta-descripcion"
+                className="venta-descripcion"
+                rows={2}
+                maxLength={300}
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                placeholder="Ej: Pedido para el evento del sábado"
+              />
+            </>
+          )}
+
           <label>
             ¿Quién realiza la venta?
           </label>
@@ -935,10 +1376,17 @@ export default function RegistrarVenta() {
           <div className="venta-resumen-fila">
             <span>Método de pago</span>
 
-            <span className="venta-capitalize">
-              {metodoPago}
+            <span>
+              {etiquetaMetodoPago(metodoPago)}
             </span>
           </div>
+
+          {clienteSeleccionado && (
+            <div className="venta-resumen-fila">
+              <span>Cliente</span>
+              <span>{clienteSeleccionado.nombre}</span>
+            </div>
+          )}
 
           <div className="venta-resumen-fila">
             <span>Vendido por</span>
@@ -954,6 +1402,13 @@ export default function RegistrarVenta() {
             </span>
           </div>
 
+          {descripcion.trim() && (
+            <div className="venta-resumen-fila">
+              <span>Nota</span>
+              <span>{descripcion.trim()}</span>
+            </div>
+          )}
+
           <div className="venta-resumen-fila venta-resumen-total">
             <span>Total</span>
 
@@ -964,6 +1419,13 @@ export default function RegistrarVenta() {
               )}
             </span>
           </div>
+
+          {esCredito && (
+            <div className="venta-credito-aviso venta-credito-aviso-confirmacion">
+              <Clock3 size={14} />
+              Este pedido quedará como cuenta por cobrar pendiente.
+            </div>
+          )}
 
           {tieneRecibido && (
             <>
@@ -1026,6 +1488,14 @@ export default function RegistrarVenta() {
             Pedido #{reciboOrden.id}
           </p>
 
+          {reciboOrden.metodo_pago === "credito" && !reciboOrden.pagada && (
+            <div className="venta-credito-aviso venta-credito-aviso-recibo">
+              <Clock3 size={14} />
+              Pendiente por cobrar
+              {reciboOrden.cliente_nombre ? ` — ${reciboOrden.cliente_nombre}` : ""}
+            </div>
+          )}
+
           {reciboEfectivo && (
             <div className="venta-cambio ok">
               <span>Cambio a devolver</span>
@@ -1085,10 +1555,21 @@ export default function RegistrarVenta() {
               </span>
             </div>
 
-            <div className="recibo-detalle recibo-capitalize">
-              Método de pago:{" "}
-              {reciboOrden.metodo_pago}
+            <div className="recibo-detalle">
+              Método de pago: {etiquetaMetodoPago(reciboOrden.metodo_pago)}
             </div>
+
+            {reciboOrden.metodo_pago === "credito" && (
+              <div className="recibo-detalle">
+                Estado: {reciboOrden.pagada ? "Pagada" : "Pendiente por cobrar"}
+              </div>
+            )}
+
+            {reciboOrden.cliente_nombre && (
+              <div className="recibo-detalle">
+                Cliente: {reciboOrden.cliente_nombre}
+              </div>
+            )}
 
             {reciboEfectivo && (
               <>
@@ -1102,6 +1583,12 @@ export default function RegistrarVenta() {
                   {reciboEfectivo.cambio.toLocaleString("es-CO")}
                 </div>
               </>
+            )}
+
+            {reciboOrden.descripcion && (
+              <div className="recibo-detalle">
+                Nota: {reciboOrden.descripcion}
+              </div>
             )}
 
             <div className="recibo-detalle">
