@@ -19,3 +19,8 @@ export async function listarMovimientos(params = {}) {
   const response = await apiClient.get("/inventario/movimientos", { params });
   return response.data;
 }
+
+export async function reportarNivelProducto(data) {
+  const response = await apiClient.post("/inventario/reportar-nivel", data);
+  return response.data;
+}

@@ -674,3 +674,33 @@
   color: var(--color-text-secondary);
   margin: 0.2rem 0 0.4rem;
 }
+
+.inv-previa {
+  margin: 0.3rem 0 0.2rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.inv-previa-salida {
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.inv-previa-entrada {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+
+.inv-previa-igual {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+.inv-hint-motivo {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 0.3rem 0 0;
+}

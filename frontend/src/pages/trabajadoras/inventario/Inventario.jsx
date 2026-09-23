@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { listarProductos } from "../../../api/productos";
-import { registrarEntrada, registrarSalida, listarBajoStock } from "../../../api/inventario";
+import { registrarEntrada, reportarNivelProducto, listarBajoStock } from "../../../api/inventario";
 import { listarProveedoresDeProducto } from "../../../api/proveedores";
 import Sheet from "../../../components/Sheet";
 import VerificacionTrabajadora from "../../../components/VerificacionTrabajadora";
@@ -110,16 +110,23 @@ export default function Inventario() {
   }
 
   function ajustarCantidad(delta) {
+    const minimo = form.tipo === "entrada" ? 1 : 0;
+
     setForm((f) => {
       const actual = Number(f.cantidad || 0);
-      const siguiente = Math.max(0, actual + delta);
+      const siguiente = Math.max(minimo, actual + delta);
       return { ...f, cantidad: siguiente };
     });
   }
 
   async function guardar() {
-    if (!form.producto_id || form.cantidad === "" || Number(form.cantidad) <= 0) {
-      setError("Selecciona un producto e ingresa una cantidad válida");
+    if (!form.producto_id || form.cantidad === "" || form.cantidad === null) {
+      setError("Selecciona un producto e ingresa la cantidad");
+      return;
+    }
+
+    if (form.tipo === "salida" && Number(form.cantidad) < 0) {
+      setError("La cantidad no puede ser negativa");
       return;
     }
 
@@ -127,19 +134,34 @@ export default function Inventario() {
     setError(null);
 
     try {
-      const payload = {
-        producto_id: Number(form.producto_id),
-        cantidad: Number(form.cantidad),
-        motivo: form.motivo,
-        trabajadora_id: trabajadoraVerificada.id,
-      };
-
       if (form.tipo === "entrada") {
-        await registrarEntrada(payload);
+        await registrarEntrada({
+          producto_id: Number(form.producto_id),
+          cantidad: Number(form.cantidad),
+          motivo: form.motivo,
+          trabajadora_id: trabajadoraVerificada.id,
+        });
+
         setMensaje(`Se agregaron ${form.cantidad} unidades de ${productoSeleccionado.nombre}`);
       } else {
-        await registrarSalida(payload);
-        setMensaje(`Se registró una salida de ${form.cantidad} unidades de ${productoSeleccionado.nombre}`);
+        const resultado = await reportarNivelProducto({
+          producto_id: Number(form.producto_id),
+          cantidad_restante: Number(form.cantidad),
+          motivo: form.motivo,
+          trabajadora_id: trabajadoraVerificada.id,
+        });
+
+        if (resultado.sin_cambios) {
+          setMensaje("El nivel reportado coincide con el registrado, no hubo cambios");
+        } else if (resultado.tipo === "entrada") {
+          setMensaje(
+            `Había menos registrado de lo real: se corrigió agregando ${resultado.cantidad} unidades`
+          );
+        } else {
+          setMensaje(
+            `Salida registrada: se consumieron ${resultado.cantidad} unidades de ${productoSeleccionado.nombre}`
+          );
+        }
       }
 
       cerrarSheet(false);
@@ -174,6 +196,36 @@ export default function Inventario() {
   }
 
   const motivosDisponibles = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
+
+  /* Vista previa de lo que se va a registrar, antes de guardar */
+  let previa = null;
+  if (
+    form.tipo === "salida" &&
+    productoSeleccionado &&
+    form.cantidad !== "" &&
+    form.cantidad !== null
+  ) {
+    const stockActual = Number(productoSeleccionado.stock_actual);
+    const restante = Number(form.cantidad);
+    const diferencia = Math.round((stockActual - restante) * 100) / 100;
+
+    if (diferencia > 0) {
+      previa = {
+        tipo: "salida",
+        texto: `Se registrará una salida de ${diferencia} unidades`,
+      };
+    } else if (diferencia < 0) {
+      previa = {
+        tipo: "entrada",
+        texto: `Había menos registrado: se agregarán ${Math.abs(diferencia)} unidades`,
+      };
+    } else {
+      previa = {
+        tipo: "igual",
+        texto: "Sin cambios respecto al stock actual",
+      };
+    }
+  }
 
   const idsBajoStock = new Set(bajoStock.map((producto) => producto.id));
 
@@ -373,13 +425,15 @@ export default function Inventario() {
                 </div>
               )}
 
-              {form.tipo === "salida" && productoSeleccionado && (
-                <p className="inv-stock-referencia">Stock actual: {productoSeleccionado.stock_actual}</p>
-              )}
-
               <label>
-                {form.tipo === "entrada" ? "¿Cuántas unidades se hicieron?" : "¿Cuántas unidades salieron?"}
+                {form.tipo === "entrada" ? "¿Cuántas unidades se hicieron?" : "¿Cuánto queda actualmente?"}
               </label>
+
+              {form.tipo === "salida" && productoSeleccionado && (
+                <p className="inv-stock-referencia">
+                  Stock registrado: {productoSeleccionado.stock_actual}
+                </p>
+              )}
 
               <div className="inv-stepper">
                 <button type="button" className="inv-stepper-btn" onClick={() => ajustarCantidad(-1)}>
@@ -402,6 +456,12 @@ export default function Inventario() {
                 </button>
               </div>
 
+              {previa && (
+                <p className={`inv-previa inv-previa-${previa.tipo}`}>
+                  {previa.texto}
+                </p>
+              )}
+
               <label>Motivo</label>
               <select
                 value={form.motivo}
@@ -413,6 +473,13 @@ export default function Inventario() {
                   </option>
                 ))}
               </select>
+
+              {form.tipo === "salida" && (
+                <p className="inv-hint-motivo">
+                  Si resulta que había más stock del registrado, se corrige
+                  automáticamente como un ajuste, sin importar el motivo elegido.
+                </p>
+              )}
 
               <button
                 className="inv-btn-primario inv-btn-guardar-sheet"
