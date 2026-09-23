@@ -33,6 +33,7 @@ def create_app():
     from app.interfaces.routes.auth_routes import auth_bp
     from app.interfaces.routes.orden_routes import orden_bp
     from app.interfaces.routes.insumo_routes import insumo_bp
+    from app.interfaces.routes.cliente_routes import cliente_bp
 
     app.register_blueprint(producto_bp)
     app.register_blueprint(trabajadora_bp)
@@ -46,5 +47,6 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(orden_bp)
     app.register_blueprint(insumo_bp)
+    app.register_blueprint(cliente_bp)
 
     return app

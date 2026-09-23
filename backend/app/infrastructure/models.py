@@ -125,6 +125,34 @@ class Orden(db.Model):
     def __repr__(self):
         return f"<Orden {self.id} - {self.trabajadora_id}>"
 
+class Cliente(db.Model):
+    __tablename__ = "clientes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tipo = db.Column(db.String(10), nullable=False)  # "natural" o "juridica"
+    nombre = db.Column(db.String(150), nullable=False)  # nombre de la persona o razón social
+    documento = db.Column(db.String(30), nullable=False, unique=True)  # cédula o NIT
+    contacto = db.Column(db.String(100), nullable=True)  # solo aplica a jurídica
+    celular = db.Column(db.String(20), nullable=True)
+    direccion = db.Column(db.String(200), nullable=True)
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "tipo": self.tipo,
+            "nombre": self.nombre,
+            "documento": self.documento,
+            "contacto": self.contacto,
+            "celular": self.celular,
+            "direccion": self.direccion,
+            "activo": self.activo,
+        }
+
+    def __repr__(self):
+        return f"<Cliente {self.nombre}>"
+
 class Venta(db.Model):
     __tablename__ = "ventas"
 
