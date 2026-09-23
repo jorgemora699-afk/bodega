@@ -208,12 +208,15 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 0.5rem;
 }
 
 .prodad-info {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .prodad-nombre {
@@ -221,9 +224,6 @@
   font-size: 0.9rem;
   line-height: 1.25;
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .prodad-categoria {
@@ -240,6 +240,7 @@
   font-size: 0.95rem;
   color: var(--color-primary);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .prodad-stock-fila {
