@@ -45,17 +45,27 @@ class AdminService:
             _venta_excluye_credito_pendiente(),
         ).scalar()
 
-        cantidad_ventas = db.session.query(func.count(Venta.id)).filter(
-            Venta.fecha.between(inicio, fin),
-            _venta_excluye_credito_pendiente(),
+        # "Pedidos" = transacciones distintas, no líneas de producto.
+        # Un pedido con 3 productos son 3 filas en Venta pero 1 sola Orden.
+        cantidad_pedidos_agrupados = db.session.query(func.count(Orden.id)).filter(
+            Orden.fecha.between(inicio, fin),
+            _orden_excluye_credito_pendiente(),
         ).scalar()
+
+        # Ventas sueltas del sistema antiguo (sin Orden): cada una es su propio pedido.
+        cantidad_ventas_sueltas = db.session.query(func.count(Venta.id)).filter(
+            Venta.orden_id.is_(None),
+            Venta.fecha.between(inicio, fin),
+        ).scalar()
+
+        cantidad_pedidos = cantidad_pedidos_agrupados + cantidad_ventas_sueltas
 
         return {
             "periodo": periodo,
             "desde": inicio.isoformat(),
             "hasta": fin.isoformat(),
             "total_ventas": float(total),
-            "cantidad_ventas": cantidad_ventas,
+            "cantidad_pedidos": cantidad_pedidos,
         }
 
     @staticmethod
