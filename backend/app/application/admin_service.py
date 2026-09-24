@@ -217,26 +217,40 @@ class AdminService:
     @staticmethod
     def calcular_salarios(desde, hasta):
         trabajadoras = Trabajadora.query.filter_by(activa=True, incluye_nomina=True).order_by(Trabajadora.nombre).all()
-        pagos = AdminService.listar_pagos_periodo(desde, hasta)
+        pagos_por_trabajadora = AdminService.pagos_solapados_por_trabajadora(desde, hasta)
 
         resultados = []
         for t in trabajadoras:
             resultado, _ = AdminService.calcular_salario(t.id, desde, hasta)
-            pago = pagos.get(t.id)
-            resultado["pagado"] = pago is not None
-            resultado["pago_id"] = pago.id if pago else None
-            resultado["fecha_pago"] = pago.fecha_pago.isoformat() + "Z" if pago else None
+
+            total_pagado = pagos_por_trabajadora.get(t.id, 0)
+            calculado = resultado["salario_calculado"] or 0
+            pendiente = round(calculado - total_pagado, 2)
+
+            if total_pagado <= 0:
+                estado_pago = "sin_pagar"
+            elif pendiente <= 0:
+                estado_pago = "pagado_completo"
+            else:
+                estado_pago = "parcial"
+
+            resultado["total_pagado"] = total_pagado
+            resultado["pendiente"] = max(pendiente, 0)
+            resultado["estado_pago"] = estado_pago
+
             resultados.append(resultado)
         return resultados
 
     @staticmethod
     def marcar_salario_pagado(trabajadora_id, desde, hasta, monto):
         from app.infrastructure.models import PagoSalario
-        from sqlalchemy.exc import IntegrityError
 
         trabajadora = Trabajadora.query.get(trabajadora_id)
         if not trabajadora:
             return None, "Trabajadora no encontrada"
+
+        if monto is None or monto <= 0:
+            return None, "El monto debe ser mayor a 0"
 
         pago = PagoSalario(
             trabajadora_id=trabajadora_id,
@@ -245,41 +259,37 @@ class AdminService:
             monto=monto,
         )
         db.session.add(pago)
-
-        try:
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-            return None, "Este periodo ya fue marcado como pagado para esta trabajadora"
-
+        db.session.commit()
         return pago, None
 
     @staticmethod
-    def desmarcar_salario_pagado(trabajadora_id, desde, hasta):
+    def eliminar_pago(pago_id):
         from app.infrastructure.models import PagoSalario
 
-        pago = PagoSalario.query.filter_by(
-            trabajadora_id=trabajadora_id,
-            periodo_desde=desde,
-            periodo_hasta=hasta,
-        ).first()
-
+        pago = PagoSalario.query.get(pago_id)
         if not pago:
-            return False, "No se encontró un pago registrado para este periodo"
+            return False, "Pago no encontrado"
 
         db.session.delete(pago)
         db.session.commit()
         return True, None
 
     @staticmethod
-    def listar_pagos_periodo(desde, hasta):
-        """Todos los pagos registrados que coinciden exactamente con este rango,
-        para saber cuáles trabajadoras ya están marcadas como pagadas al mostrar
-        la lista de salarios de este periodo."""
+    def pagos_solapados_por_trabajadora(desde, hasta):
+        """Para cada trabajadora, suma el monto de todos los pagos registrados
+        cuyo rango se solapa con [desde, hasta] — sin importar si el pago fue
+        por el periodo completo o por una parte de él (ej. dos quincenas)."""
         from app.infrastructure.models import PagoSalario
 
-        pagos = PagoSalario.query.filter_by(periodo_desde=desde, periodo_hasta=hasta).all()
-        return {p.trabajadora_id: p for p in pagos}
+        resultados = db.session.query(
+            PagoSalario.trabajadora_id,
+            func.coalesce(func.sum(PagoSalario.monto), 0).label("total_pagado"),
+        ).filter(
+            PagoSalario.periodo_desde <= hasta,
+            PagoSalario.periodo_hasta >= desde,
+        ).group_by(PagoSalario.trabajadora_id).all()
+
+        return {r.trabajadora_id: float(r.total_pagado) for r in resultados}
 
     @staticmethod
     def calcular_salario(trabajadora_id, desde, hasta):

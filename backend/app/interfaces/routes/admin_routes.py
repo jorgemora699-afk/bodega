@@ -188,7 +188,6 @@ def metodos_pago():
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resultado), 200
-
 @admin_bp.route("/salarios/marcar-pagado", methods=["POST"])
 def marcar_salario_pagado():
     data = request.get_json()
@@ -215,13 +214,11 @@ def marcar_salario_pagado():
     return jsonify(pago.to_dict()), 201
 
 
-@admin_bp.route("/salarios/desmarcar-pagado", methods=["POST"])
-def desmarcar_salario_pagado():
-    data = request.get_json()
-
-    trabajadora_id = data.get("trabajadora_id")
-    desde_str = data.get("desde")
-    hasta_str = data.get("hasta")
+@admin_bp.route("/salarios/pagos", methods=["GET"])
+def listar_pagos_trabajadora():
+    trabajadora_id = request.args.get("trabajadora_id", type=int)
+    desde_str = request.args.get("desde")
+    hasta_str = request.args.get("hasta")
 
     if not trabajadora_id or not desde_str or not hasta_str:
         return jsonify({"error": "trabajadora_id, desde y hasta son obligatorios"}), 400
@@ -232,8 +229,13 @@ def desmarcar_salario_pagado():
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
-    exito, error = AdminService.desmarcar_salario_pagado(trabajadora_id, desde, hasta)
+    pagos = AdminService.listar_pagos_de_trabajadora(trabajadora_id, desde, hasta)
+    return jsonify([p.to_dict() for p in pagos]), 200
+
+
+@admin_bp.route("/salarios/pagos/<int:pago_id>", methods=["DELETE"])
+def eliminar_pago(pago_id):
+    exito, error = AdminService.eliminar_pago(pago_id)
     if not exito:
         return jsonify({"error": error}), 404
-
-    return jsonify({"mensaje": "Pago desmarcado"}), 200
+    return jsonify({"mensaje": "Pago eliminado"}), 200

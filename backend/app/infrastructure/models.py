@@ -109,13 +109,6 @@ class PagoSalario(db.Model):
 
     trabajadora = db.relationship("Trabajadora")
 
-    __table_args__ = (
-        db.UniqueConstraint(
-            "trabajadora_id", "periodo_desde", "periodo_hasta",
-            name="uq_pago_salario_periodo"
-        ),
-    )
-
     def to_dict(self):
         return {
             "id": self.id,
