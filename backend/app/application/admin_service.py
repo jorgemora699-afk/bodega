@@ -263,6 +263,17 @@ class AdminService:
         return pago, None
 
     @staticmethod
+    def listar_pagos_de_trabajadora(trabajadora_id, desde, hasta):
+        """Pagos cuyo periodo se solapa con [desde, hasta] para una trabajadora."""
+        from app.infrastructure.models import PagoSalario
+
+        return PagoSalario.query.filter(
+            PagoSalario.trabajadora_id == trabajadora_id,
+            PagoSalario.periodo_desde <= hasta,
+            PagoSalario.periodo_hasta >= desde,
+        ).order_by(PagoSalario.fecha_pago.desc()).all()
+
+    @staticmethod
     def eliminar_pago(pago_id):
         from app.infrastructure.models import PagoSalario
 
