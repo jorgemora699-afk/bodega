@@ -940,10 +940,16 @@ export default function Salarios() {
                     <span className={`sal-badge-pago ${s.estado_pago}`}>
                       {s.estado_pago === "pagado_completo" && <Check size={12} />}
                       {s.estado_pago === "sin_pagar" && "Sin pagar"}
-                      {s.estado_pago === "parcial" &&
-                        `Pagado ${formatearMoneda(s.total_pagado)} de ${formatearMoneda(
-                          s.salario_calculado
-                        )} · Debe ${formatearMoneda(s.pendiente)}`}
+                      {s.estado_pago === "parcial" && (
+                        <>
+                          <span className="sal-badge-pago-detalle">
+                            Pagado {formatearMoneda(s.total_pagado)} de {formatearMoneda(s.salario_calculado)}
+                          </span>
+                          <span className="sal-badge-pago-pendiente">
+                            Debe {formatearMoneda(s.pendiente)}
+                          </span>
+                        </>
+                      )}
                       {s.estado_pago === "pagado_completo" && "Pagado"}
                     </span>
 

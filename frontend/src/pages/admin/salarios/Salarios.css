@@ -908,8 +908,24 @@
 }
 
 .sal-badge-pago.parcial {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
   background: var(--color-brand-tint);
   color: var(--color-brand-dark);
+}
+
+.sal-badge-pago-detalle {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.sal-badge-pago-pendiente {
+  font-weight: 800;
+  padding-left: 0.55rem;
+  border-left: 1.5px solid var(--color-brand-dark);
+  opacity: 1;
 }
 
 .sal-badge-pago.pagado_completo {
