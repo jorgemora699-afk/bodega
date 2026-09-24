@@ -16,6 +16,7 @@ import {
   Boxes,
   Wheat,
   UserCircle,
+  CreditCard,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -32,6 +33,11 @@ const LINKS = [
     to: "/admin/ventas",
     label: "Ventas",
     Icon: Receipt,
+  },
+  {
+    to: "/admin/cuentas-cobrar",
+    label: "Cuentas por cobrar",
+    Icon: CreditCard,
   },
   {
     to: "/admin/reportes",

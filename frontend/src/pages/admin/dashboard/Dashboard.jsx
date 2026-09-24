@@ -26,6 +26,8 @@ import { dashboardResumen, productosMasVendidos, ventasPorDia, metodosPago } fro
 import { listarBajoStock } from "../../../api/inventario";
 import "./Dashboard.css";
 import { listarBajoStockInsumo } from "../../../api/insumos";
+import { useNavigate } from "react-router-dom";
+import { listarOrdenesPendientes } from "../../../api/ordenes";
 
 const PERIODOS = [
   { valor: "dia", label: "Hoy" },
@@ -81,6 +83,8 @@ export default function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [bajoStockInsumos, setBajoStockInsumos] = useState([]);
+  const [cuentasPorCobrar, setCuentasPorCobrar] = useState([]);
+  const navigate = useNavigate();
   const [verTodosProductos, setVerTodosProductos] = useState(false);
   const [verTodosInsumos, setVerTodosInsumos] = useState(false);
 
@@ -97,13 +101,14 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      const [resumenData, stock, stockInsumos, top, dia, metodo] = await Promise.all([
+      const [resumenData, stock, stockInsumos, top, dia, metodo, pendientes] = await Promise.all([
         dashboardResumen(periodoActual),
         listarBajoStock(),
         listarBajoStockInsumo(),
         productosMasVendidos(periodoActual, 3),
         ventasPorDia(periodoActual === "dia" ? "semana" : periodoActual),
         metodosPago(periodoActual),
+        listarOrdenesPendientes(),
       ]);
 
       setResumen(resumenData);
@@ -112,6 +117,7 @@ export default function Dashboard() {
       setTopProductos(top);
       setPorDia(dia);
       setPorMetodo(metodo);
+      setCuentasPorCobrar(pendientes);
     } catch (err) {
       setError("No se pudieron cargar los datos del panel");
     } finally {
@@ -126,6 +132,8 @@ export default function Dashboard() {
     topProductos.length > 0
       ? Math.max(...topProductos.map((p) => Number(p.cantidad_vendida) || 0))
       : 1;
+
+  const totalPorCobrar = cuentasPorCobrar.reduce((sum, o) => sum + Number(o.total), 0);
 
   return (
     <div className="dash-container">
@@ -169,7 +177,7 @@ export default function Dashboard() {
           {/* ==================== KPIs ==================== */}
 
           <section className="dash-tarjetas">
-            <div className="dash-tarjeta">
+            <div className="dash-tarjeta dash-tarjeta-clicable" onClick={() => navigate("/admin/ventas")}>
               <div className="dash-tarjeta-top">
                 <div className="dash-tarjeta-icono verde">
                   <DollarSign size={18} />
@@ -183,7 +191,7 @@ export default function Dashboard() {
               </span>
             </div>
 
-            <div className="dash-tarjeta">
+            <div className="dash-tarjeta dash-tarjeta-clicable" onClick={() => navigate("/admin/ventas")}>
               <div className="dash-tarjeta-top">
                 <div className="dash-tarjeta-icono azul">
                   <ShoppingCart size={18} />
@@ -213,7 +221,7 @@ export default function Dashboard() {
               </span>
             </div>
 
-            <div className="dash-tarjeta">
+            <div className="dash-tarjeta dash-tarjeta-clicable" onClick={() => navigate("/admin/inventario")}>
               <div className="dash-tarjeta-top">
                 <div className={`dash-tarjeta-icono ${bajoStock.length > 0 ? "rojo" : "verde"}`}>
                   <Package size={18} />
@@ -224,6 +232,25 @@ export default function Dashboard() {
               <span className="dash-tarjeta-valor">{bajoStock.length}</span>
               <span className={`dash-tarjeta-sub ${bajoStock.length > 0 ? "dash-sub-alerta" : "dash-sub-ok"}`}>
                 {bajoStock.length > 0 ? "Productos por acabarse" : "Todo está en buen nivel"}
+              </span>
+            </div>
+
+            <div
+              className="dash-tarjeta dash-tarjeta-clicable"
+              onClick={() => navigate("/admin/cuentas-cobrar")}
+            >
+              <div className="dash-tarjeta-top">
+                <div className={`dash-tarjeta-icono ${cuentasPorCobrar.length > 0 ? "rojo" : "verde"}`}>
+                  <Wallet size={18} />
+                </div>
+                <span className="dash-tarjeta-contexto">Créditos</span>
+              </div>
+              <span className="dash-tarjeta-label">Por cobrar</span>
+              <span className="dash-tarjeta-valor">{formatearMoneda(totalPorCobrar)}</span>
+              <span className={`dash-tarjeta-sub ${cuentasPorCobrar.length > 0 ? "dash-sub-alerta" : "dash-sub-ok"}`}>
+                {cuentasPorCobrar.length > 0
+                  ? `${cuentasPorCobrar.length} pendiente${cuentasPorCobrar.length !== 1 ? "s" : ""}`
+                  : "Sin cuentas pendientes"}
               </span>
             </div>
           </section>

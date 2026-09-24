@@ -1,0 +1,267 @@
+.cxc-container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.75rem 1.15rem 3.5rem;
+}
+
+.cxc-header {
+  margin-bottom: 1.25rem;
+}
+
+.cxc-header h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 750;
+}
+
+.cxc-header p {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+}
+
+.cxc-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.cxc-resumen-total {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cxc-resumen-total span {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.cxc-resumen-total strong {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.cxc-resumen-contador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.9rem;
+  border-radius: 12px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.cxc-resumen-contador span {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cxc-resumen-contador small {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cxc-mensaje-exito,
+.cxc-mensaje-error {
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.cxc-mensaje-exito {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+
+.cxc-mensaje-error {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.cxc-por-cliente {
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.cxc-por-cliente-titulo {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
+}
+
+.cxc-por-cliente-fila {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  font-size: 0.8rem;
+}
+
+.cxc-por-cliente-fila strong {
+  font-weight: 700;
+}
+
+.cxc-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.cxc-tarjeta {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.cxc-fila-principal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cxc-cliente {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.cxc-cliente-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.cxc-cliente-nombre {
+  font-weight: 750;
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cxc-total {
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.cxc-detalle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+}
+
+.cxc-fecha {
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.cxc-badge-antiguedad {
+  margin-left: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-weight: 700;
+}
+
+.cxc-badge-antiguedad.critico {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.cxc-acciones {
+  margin-top: 0.85rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.cxc-btn-pagar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--color-success);
+  border-radius: 9px;
+  background: var(--color-success);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cxc-btn-pagar:hover {
+  opacity: 0.9;
+}
+
+.cxc-btn-pagar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cxc-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: 14px;
+  color: var(--color-text-secondary);
+}
+
+.cxc-vacio svg {
+  color: var(--color-success);
+}
+
+.cxc-vacio strong {
+  color: var(--color-text);
+  font-size: 0.85rem;
+}
+
+.cxc-vacio span {
+  font-size: 0.75rem;
+}
+
+.cxc-sin-datos {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 2rem 0;
+  font-size: 0.85rem;
+}

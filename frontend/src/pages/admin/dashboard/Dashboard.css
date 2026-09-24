@@ -708,3 +708,11 @@
   background: var(--color-brand-tint);
   border-color: var(--color-brand-dark);
 }
+
+.dash-tarjeta-clicable {
+  cursor: pointer;
+}
+
+.dash-tarjeta-clicable:hover {
+  border-color: var(--color-brand-dark);
+}

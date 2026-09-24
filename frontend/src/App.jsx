@@ -23,6 +23,7 @@ import Insumos from "./pages/admin/insumos/Insumos";
 import InsumosTrabajadora from "./pages/trabajadoras/insumos/Insumos";
 import MiCuenta from "./pages/admin/cuenta/MiCuenta";
 import VentasTrabajadora from "./pages/trabajadoras/venta/Ventas";
+import CuentasPorCobrar from "./pages/admin/cuentascobrar/CuentasPorCobrar";
 
 export default function App() {
   return (
