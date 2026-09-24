@@ -81,9 +81,15 @@ export default function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [bajoStockInsumos, setBajoStockInsumos] = useState([]);
+  const [verTodosProductos, setVerTodosProductos] = useState(false);
+  const [verTodosInsumos, setVerTodosInsumos] = useState(false);
+
+  const LIMITE_LISTA = 3;
 
   useEffect(() => {
     cargarDatos(periodo);
+    setVerTodosProductos(false);
+    setVerTodosInsumos(false);
   }, [periodo]);
 
   async function cargarDatos(periodoActual) {
@@ -359,28 +365,40 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="dash-lista-stock">
-                  {bajoStock.map((p) => {
-                    const stock = Number(p.stock_actual) || 0;
-                    const nivel = stock <= 2 ? "critico" : "bajo";
-                    return (
-                      <div key={p.id} className="dash-stock-fila">
-                        <div className="dash-stock-info">
-                          <span className="dash-stock-nombre">{p.nombre}</span>
-                          <div className="dash-stock-barra">
-                            <span
-                              className={`dash-stock-progreso ${nivel}`}
-                              style={{ width: `${Math.min(Math.max(stock * 10, 8), 100)}%` }}
-                            />
+                <>
+                  <div className="dash-lista-stock">
+                    {(verTodosProductos ? bajoStock : bajoStock.slice(0, LIMITE_LISTA)).map((p) => {
+                      const stock = Number(p.stock_actual) || 0;
+                      const nivel = stock <= 2 ? "critico" : "bajo";
+                      return (
+                        <div key={p.id} className="dash-stock-fila">
+                          <div className="dash-stock-info">
+                            <span className="dash-stock-nombre">{p.nombre}</span>
+                            <div className="dash-stock-barra">
+                              <span
+                                className={`dash-stock-progreso ${nivel}`}
+                                style={{ width: `${Math.min(Math.max(stock * 10, 8), 100)}%` }}
+                              />
+                            </div>
                           </div>
+                          <span className={`dash-badge-bajo ${nivel}`}>
+                            {stock === 1 ? "1 unidad" : `${stock} unidades`}
+                          </span>
                         </div>
-                        <span className={`dash-badge-bajo ${nivel}`}>
-                          {stock === 1 ? "1 unidad" : `${stock} unidades`}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+
+                  {bajoStock.length > LIMITE_LISTA && (
+                    <button
+                      type="button"
+                      className="dash-btn-ampliar"
+                      onClick={() => setVerTodosProductos((v) => !v)}
+                    >
+                      {verTodosProductos ? "Ver menos" : `Ver todos (${bajoStock.length})`}
+                    </button>
+                  )}
+                </>
               )}
             </section>
 
@@ -453,31 +471,43 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="dash-lista-stock">
-                  {bajoStockInsumos.map((i) => {
-                    const stock = Number(i.stock_actual) || 0;
-                    const minimo = Number(i.stock_minimo) || 1;
-                    const nivel = stock <= minimo / 2 ? "critico" : "bajo";
-                    const porcentaje = Math.min(Math.max((stock / minimo) * 100, 8), 100);
+                <>
+                  <div className="dash-lista-stock">
+                    {(verTodosInsumos ? bajoStockInsumos : bajoStockInsumos.slice(0, LIMITE_LISTA)).map((i) => {
+                      const stock = Number(i.stock_actual) || 0;
+                      const minimo = Number(i.stock_minimo) || 1;
+                      const nivel = stock <= minimo / 2 ? "critico" : "bajo";
+                      const porcentaje = Math.min(Math.max((stock / minimo) * 100, 8), 100);
 
-                    return (
-                      <div key={i.id} className="dash-stock-fila">
-                        <div className="dash-stock-info">
-                          <span className="dash-stock-nombre">{i.nombre}</span>
-                          <div className="dash-stock-barra">
-                            <span
-                              className={`dash-stock-progreso ${nivel}`}
-                              style={{ width: `${porcentaje}%` }}
-                            />
+                      return (
+                        <div key={i.id} className="dash-stock-fila">
+                          <div className="dash-stock-info">
+                            <span className="dash-stock-nombre">{i.nombre}</span>
+                            <div className="dash-stock-barra">
+                              <span
+                                className={`dash-stock-progreso ${nivel}`}
+                                style={{ width: `${porcentaje}%` }}
+                              />
+                            </div>
                           </div>
+                          <span className={`dash-badge-bajo ${nivel}`}>
+                            {stock} {i.unidad_medida}
+                          </span>
                         </div>
-                        <span className={`dash-badge-bajo ${nivel}`}>
-                          {stock} {i.unidad_medida}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+
+                  {bajoStockInsumos.length > LIMITE_LISTA && (
+                    <button
+                      type="button"
+                      className="dash-btn-ampliar"
+                      onClick={() => setVerTodosInsumos((v) => !v)}
+                    >
+                      {verTodosInsumos ? "Ver menos" : `Ver todos (${bajoStockInsumos.length})`}
+                    </button>
+                  )}
+                </>
               )}
             </section>
           </div>
