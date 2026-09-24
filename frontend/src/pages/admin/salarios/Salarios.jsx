@@ -25,11 +25,6 @@ import {
   AlertTriangle,
   Users,
 } from "lucide-react";
-import {
-  calcularSalarios,
-  generarPdfTrabajadora,
-  generarReporteGeneralPdf,
-} from "../../../api/admin";
 
 /* =========================
    FECHAS Y PERIODOS
