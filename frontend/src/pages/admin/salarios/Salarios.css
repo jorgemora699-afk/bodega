@@ -984,10 +984,10 @@
 
 .sal-pago-fila {
   display: grid;
-  grid-template-columns: 55px 1fr auto auto;
+  grid-template-columns: 60px 1fr auto;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.7rem;
+  gap: 1rem;
+  padding: 0.65rem 0.7rem;
   background: var(--color-bg);
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
@@ -1008,6 +1008,7 @@
   font-weight: 700;
   color: var(--color-success);
   white-space: nowrap;
+  padding-left: 0.25rem;
 }
 
 .sal-pago-eliminar {
