@@ -986,7 +986,7 @@
   display: grid;
   grid-template-columns: 60px 1fr auto;
   align-items: center;
-  gap: 1rem;
+  gap: 3rem;
   padding: 0.65rem 0.7rem;
   background: var(--color-bg);
   border-radius: var(--radius-sm);
