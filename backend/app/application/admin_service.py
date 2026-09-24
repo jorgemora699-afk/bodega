@@ -217,11 +217,69 @@ class AdminService:
     @staticmethod
     def calcular_salarios(desde, hasta):
         trabajadoras = Trabajadora.query.filter_by(activa=True, incluye_nomina=True).order_by(Trabajadora.nombre).all()
+        pagos = AdminService.listar_pagos_periodo(desde, hasta)
+
         resultados = []
         for t in trabajadoras:
             resultado, _ = AdminService.calcular_salario(t.id, desde, hasta)
+            pago = pagos.get(t.id)
+            resultado["pagado"] = pago is not None
+            resultado["pago_id"] = pago.id if pago else None
+            resultado["fecha_pago"] = pago.fecha_pago.isoformat() + "Z" if pago else None
             resultados.append(resultado)
         return resultados
+
+    @staticmethod
+    def marcar_salario_pagado(trabajadora_id, desde, hasta, monto):
+        from app.infrastructure.models import PagoSalario
+        from sqlalchemy.exc import IntegrityError
+
+        trabajadora = Trabajadora.query.get(trabajadora_id)
+        if not trabajadora:
+            return None, "Trabajadora no encontrada"
+
+        pago = PagoSalario(
+            trabajadora_id=trabajadora_id,
+            periodo_desde=desde,
+            periodo_hasta=hasta,
+            monto=monto,
+        )
+        db.session.add(pago)
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return None, "Este periodo ya fue marcado como pagado para esta trabajadora"
+
+        return pago, None
+
+    @staticmethod
+    def desmarcar_salario_pagado(trabajadora_id, desde, hasta):
+        from app.infrastructure.models import PagoSalario
+
+        pago = PagoSalario.query.filter_by(
+            trabajadora_id=trabajadora_id,
+            periodo_desde=desde,
+            periodo_hasta=hasta,
+        ).first()
+
+        if not pago:
+            return False, "No se encontró un pago registrado para este periodo"
+
+        db.session.delete(pago)
+        db.session.commit()
+        return True, None
+
+    @staticmethod
+    def listar_pagos_periodo(desde, hasta):
+        """Todos los pagos registrados que coinciden exactamente con este rango,
+        para saber cuáles trabajadoras ya están marcadas como pagadas al mostrar
+        la lista de salarios de este periodo."""
+        from app.infrastructure.models import PagoSalario
+
+        pagos = PagoSalario.query.filter_by(periodo_desde=desde, periodo_hasta=hasta).all()
+        return {p.trabajadora_id: p for p in pagos}
 
     @staticmethod
     def calcular_salario(trabajadora_id, desde, hasta):

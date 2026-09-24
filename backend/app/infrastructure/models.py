@@ -97,6 +97,38 @@ class Trabajadora(db.Model):
     def __repr__(self):
         return f"<Trabajadora {self.nombre}>"
 
+class PagoSalario(db.Model):
+    __tablename__ = "pagos_salario"
+
+    id = db.Column(db.Integer, primary_key=True)
+    trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=False)
+    periodo_desde = db.Column(db.Date, nullable=False)
+    periodo_hasta = db.Column(db.Date, nullable=False)
+    monto = db.Column(db.Numeric(10, 2), nullable=False)
+    fecha_pago = db.Column(db.DateTime, default=datetime.utcnow)
+
+    trabajadora = db.relationship("Trabajadora")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "trabajadora_id", "periodo_desde", "periodo_hasta",
+            name="uq_pago_salario_periodo"
+        ),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "trabajadora_id": self.trabajadora_id,
+            "periodo_desde": self.periodo_desde.isoformat(),
+            "periodo_hasta": self.periodo_hasta.isoformat(),
+            "monto": float(self.monto),
+            "fecha_pago": self.fecha_pago.isoformat() + "Z",
+        }
+
+    def __repr__(self):
+        return f"<PagoSalario {self.trabajadora_id} - {self.periodo_desde}:{self.periodo_hasta}>"
+
 
 class Cliente(db.Model):
     __tablename__ = "clientes"

@@ -188,3 +188,52 @@ def metodos_pago():
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resultado), 200
+
+@admin_bp.route("/salarios/marcar-pagado", methods=["POST"])
+def marcar_salario_pagado():
+    data = request.get_json()
+
+    trabajadora_id = data.get("trabajadora_id")
+    desde_str = data.get("desde")
+    hasta_str = data.get("hasta")
+    monto = data.get("monto")
+
+    if not trabajadora_id or not desde_str or not hasta_str or monto is None:
+        return jsonify({"error": "trabajadora_id, desde, hasta y monto son obligatorios"}), 400
+
+    try:
+        desde = parsear_fecha(desde_str, "desde")
+        hasta = parsear_fecha(hasta_str, "hasta")
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    pago, error = AdminService.marcar_salario_pagado(trabajadora_id, desde, hasta, monto)
+    if error:
+        status = 404 if error == "Trabajadora no encontrada" else 400
+        return jsonify({"error": error}), status
+
+    return jsonify(pago.to_dict()), 201
+
+
+@admin_bp.route("/salarios/desmarcar-pagado", methods=["POST"])
+def desmarcar_salario_pagado():
+    data = request.get_json()
+
+    trabajadora_id = data.get("trabajadora_id")
+    desde_str = data.get("desde")
+    hasta_str = data.get("hasta")
+
+    if not trabajadora_id or not desde_str or not hasta_str:
+        return jsonify({"error": "trabajadora_id, desde y hasta son obligatorios"}), 400
+
+    try:
+        desde = parsear_fecha(desde_str, "desde")
+        hasta = parsear_fecha(hasta_str, "hasta")
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    exito, error = AdminService.desmarcar_salario_pagado(trabajadora_id, desde, hasta)
+    if not exito:
+        return jsonify({"error": error}), 404
+
+    return jsonify({"mensaje": "Pago desmarcado"}), 200
