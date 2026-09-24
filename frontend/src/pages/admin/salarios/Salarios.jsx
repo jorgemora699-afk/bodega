@@ -305,6 +305,7 @@ export default function Salarios() {
   const [montoPagoForm, setMontoPagoForm] = useState("");
   const [guardandoPago, setGuardandoPago] = useState(false);
   const [eliminandoPagoId, setEliminandoPagoId] = useState(null);
+  const [confirmandoPagoId, setConfirmandoPagoId] = useState(null);
 
   const [guardando, setGuardando] = useState(false);
 
@@ -360,6 +361,7 @@ export default function Salarios() {
     setEditandoTurnoId(null);
     setAdvertenciaTurno(null);
     setFormPagoId(null);
+    setConfirmandoPagoId(null);
   }
 
   function cambiarPeriodo(tipo) {
@@ -494,6 +496,7 @@ export default function Salarios() {
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo eliminar el pago");
     } finally {
+      setConfirmandoPagoId(null)
       setEliminandoPagoId(null);
     }
   }
@@ -1118,29 +1121,52 @@ export default function Salarios() {
                         {pagosCargaOk && pagos.length > 0 && (
                           <div className="sal-dias-lista">
                             {pagos.map((pago) => (
-                              <div key={pago.id} className="sal-pago-fila">
-                                <span className="sal-pago-fecha">
-                                  {formatearFechaCorta(pago.fecha_pago.slice(0, 10))}
-                                </span>
+                              confirmandoPagoId === pago.id ? (
+                                <div key={pago.id} className="sal-pago-confirmar">
+                                  <span>
+                                    ¿Eliminar este pago de {formatearMoneda(pago.monto)}?
+                                  </span>
 
-                                <span className="sal-pago-rango">
-                                  {formatearFechaCorta(pago.periodo_desde)} -{" "}
-                                  {formatearFechaCorta(pago.periodo_hasta)}
-                                </span>
+                                  <div className="sal-pago-confirmar-botones">
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmandoPagoId(null)}
+                                      disabled={eliminandoPagoId === pago.id}
+                                    >
+                                      No
+                                    </button>
 
-                                <span className="sal-pago-monto">
-                                  {formatearMoneda(pago.monto)}
-                                </span>
+                                    <button
+                                      type="button"
+                                      className="sal-pago-confirmar-si"
+                                      onClick={() => eliminarPagoHandler(pago.id, id)}
+                                      disabled={eliminandoPagoId === pago.id}
+                                    >
+                                      {eliminandoPagoId === pago.id
+                                        ? "Eliminando..."
+                                        : "Sí, eliminar"}
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div key={pago.id} className="sal-pago-fila">
+                                  <span className="sal-pago-fecha">
+                                    {formatearFechaCorta(pago.fecha_pago.slice(0, 10))}
+                                  </span>
 
-                                <button
-                                  className="sal-pago-eliminar"
-                                  aria-label="Eliminar pago"
-                                  onClick={() => eliminarPagoHandler(pago.id, id)}
-                                  disabled={eliminandoPagoId === pago.id}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
+                                  <span className="sal-pago-monto">
+                                    {formatearMoneda(pago.monto)}
+                                  </span>
+
+                                  <button
+                                    className="sal-pago-eliminar"
+                                    aria-label="Eliminar pago"
+                                    onClick={() => setConfirmandoPagoId(pago.id)}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              )
                             ))}
                           </div>
                         )}

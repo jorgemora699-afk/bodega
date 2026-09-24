@@ -1031,3 +1031,41 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.sal-pago-confirmar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-tint);
+  font-size: 0.78rem;
+}
+
+.sal-pago-confirmar span {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.sal-pago-confirmar-botones {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.sal-pago-confirmar-botones button {
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sal-pago-confirmar-si {
+  border-color: var(--color-danger) !important;
+  background: var(--color-danger) !important;
+  color: white !important;
+}
