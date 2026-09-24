@@ -115,8 +115,6 @@ function calcularMesAnterior() {
 
 const PERIODOS = [
   { valor: "mes_anterior", label: "Mes anterior", calcular: calcularMesAnterior },
-  { valor: "quincena_anterior", label: "Quincena anterior", calcular: calcularQuincenaAnterior },
-  { valor: "semana_pasada", label: "Semana pasada", calcular: calcularSemanaPasada },
   { valor: "semana", label: "Esta semana", calcular: calcularSemana },
   { valor: "quincena", label: "Quincena actual", calcular: calcularQuincena },
   { valor: "mes", label: "Este mes", calcular: calcularMes },
@@ -945,7 +943,7 @@ export default function Salarios() {
                       {s.estado_pago === "parcial" &&
                         `Pagado ${formatearMoneda(s.total_pagado)} de ${formatearMoneda(
                           s.salario_calculado
-                        )}`}
+                        )} · Debe ${formatearMoneda(s.pendiente)}`}
                       {s.estado_pago === "pagado_completo" && "Pagado"}
                     </span>
 
