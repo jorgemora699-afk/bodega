@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import func, exists, and_, or_
+from sqlalchemy import func, exists, and_, or_, case
 from app import db
 from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora
 from app.domain.salario import (
@@ -131,11 +131,16 @@ class AdminService:
     def ventas_por_trabajadora(periodo="dia"):
         inicio, fin = rango_por_periodo(periodo)
 
+        # Igual que en resumen_ventas: pedidos con Orden (distinct orden_id)
+        # + ventas sueltas del sistema antiguo (orden_id nulo, cada una su propio pedido).
+        ventas_sueltas_expr = func.count(case((Venta.orden_id.is_(None), Venta.id)))
+
         resultados = db.session.query(
             Trabajadora.id,
             Trabajadora.nombre,
             func.sum(Venta.total).label("total_vendido"),
-            func.count(Venta.id).label("cantidad_ventas"),
+            func.count(func.distinct(Venta.orden_id)).label("pedidos_con_orden"),
+            ventas_sueltas_expr.label("ventas_sueltas"),
         ).join(Venta, Venta.trabajadora_id == Trabajadora.id).filter(
             Venta.fecha.between(inicio, fin),
             _venta_excluye_credito_pendiente(),
@@ -148,7 +153,7 @@ class AdminService:
                 "trabajadora_id": r.id,
                 "trabajadora_nombre": r.nombre,
                 "total_vendido": float(r.total_vendido),
-                "cantidad_ventas": r.cantidad_ventas,
+                "cantidad_pedidos": r.pedidos_con_orden + r.ventas_sueltas,
             }
             for r in resultados
         ]
