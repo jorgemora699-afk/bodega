@@ -679,3 +679,12 @@
     grid-template-columns: 1fr;
   }
 }
+
+.dash-fila-ancha {
+  margin-top: 1rem;
+  grid-template-columns: 1fr;
+}
+
+.dash-seccion-ancha {
+  width: 100%;
+}

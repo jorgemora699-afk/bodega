@@ -25,6 +25,7 @@ import {
 import { dashboardResumen, productosMasVendidos, ventasPorDia, metodosPago } from "../../../api/admin";
 import { listarBajoStock } from "../../../api/inventario";
 import "./Dashboard.css";
+import { listarBajoStockInsumo } from "../../../api/insumos";
 
 const PERIODOS = [
   { valor: "dia", label: "Hoy" },
@@ -79,6 +80,7 @@ export default function Dashboard() {
   const [porMetodo, setPorMetodo] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [bajoStockInsumos, setBajoStockInsumos] = useState([]);
 
   useEffect(() => {
     cargarDatos(periodo);
@@ -89,9 +91,10 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      const [resumenData, stock, top, dia, metodo] = await Promise.all([
+      const [resumenData, stock, stockInsumos, top, dia, metodo] = await Promise.all([
         dashboardResumen(periodoActual),
         listarBajoStock(),
+        listarBajoStockInsumo(),
         productosMasVendidos(periodoActual, 3),
         ventasPorDia(periodoActual === "dia" ? "semana" : periodoActual),
         metodosPago(periodoActual),
@@ -99,6 +102,7 @@ export default function Dashboard() {
 
       setResumen(resumenData);
       setBajoStock(stock);
+      setBajoStockInsumos(stockInsumos);
       setTopProductos(top);
       setPorDia(dia);
       setPorMetodo(metodo);
@@ -414,6 +418,62 @@ export default function Dashboard() {
                             <span style={{ width: `${porcentaje}%` }} />
                           </div>
                         </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+          {/* ==================== INSUMOS POR ACABARSE ==================== */}
+
+          <div className="dash-columnas dash-fila-ancha">
+            <section className="dash-seccion dash-seccion-ancha">
+              <div className="dash-seccion-header">
+                <div>
+                  <h2>
+                    <AlertTriangle size={16} />
+                    Insumos por acabarse
+                  </h2>
+                  <p>Materia prima que requiere atención</p>
+                </div>
+                {bajoStockInsumos.length > 0 && (
+                  <span className="dash-contador-alerta">{bajoStockInsumos.length}</span>
+                )}
+              </div>
+
+              {bajoStockInsumos.length === 0 ? (
+                <div className="dash-sin-alertas">
+                  <div className="dash-sin-alertas-icono">
+                    <CheckCircle2 size={17} />
+                  </div>
+                  <div>
+                    <strong>Todo está en orden</strong>
+                    <span>No hay insumos con stock bajo.</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="dash-lista-stock">
+                  {bajoStockInsumos.map((i) => {
+                    const stock = Number(i.stock_actual) || 0;
+                    const minimo = Number(i.stock_minimo) || 1;
+                    const nivel = stock <= minimo / 2 ? "critico" : "bajo";
+                    const porcentaje = Math.min(Math.max((stock / minimo) * 100, 8), 100);
+
+                    return (
+                      <div key={i.id} className="dash-stock-fila">
+                        <div className="dash-stock-info">
+                          <span className="dash-stock-nombre">{i.nombre}</span>
+                          <div className="dash-stock-barra">
+                            <span
+                              className={`dash-stock-progreso ${nivel}`}
+                              style={{ width: `${porcentaje}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className={`dash-badge-bajo ${nivel}`}>
+                          {stock} {i.unidad_medida}
+                        </span>
                       </div>
                     );
                   })}
