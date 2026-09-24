@@ -280,8 +280,8 @@ export default function Reportes() {
   const sinDatosPorError = Boolean(error) && !resumen;
 
   const ticketPromedio =
-    resumen && resumen.cantidad_ventas > 0
-      ? resumen.total_ventas / resumen.cantidad_ventas
+    resumen && resumen.cantidad_pedidos > 0
+      ? resumen.total_ventas / resumen.cantidad_pedidos
       : 0;
 
   /* Sparklines (solo si hay al menos 2 días) */
@@ -412,8 +412,8 @@ export default function Reportes() {
               />
 
               <Metrica
-                label="Ventas"
-                valor={resumen.cantidad_ventas}
+                label="Pedidos"
+                valor={resumen.cantidad_pedidos}
                 serie={serieVentas}
                 id="spark-ventas"
                 color="var(--color-primary)"
