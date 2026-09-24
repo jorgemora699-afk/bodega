@@ -118,9 +118,9 @@ function TooltipGrafica({ active, payload, label, titulo }) {
     <div className="rep-tooltip">
       <span className="rep-tooltip-titulo">{encabezado}</span>
       <strong>{formatearMoneda(item.value)}</strong>
-      {datos.cantidad_ventas != null && (
+      {datos.cantidad_pedidos != null && (
         <span className="rep-tooltip-sub">
-          {datos.cantidad_ventas} venta(s)
+          {datos.cantidad_pedidos} pedido(s)
         </span>
       )}
     </div>
@@ -335,7 +335,7 @@ export default function Reportes() {
     id: t.trabajadora_id,
     name: t.trabajadora_nombre,
     value: Number(t.total_vendido),
-    cantidad_ventas: t.cantidad_ventas,
+    cantidad_pedidos: t.cantidad_pedidos,
   }));
 
   return (
@@ -671,7 +671,7 @@ export default function Reportes() {
 
                       <span className="rep-leyenda-nombre">
                         {d.name}
-                        <small>{d.cantidad_ventas} venta(s)</small>
+                        <small>{d.cantidad_pedidos} pedido(s)</small>
                       </span>
 
                       <span className="rep-leyenda-cifras">
