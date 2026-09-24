@@ -452,6 +452,13 @@ export default function Salarios() {
       return;
     }
 
+    if (monto > s.pendiente) {
+      setError(
+        `El monto no puede ser mayor al pendiente (${formatearMoneda(s.pendiente)})`
+      );
+      return;
+    }
+
     setGuardandoPago(true);
     setError(null);
 
@@ -946,7 +953,7 @@ export default function Salarios() {
                             Pagado {formatearMoneda(s.total_pagado)} de {formatearMoneda(s.salario_calculado)}
                           </span>
                           <span className="sal-badge-pago-pendiente">
-                            Debe {formatearMoneda(s.pendiente)}
+                            Pendiente {formatearMoneda(s.pendiente)}
                           </span>
                         </>
                       )}

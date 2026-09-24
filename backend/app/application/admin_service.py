@@ -252,6 +252,20 @@ class AdminService:
         if monto is None or monto <= 0:
             return None, "El monto debe ser mayor a 0"
 
+        resultado, error = AdminService.calcular_salario(trabajadora_id, desde, hasta)
+        if error:
+            return None, error
+
+        salario_calculado = resultado["salario_calculado"]
+        if salario_calculado is None:
+            return None, "Falta configurar el valor de pago de esta trabajadora"
+
+        total_pagado_actual = AdminService.pagos_solapados_por_trabajadora(desde, hasta).get(trabajadora_id, 0)
+        pendiente = round(salario_calculado - total_pagado_actual, 2)
+
+        if monto > pendiente + 0.01:  # margen mínimo por redondeo
+            return None, f"El monto (${monto:,.0f}) supera el pendiente (${pendiente:,.0f})"
+
         pago = PagoSalario(
             trabajadora_id=trabajadora_id,
             periodo_desde=desde,
