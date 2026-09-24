@@ -877,36 +877,141 @@
   }
 }
 
-.sal-btn-pagado {
+
+/* =========================
+   ESTADO DE PAGO
+   ========================= */
+
+.sal-pago-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  width: 100%;
-  padding: 0.5rem;
-  margin-top: 0.5rem;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: 0.78rem;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0 1.1rem 1rem;
+}
+
+.sal-badge-pago {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 700;
-  cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  white-space: nowrap;
 }
 
-.sal-btn-pagado:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
+.sal-badge-pago.sin_pagar {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
 }
 
-.sal-btn-pagado.pagado {
-  border-color: var(--color-success);
+.sal-badge-pago.parcial {
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.sal-badge-pago.pagado_completo {
   background: var(--color-success-tint);
   color: var(--color-success);
 }
 
-.sal-btn-pagado:disabled {
-  opacity: 0.6;
+.sal-btn-registrar-pago {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sal-btn-registrar-pago:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* =========================
+   FORMULARIO DE PAGO
+   ========================= */
+
+.sal-form-pago {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 1.1rem 1rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-bg);
+}
+
+/* .sal-valor-input, .sal-btn-guardar-mini, .sal-btn-cancelar-mini y .sal-hint
+   ya existen en el archivo y se reutilizan tal cual aquí */
+
+/* =========================
+   HISTORIAL DE PAGOS
+   ========================= */
+
+.sal-pagos-historial {
+  margin-bottom: 1.1rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1.5px dashed var(--color-border);
+}
+
+.sal-pago-fila {
+  display: grid;
+  grid-template-columns: 55px 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+
+.sal-pago-fecha {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.sal-pago-rango {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.sal-pago-monto {
+  font-weight: 700;
+  color: var(--color-success);
+  white-space: nowrap;
+}
+
+.sal-pago-eliminar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.sal-pago-eliminar:hover {
+  background: var(--color-danger-tint);
+}
+
+.sal-pago-eliminar:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }

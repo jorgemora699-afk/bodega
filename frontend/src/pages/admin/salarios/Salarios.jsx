@@ -10,7 +10,6 @@ import {
   Tooltip,
 } from "recharts";
 import { actualizarTrabajadora } from "../../../api/trabajadoras";
-import { calcularSalarios, generarPdfTrabajadora, generarReporteGeneralPdf, marcarSalarioPagado, desmarcarSalarioPagado } from "../../../api/admin";
 import { listarHorarios, actualizarHorario } from "../../../api/horarios";
 import "./Salarios.css";
 import {
@@ -24,7 +23,17 @@ import {
   Download,
   AlertTriangle,
   Users,
+  Banknote,
+  Trash2,
 } from "lucide-react";
+import {
+  calcularSalarios,
+  generarPdfTrabajadora,
+  generarReporteGeneralPdf,
+  marcarSalarioPagado,
+  listarPagosTrabajadora,
+  eliminarPago,
+} from "../../../api/admin";
 
 /* =========================
    FECHAS Y PERIODOS
@@ -285,6 +294,7 @@ export default function Salarios() {
 
   const [expandidoId, setExpandidoId] = useState(null);
   const [detallePorId, setDetallePorId] = useState({});
+  const [pagosPorId, setPagosPorId] = useState({});
 
   const [editandoId, setEditandoId] = useState(null);
   const [valorPagoForm, setValorPagoForm] = useState("");
@@ -293,8 +303,12 @@ export default function Salarios() {
   const [formTurno, setFormTurno] = useState({ hora_entrada: "", hora_salida: "" });
   const [advertenciaTurno, setAdvertenciaTurno] = useState(null);
 
+  const [formPagoId, setFormPagoId] = useState(null);
+  const [montoPagoForm, setMontoPagoForm] = useState("");
+  const [guardandoPago, setGuardandoPago] = useState(false);
+  const [eliminandoPagoId, setEliminandoPagoId] = useState(null);
+
   const [guardando, setGuardando] = useState(false);
-  const [marcandoPagoId, setMarcandoPagoId] = useState(null);
 
   /* Validación del rango */
   const rangoValido = Boolean(desde && hasta && desde >= "2000-01-01" && desde <= hasta);
@@ -347,6 +361,7 @@ export default function Salarios() {
     setEditandoId(null);
     setEditandoTurnoId(null);
     setAdvertenciaTurno(null);
+    setFormPagoId(null);
   }
 
   function cambiarPeriodo(tipo) {
@@ -402,6 +417,82 @@ export default function Salarios() {
     recargarDetalle(trabajadoraId);
   }
 
+  /* ---------- Pagos ---------- */
+
+  async function cargarPagos(trabajadoraId) {
+    const clave = claveDetalle(trabajadoraId);
+
+    try {
+      const pagos = await listarPagosTrabajadora({
+        trabajadora_id: trabajadoraId,
+        desde,
+        hasta,
+      });
+      setPagosPorId((prev) => ({ ...prev, [clave]: pagos }));
+    } catch (err) {
+      setPagosPorId((prev) => ({ ...prev, [clave]: null }));
+    }
+  }
+
+  function abrirFormPago(s) {
+    setFormPagoId(s.trabajadora_id);
+    setMontoPagoForm(s.pendiente > 0 ? String(Math.round(s.pendiente)) : "");
+    setError(null);
+  }
+
+  function cancelarFormPago() {
+    setFormPagoId(null);
+    setMontoPagoForm("");
+  }
+
+  async function registrarPago(s) {
+    const id = s.trabajadora_id;
+    const monto = Number(montoPagoForm);
+
+    if (!monto || monto <= 0) {
+      setError("Ingresa un monto válido");
+      return;
+    }
+
+    setGuardandoPago(true);
+    setError(null);
+
+    try {
+      await marcarSalarioPagado({
+        trabajadora_id: id,
+        desde,
+        hasta,
+        monto,
+      });
+
+      setFormPagoId(null);
+      setMontoPagoForm("");
+      setAviso("Pago registrado");
+      await cargarPagos(id);
+      setRecarga((n) => n + 1);
+    } catch (err) {
+      setError(err.response?.data?.error || "No se pudo registrar el pago");
+    } finally {
+      setGuardandoPago(false);
+    }
+  }
+
+  async function eliminarPagoHandler(pagoId, trabajadoraId) {
+    setEliminandoPagoId(pagoId);
+    setError(null);
+
+    try {
+      await eliminarPago(pagoId);
+      setAviso("Pago eliminado");
+      await cargarPagos(trabajadoraId);
+      setRecarga((n) => n + 1);
+    } catch (err) {
+      setError(err.response?.data?.error || "No se pudo eliminar el pago");
+    } finally {
+      setEliminandoPagoId(null);
+    }
+  }
+
   function toggleDetalle(trabajadoraId) {
     if (expandidoId === trabajadoraId) {
       colapsar();
@@ -412,9 +503,14 @@ export default function Salarios() {
     setEditandoId(null);
     setEditandoTurnoId(null);
     setAdvertenciaTurno(null);
+    setFormPagoId(null);
 
     if (detallePorId[claveDetalle(trabajadoraId)] === undefined) {
       recargarDetalle(trabajadoraId);
+    }
+
+    if (pagosPorId[claveDetalle(trabajadoraId)] === undefined) {
+      cargarPagos(trabajadoraId);
     }
   }
 
@@ -587,31 +683,6 @@ export default function Salarios() {
       setError("No se pudo generar el reporte");
     } finally {
       setGenerandoReporte(false);
-    }
-  }
-
-  async function togglePagado(s) {
-    const id = s.trabajadora_id;
-    setMarcandoPagoId(id);
-    setError(null);
-
-    try {
-      if (s.pagado) {
-        await desmarcarSalarioPagado({ trabajadora_id: id, desde, hasta });
-      } else {
-        await marcarSalarioPagado({
-          trabajadora_id: id,
-          desde,
-          hasta,
-          monto: s.salario_calculado,
-        });
-      }
-      setAviso(s.pagado ? "Pago desmarcado" : "Pago registrado");
-      setRecarga((n) => n + 1);
-    } catch (err) {
-      setError(err.response?.data?.error || "No se pudo actualizar el estado de pago");
-    } finally {
-      setMarcandoPagoId(null);
     }
   }
 
@@ -800,6 +871,9 @@ export default function Salarios() {
               ? turnos.reduce((sum, t) => sum + (Number(t.horas_trabajadas) || 0), 0)
               : 0;
 
+            const pagos = pagosPorId[claveDetalle(id)];
+            const pagosCargaOk = Array.isArray(pagos);
+
             /* Nota del prorrateo (solo si el cálculo coincide con el backend) */
             let notaProrrateo = null;
             if (esMensual && s.salario_mensual != null && diasDelRango > 0) {
@@ -848,25 +922,6 @@ export default function Salarios() {
                   </span>
                 </button>
 
-                {!sinConfig && (
-                  <button
-                    type="button"
-                    className={`sal-btn-pagado ${s.pagado ? "pagado" : ""}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      togglePagado(s);
-                    }}
-                    disabled={marcandoPagoId === id}
-                  >
-                    <Check size={13} />
-                    {marcandoPagoId === id
-                      ? "Actualizando..."
-                      : s.pagado
-                      ? "Pagado"
-                      : "Marcar como pagado"}
-                  </button>
-                )}
-
                 {sinConfig && editandoId !== id && (
                   <div className="sal-configurar">
                     <span>
@@ -877,6 +932,78 @@ export default function Salarios() {
                     <button type="button" onClick={() => configurar(s)}>
                       Configurar
                     </button>
+                  </div>
+                )}
+
+                {/* ---------- Estado de pago (siempre visible) ---------- */}
+
+                {!sinConfig && (
+                  <div className="sal-pago-row">
+                    <span className={`sal-badge-pago ${s.estado_pago}`}>
+                      {s.estado_pago === "pagado_completo" && <Check size={12} />}
+                      {s.estado_pago === "sin_pagar" && "Sin pagar"}
+                      {s.estado_pago === "parcial" &&
+                        `Pagado ${formatearMoneda(s.total_pagado)} de ${formatearMoneda(
+                          s.salario_calculado
+                        )}`}
+                      {s.estado_pago === "pagado_completo" && "Pagado"}
+                    </span>
+
+                    {s.estado_pago !== "pagado_completo" && formPagoId !== id && (
+                      <button
+                        type="button"
+                        className="sal-btn-registrar-pago"
+                        onClick={() => abrirFormPago(s)}
+                      >
+                        <Banknote size={13} />
+                        Registrar pago
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {formPagoId === id && (
+                  <div className="sal-form-pago">
+                    <div className="sal-valor-input">
+                      <span>$</span>
+
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        autoFocus
+                        value={
+                          montoPagoForm
+                            ? Number(montoPagoForm).toLocaleString("es-CO")
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setMontoPagoForm(e.target.value.replace(/\D/g, "").slice(0, 9))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") registrarPago(s);
+                          if (e.key === "Escape") cancelarFormPago();
+                        }}
+                        placeholder="Monto pagado"
+                        aria-label="Monto pagado"
+                      />
+                    </div>
+
+                    <button
+                      className="sal-btn-guardar-mini"
+                      onClick={() => registrarPago(s)}
+                      disabled={guardandoPago}
+                    >
+                      {guardandoPago ? "Guardando..." : "Guardar"}
+                    </button>
+
+                    <button className="sal-btn-cancelar-mini" onClick={cancelarFormPago}>
+                      Cancelar
+                    </button>
+
+                    <p className="sal-hint">
+                      Pendiente: {formatearMoneda(s.pendiente)} · Enter guarda · Esc cancela
+                    </p>
                   </div>
                 )}
 
@@ -952,6 +1079,62 @@ export default function Salarios() {
                     </div>
 
                     {notaProrrateo && <p className="sal-nota-prorrateo">{notaProrrateo}</p>}
+
+                    {/* ---------- Historial de pagos ---------- */}
+
+                    {!sinConfig && (
+                      <div className="sal-pagos-historial">
+                        <p className="sal-detalle-titulo">Pagos registrados</p>
+
+                        {pagos === undefined && (
+                          <div className="sal-dias-lista">
+                            <Skeleton className="sal-sk-fila" />
+                          </div>
+                        )}
+
+                        {pagos === null && (
+                          <p className="sal-sin-turnos">
+                            No se pudo cargar el historial de pagos
+                          </p>
+                        )}
+
+                        {pagosCargaOk && pagos.length === 0 && (
+                          <p className="sal-sin-turnos">
+                            Todavía no se ha registrado ningún pago
+                          </p>
+                        )}
+
+                        {pagosCargaOk && pagos.length > 0 && (
+                          <div className="sal-dias-lista">
+                            {pagos.map((pago) => (
+                              <div key={pago.id} className="sal-pago-fila">
+                                <span className="sal-pago-fecha">
+                                  {formatearFechaCorta(pago.fecha_pago.slice(0, 10))}
+                                </span>
+
+                                <span className="sal-pago-rango">
+                                  {formatearFechaCorta(pago.periodo_desde)} -{" "}
+                                  {formatearFechaCorta(pago.periodo_hasta)}
+                                </span>
+
+                                <span className="sal-pago-monto">
+                                  {formatearMoneda(pago.monto)}
+                                </span>
+
+                                <button
+                                  className="sal-pago-eliminar"
+                                  aria-label="Eliminar pago"
+                                  onClick={() => eliminarPagoHandler(pago.id, id)}
+                                  disabled={eliminandoPagoId === pago.id}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* ---------- Detalle por día ---------- */}
 

@@ -75,7 +75,12 @@ export async function marcarSalarioPagado(data) {
   return response.data;
 }
 
-export async function desmarcarSalarioPagado(data) {
-  const response = await apiClient.post("/admin/salarios/desmarcar-pagado", data);
+export async function listarPagosTrabajadora(params) {
+  const response = await apiClient.get("/admin/salarios/pagos", { params });
+  return response.data;
+}
+
+export async function eliminarPago(pagoId) {
+  const response = await apiClient.delete(`/admin/salarios/pagos/${pagoId}`);
   return response.data;
 }
