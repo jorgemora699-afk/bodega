@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "recharts";
 import { actualizarTrabajadora } from "../../../api/trabajadoras";
+import { calcularSalarios, generarPdfTrabajadora, generarReporteGeneralPdf, marcarSalarioPagado, desmarcarSalarioPagado } from "../../../api/admin";
 import { listarHorarios, actualizarHorario } from "../../../api/horarios";
 import "./Salarios.css";
 import {
@@ -298,6 +299,7 @@ export default function Salarios() {
   const [advertenciaTurno, setAdvertenciaTurno] = useState(null);
 
   const [guardando, setGuardando] = useState(false);
+  const [marcandoPagoId, setMarcandoPagoId] = useState(null);
 
   /* Validación del rango */
   const rangoValido = Boolean(desde && hasta && desde >= "2000-01-01" && desde <= hasta);
@@ -593,6 +595,31 @@ export default function Salarios() {
     }
   }
 
+  async function togglePagado(s) {
+    const id = s.trabajadora_id;
+    setMarcandoPagoId(id);
+    setError(null);
+
+    try {
+      if (s.pagado) {
+        await desmarcarSalarioPagado({ trabajadora_id: id, desde, hasta });
+      } else {
+        await marcarSalarioPagado({
+          trabajadora_id: id,
+          desde,
+          hasta,
+          monto: s.salario_calculado,
+        });
+      }
+      setAviso(s.pagado ? "Pago desmarcado" : "Pago registrado");
+      setRecarga((n) => n + 1);
+    } catch (err) {
+      setError(err.response?.data?.error || "No se pudo actualizar el estado de pago");
+    } finally {
+      setMarcandoPagoId(null);
+    }
+  }
+
   /* =========================
      DERIVADOS
      ========================= */
@@ -825,6 +852,25 @@ export default function Salarios() {
                     {abierto ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </span>
                 </button>
+
+                {!sinConfig && (
+                  <button
+                    type="button"
+                    className={`sal-btn-pagado ${s.pagado ? "pagado" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePagado(s);
+                    }}
+                    disabled={marcandoPagoId === id}
+                  >
+                    <Check size={13} />
+                    {marcandoPagoId === id
+                      ? "Actualizando..."
+                      : s.pagado
+                      ? "Pagado"
+                      : "Marcar como pagado"}
+                  </button>
+                )}
 
                 {sinConfig && editandoId !== id && (
                   <div className="sal-configurar">

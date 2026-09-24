@@ -69,3 +69,13 @@ export async function metodosPago(periodo = "dia") {
   const response = await apiClient.get("/admin/metodos-pago", { params: { periodo } });
   return response.data;
 }
+
+export async function marcarSalarioPagado(data) {
+  const response = await apiClient.post("/admin/salarios/marcar-pagado", data);
+  return response.data;
+}
+
+export async function desmarcarSalarioPagado(data) {
+  const response = await apiClient.post("/admin/salarios/desmarcar-pagado", data);
+  return response.data;
+}
