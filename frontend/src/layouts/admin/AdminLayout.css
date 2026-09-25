@@ -534,14 +534,17 @@
 
 
   .admin-brand {
-    width: 105px;
+    width: auto;
+    height: 100%;
 
     justify-content: flex-start;
   }
 
 
   .admin-logo {
-    width: 100px;
+    width: auto;
+    height: 40px;
+    max-width: 140px;
   }
 
 
