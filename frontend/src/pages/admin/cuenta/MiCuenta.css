@@ -96,3 +96,35 @@
   border-radius: var(--radius-lg);
   background: var(--color-surface);
 }
+
+.cuenta-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cuenta-input-wrapper input {
+  width: 100%;
+  padding-right: 2.4rem;
+  box-sizing: border-box;
+}
+
+.cuenta-toggle-password {
+  position: absolute;
+  right: 0.3rem;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.cuenta-toggle-password:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}

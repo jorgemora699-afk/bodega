@@ -1,8 +1,35 @@
 import { useState } from "react";
-import { User, Lock, Check, Users } from "lucide-react";
+import { User, Lock, Check, Users, Eye, EyeOff } from "lucide-react";
 import { cambiarCredenciales, resetearPasswordTrabajadora } from "../../../api/auth";
 import { useAuth } from "../../../context/AuthContext";
 import "./MiCuenta.css";
+
+function CampoPassword({ id, value, onChange, placeholder }) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="cuenta-input-wrapper">
+      <input
+        id={id}
+        type={visible ? "text" : "password"}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete="new-password"
+      />
+
+      <button
+        type="button"
+        className="cuenta-toggle-password"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        tabIndex={-1}
+      >
+        {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
+}
 
 export default function MiCuenta() {
   const { usuario, actualizarUsername } = useAuth();
@@ -129,8 +156,7 @@ export default function MiCuenta() {
         <label>
           <Lock size={14} /> Nueva contraseña (opcional)
         </label>
-        <input
-          type="password"
+        <CampoPassword
           value={nuevaPassword}
           onChange={(e) => setNuevaPassword(e.target.value)}
           placeholder="Deja en blanco para no cambiarla"
@@ -139,8 +165,7 @@ export default function MiCuenta() {
         {nuevaPassword && (
           <>
             <label>Confirmar nueva contraseña</label>
-            <input
-              type="password"
+            <CampoPassword
               value={confirmarPassword}
               onChange={(e) => setConfirmarPassword(e.target.value)}
             />
@@ -152,8 +177,7 @@ export default function MiCuenta() {
         <label>
           <Lock size={14} /> Contraseña actual (para confirmar)
         </label>
-        <input
-          type="password"
+        <CampoPassword
           value={passwordActual}
           onChange={(e) => setPasswordActual(e.target.value)}
         />
@@ -183,16 +207,14 @@ export default function MiCuenta() {
         <label>
           <Users size={14} /> Nueva contraseña del personal
         </label>
-        <input
-          type="password"
+        <CampoPassword
           value={nuevaPasswordTrabajadora}
           onChange={(e) => setNuevaPasswordTrabajadora(e.target.value)}
           placeholder="Mínimo 6 caracteres"
         />
 
         <label>Confirmar nueva contraseña</label>
-        <input
-          type="password"
+        <CampoPassword
           value={confirmarPasswordTrabajadora}
           onChange={(e) => setConfirmarPasswordTrabajadora(e.target.value)}
         />
@@ -202,8 +224,7 @@ export default function MiCuenta() {
         <label>
           <Lock size={14} /> Tu contraseña (para confirmar)
         </label>
-        <input
-          type="password"
+        <CampoPassword
           value={passwordJefeConfirma}
           onChange={(e) => setPasswordJefeConfirma(e.target.value)}
         />
