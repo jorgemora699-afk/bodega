@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { User, Lock, Check } from "lucide-react";
-import { cambiarCredenciales } from "../../../api/auth";
+import { User, Lock, Check, Users } from "lucide-react";
+import { cambiarCredenciales, resetearPasswordTrabajadora } from "../../../api/auth";
 import { useAuth } from "../../../context/AuthContext";
 import "./MiCuenta.css";
 
 export default function MiCuenta() {
   const { usuario, actualizarUsername } = useAuth();
+
+  /* ---------- Cuenta del jefe ---------- */
 
   const [nuevoUsername, setNuevoUsername] = useState(usuario?.username || "");
   const [nuevaPassword, setNuevaPassword] = useState("");
@@ -15,6 +17,16 @@ export default function MiCuenta() {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
+
+  /* ---------- Cuenta compartida de trabajadoras ---------- */
+
+  const [nuevaPasswordTrabajadora, setNuevaPasswordTrabajadora] = useState("");
+  const [confirmarPasswordTrabajadora, setConfirmarPasswordTrabajadora] = useState("");
+  const [passwordJefeConfirma, setPasswordJefeConfirma] = useState("");
+
+  const [guardandoTrabajadora, setGuardandoTrabajadora] = useState(false);
+  const [mensajeTrabajadora, setMensajeTrabajadora] = useState(null);
+  const [errorTrabajadora, setErrorTrabajadora] = useState(null);
 
   async function guardar() {
     setError(null);
@@ -50,6 +62,43 @@ export default function MiCuenta() {
       setError(err.response?.data?.error || "No se pudieron actualizar las credenciales");
     } finally {
       setGuardando(false);
+    }
+  }
+
+  async function guardarPasswordTrabajadora() {
+    setErrorTrabajadora(null);
+    setMensajeTrabajadora(null);
+
+    if (!passwordJefeConfirma) {
+      setErrorTrabajadora("Debes confirmar tu propia contraseña");
+      return;
+    }
+    if (!nuevaPasswordTrabajadora) {
+      setErrorTrabajadora("Ingresa la nueva contraseña");
+      return;
+    }
+    if (nuevaPasswordTrabajadora !== confirmarPasswordTrabajadora) {
+      setErrorTrabajadora("Las contraseñas nuevas no coinciden");
+      return;
+    }
+
+    setGuardandoTrabajadora(true);
+    try {
+      await resetearPasswordTrabajadora({
+        password_actual: passwordJefeConfirma,
+        nueva_password: nuevaPasswordTrabajadora,
+      });
+
+      setMensajeTrabajadora("Contraseña del personal actualizada correctamente");
+      setNuevaPasswordTrabajadora("");
+      setConfirmarPasswordTrabajadora("");
+      setPasswordJefeConfirma("");
+    } catch (err) {
+      setErrorTrabajadora(
+        err.response?.data?.error || "No se pudo actualizar la contraseña del personal"
+      );
+    } finally {
+      setGuardandoTrabajadora(false);
     }
   }
 
@@ -111,6 +160,60 @@ export default function MiCuenta() {
 
         <button className="cuenta-btn-guardar" onClick={guardar} disabled={guardando}>
           {guardando ? "Guardando..." : "Guardar cambios"}
+        </button>
+      </div>
+
+      {/* ==========================================
+          CUENTA COMPARTIDA DE TRABAJADORAS
+          ========================================== */}
+
+      <header className="cuenta-header" style={{ marginTop: "2rem" }}>
+        <h1 style={{ fontSize: "1.15rem" }}>Acceso del personal</h1>
+        <p>Cambia la contraseña con la que las trabajadoras inician sesión</p>
+      </header>
+
+      {mensajeTrabajadora && (
+        <div className="cuenta-mensaje-exito">
+          <Check size={16} /> {mensajeTrabajadora}
+        </div>
+      )}
+      {errorTrabajadora && <div className="cuenta-mensaje-error">{errorTrabajadora}</div>}
+
+      <div className="cuenta-form">
+        <label>
+          <Users size={14} /> Nueva contraseña del personal
+        </label>
+        <input
+          type="password"
+          value={nuevaPasswordTrabajadora}
+          onChange={(e) => setNuevaPasswordTrabajadora(e.target.value)}
+          placeholder="Mínimo 6 caracteres"
+        />
+
+        <label>Confirmar nueva contraseña</label>
+        <input
+          type="password"
+          value={confirmarPasswordTrabajadora}
+          onChange={(e) => setConfirmarPasswordTrabajadora(e.target.value)}
+        />
+
+        <div className="cuenta-separador" />
+
+        <label>
+          <Lock size={14} /> Tu contraseña (para confirmar)
+        </label>
+        <input
+          type="password"
+          value={passwordJefeConfirma}
+          onChange={(e) => setPasswordJefeConfirma(e.target.value)}
+        />
+
+        <button
+          className="cuenta-btn-guardar"
+          onClick={guardarPasswordTrabajadora}
+          disabled={guardandoTrabajadora}
+        >
+          {guardandoTrabajadora ? "Guardando..." : "Guardar contraseña del personal"}
         </button>
       </div>
     </div>

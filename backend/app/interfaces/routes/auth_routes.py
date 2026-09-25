@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token,jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token,jwt_required, get_jwt_identity, get_jwt
 from app.application.auth_service import AuthService
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -49,3 +49,25 @@ def cambiar_credenciales():
         return jsonify({"error": error}), 400
 
     return jsonify(usuario.to_dict()), 200
+
+@auth_bp.route("/trabajadora/password", methods=["PUT"])
+@jwt_required()
+def resetear_password_trabajadora():
+    claims = get_jwt()
+    if claims.get("rol") != "jefe":
+        return jsonify({"error": "No autorizado"}), 403
+
+    jefe_id = int(get_jwt_identity())
+    data = request.get_json()
+
+    password_actual = data.get("password_actual")
+    nueva_password = data.get("nueva_password")
+
+    if not password_actual or not nueva_password:
+        return jsonify({"error": "password_actual y nueva_password son obligatorios"}), 400
+
+    cuenta, error = AuthService.resetear_password_trabajadora(jefe_id, password_actual, nueva_password)
+    if error:
+        return jsonify({"error": error}), 400
+
+    return jsonify({"mensaje": "Contraseña de la cuenta de trabajadora actualizada"}), 200

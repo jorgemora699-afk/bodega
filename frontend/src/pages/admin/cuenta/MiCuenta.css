@@ -88,3 +88,11 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.cuenta-form {
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}

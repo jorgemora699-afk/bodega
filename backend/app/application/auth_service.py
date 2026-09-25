@@ -31,3 +31,23 @@ class AuthService:
 
         db.session.commit()
         return usuario, None
+
+    @staticmethod
+    def resetear_password_trabajadora(jefe_id, password_jefe_actual, nueva_password):
+        jefe = Usuario.query.get(jefe_id)
+        if not jefe:
+            return None, "Usuario no encontrado"
+
+        if not jefe.check_password(password_jefe_actual):
+            return None, "Tu contraseña actual es incorrecta"
+
+        if not nueva_password or len(nueva_password) < 6:
+            return None, "La nueva contraseña debe tener al menos 6 caracteres"
+
+        cuenta_trabajadora = Usuario.query.filter_by(rol="trabajadora").first()
+        if not cuenta_trabajadora:
+            return None, "No existe una cuenta de trabajadora configurada"
+
+        cuenta_trabajadora.set_password(nueva_password)
+        db.session.commit()
+        return cuenta_trabajadora, None
