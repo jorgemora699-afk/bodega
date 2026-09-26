@@ -44,7 +44,7 @@ def registrar_salida():
 
 @inventario_bp.route("/bajo-stock", methods=["GET"])
 def productos_bajo_stock():
-    umbral = request.args.get("umbral", default=5, type=int)
+    umbral = request.args.get("umbral", default=None, type=int)
     productos = InventarioService.productos_bajo_stock(umbral)
     return jsonify([p.to_dict() for p in productos]), 200
 

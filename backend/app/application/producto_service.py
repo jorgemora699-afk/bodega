@@ -22,6 +22,7 @@ class ProductoService:
             categoria=data.get("categoria"),
             precio_unitario=data["precio_unitario"],
             stock_actual=data.get("stock_actual", 0),
+            stock_minimo=data.get("stock_minimo", 5),
             insumo_id=data.get("insumo_id") or None,
         )
         db.session.add(producto)
@@ -42,6 +43,8 @@ class ProductoService:
             producto.precio_unitario = data["precio_unitario"]
         if "stock_actual" in data:
             producto.stock_actual = data["stock_actual"]
+        if "stock_minimo" in data:
+            producto.stock_minimo = data["stock_minimo"]
         if "insumo_id" in data:
             producto.insumo_id = data["insumo_id"] or None
         if "activo" in data:

@@ -23,6 +23,7 @@ class Producto(db.Model):
     categoria = db.Column(db.String(50), nullable=True)
     precio_unitario = db.Column(db.Numeric(10, 2), nullable=False)
     stock_actual = db.Column(db.Numeric(10, 3), nullable=False, default=0)
+    stock_minimo = db.Column(db.Numeric(10, 3), nullable=False, default=5)
     es_paquete = db.Column(db.Boolean, nullable=False, default=False)
     producto_base_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=True)
     unidades_por_paquete = db.Column(db.Integer, nullable=True)
@@ -53,6 +54,7 @@ class Producto(db.Model):
                 "categoria": self.categoria,
                 "precio_unitario": float(self.precio_unitario),
                 "stock_actual": stock_mostrado,
+                "stock_minimo": float(self.stock_minimo),
                 "es_paquete": self.es_paquete,
                 "producto_base_id": self.producto_base_id,
                 "producto_base_nombre": self.producto_base.nombre if self.producto_base else None,

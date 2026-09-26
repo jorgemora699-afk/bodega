@@ -10,7 +10,6 @@ import { listarInsumos } from "../../../api/insumos";
 import Sheet from "../../../components/Sheet";
 import "./Productos.css";
 
-const UMBRAL_BAJO_STOCK = 5;
 
 function formVacio() {
   return {
@@ -18,6 +17,7 @@ function formVacio() {
     categoria: "",
     precio_unitario: "",
     stock_actual: "",
+    stock_minimo: "5",
     insumo_id: "",
   };
 }
@@ -106,6 +106,7 @@ export default function Productos() {
       nombre: producto.nombre,
       categoria: producto.categoria || "",
       precio_unitario: producto.precio_unitario,
+      stock_minimo: producto.stock_minimo ?? "5",
       insumo_id: producto.insumo_id || "",
       // stock_actual no se edita aquí — los cambios de stock pasan por Inventario
     });
@@ -135,6 +136,7 @@ export default function Productos() {
           nombre: form.nombre,
           categoria: form.categoria || null,
           precio_unitario: Number(form.precio_unitario),
+          stock_minimo: Number(form.stock_minimo) || 5,
           insumo_id: form.insumo_id ? Number(form.insumo_id) : null,
         });
         setMensaje("Producto actualizado");
@@ -144,6 +146,7 @@ export default function Productos() {
           categoria: form.categoria || null,
           precio_unitario: Number(form.precio_unitario),
           stock_actual: Number(form.stock_actual) || 0,
+          stock_minimo: Number(form.stock_minimo) || 5,
           insumo_id: form.insumo_id ? Number(form.insumo_id) : null,
         });
         setMensaje("Producto creado");
@@ -232,7 +235,7 @@ export default function Productos() {
 
       <div className="prodad-lista">
         {productosFiltrados.map((p) => {
-          const stockBajo = Number(p.stock_actual) <= UMBRAL_BAJO_STOCK;
+          const stockBajo = Number(p.stock_actual) <= Number(p.stock_minimo);
           return (
             <div key={p.id} className="prodad-tarjeta">
               <div className="prodad-fila-principal">
@@ -347,6 +350,15 @@ export default function Productos() {
             step="0.01"
             value={form.precio_unitario}
             onChange={(e) => setForm((f) => ({ ...f, precio_unitario: e.target.value }))}
+          />
+
+          <label>Stock mínimo (alerta de bajo stock)</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.stock_minimo}
+            onChange={(e) => setForm((f) => ({ ...f, stock_minimo: e.target.value }))}
           />
 
           {!editandoId && (

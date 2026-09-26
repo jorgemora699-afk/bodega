@@ -388,9 +388,8 @@ class AdminService:
         balance = AdminService.balance(periodo)
 
         productos_activos = Producto.query.filter(Producto.activo == True).all()
-        from app.domain.inventario import UMBRAL_BAJO_STOCK_DEFAULT
         stock_bajo_cantidad = sum(
-            1 for p in productos_activos if float(p.stock_actual) <= UMBRAL_BAJO_STOCK_DEFAULT
+            1 for p in productos_activos if float(p.stock_actual) <= float(p.stock_minimo)
         )
 
         return {

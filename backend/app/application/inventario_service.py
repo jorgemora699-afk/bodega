@@ -57,9 +57,16 @@ class InventarioService:
         return movimiento, None
 
     @staticmethod
-    def productos_bajo_stock(umbral=UMBRAL_BAJO_STOCK_DEFAULT):
+    def productos_bajo_stock(umbral=None):
+        """Si se pasa un umbral explícito, se usa igual para todos (comportamiento
+        anterior, por compatibilidad). Si no, cada producto se compara contra su
+        propio stock_minimo configurado."""
         productos = Producto.query.filter(Producto.activo == True).all()
-        return [p for p in productos if esta_bajo_stock(float(p.stock_actual), umbral)]
+
+        if umbral is not None:
+            return [p for p in productos if esta_bajo_stock(float(p.stock_actual), umbral)]
+
+        return [p for p in productos if esta_bajo_stock(float(p.stock_actual), float(p.stock_minimo))]
 
 
     @staticmethod
