@@ -1,6 +1,6 @@
 from collections import defaultdict
 from app import db
-from app.infrastructure.models import Orden, Venta, Producto, Cliente, MovimientoInventario
+from app.infrastructure.models import Orden, Venta, Producto, Cliente, MovimientoInventario, MovimientoInsumo
 from app.domain.inventario import hay_stock_suficiente
 from app.application.cliente_service import ClienteService
 
@@ -14,6 +14,12 @@ def _resolver_stock(producto, cantidad):
     if producto.es_paquete and producto.producto_base and producto.unidades_por_paquete:
         return producto.producto_base, cantidad * producto.unidades_por_paquete
     return producto, cantidad
+
+
+def _usa_insumo(producto):
+    """True si este producto descuenta de un insumo compartido (ej. jugo -> pulpa)
+    en vez de tener su propio stock independiente."""
+    return bool(producto.insumo_id and producto.insumo)
 
 
 class OrdenService:
@@ -97,6 +103,7 @@ class OrdenService:
 
         productos_vendidos = {}
         cantidad_efectiva_por_stock = defaultdict(float)
+        cantidad_por_insumo = defaultdict(float)
 
         for item in items:
             if item.get("producto_id") is None or item.get("cantidad") is None:
@@ -108,13 +115,25 @@ class OrdenService:
             productos_vendidos[item["producto_id"]] = producto
 
             cantidad = float(item["cantidad"])
-            producto_stock, cantidad_efectiva = _resolver_stock(producto, cantidad)
-            cantidad_efectiva_por_stock[producto_stock.id] += cantidad_efectiva
+
+            if _usa_insumo(producto):
+                cantidad_por_insumo[producto.insumo_id] += cantidad
+            else:
+                producto_stock, cantidad_efectiva = _resolver_stock(producto, cantidad)
+                cantidad_efectiva_por_stock[producto_stock.id] += cantidad_efectiva
 
         for producto_stock_id, cantidad_total in cantidad_efectiva_por_stock.items():
             producto_stock = Producto.query.get(producto_stock_id)
             if not hay_stock_suficiente(float(producto_stock.stock_actual), cantidad_total):
                 return None, f"Stock insuficiente: quedan {float(producto_stock.stock_actual)} de {producto_stock.nombre}"
+
+        for insumo_id, cantidad_total in cantidad_por_insumo.items():
+            producto_con_insumo = next(
+                p for p in productos_vendidos.values() if p.insumo_id == insumo_id
+            )
+            insumo = producto_con_insumo.insumo
+            if not hay_stock_suficiente(float(insumo.stock_actual), cantidad_total):
+                return None, f"Stock insuficiente de {insumo.nombre}: quedan {float(insumo.stock_actual)} {insumo.unidad_medida}"
 
         orden = Orden(
             trabajadora_id=trabajadora_id,
@@ -146,18 +165,30 @@ class OrdenService:
             db.session.add(venta)
             db.session.flush()
 
-            producto_stock, cantidad_efectiva = _resolver_stock(producto, cantidad)
-            producto_stock.stock_actual = float(producto_stock.stock_actual) - cantidad_efectiva
+            if _usa_insumo(producto):
+                insumo = producto.insumo
+                insumo.stock_actual = float(insumo.stock_actual) - cantidad
 
-            movimiento = MovimientoInventario(
-                producto_id=producto_stock.id,
-                trabajadora_id=trabajadora_id,
-                venta_id=venta.id,
-                tipo="salida",
-                motivo="venta",
-                cantidad=cantidad_efectiva,
-            )
-            db.session.add(movimiento)
+                db.session.add(MovimientoInsumo(
+                    insumo_id=insumo.id,
+                    trabajadora_id=trabajadora_id,
+                    venta_id=venta.id,
+                    tipo="salida",
+                    motivo="venta",
+                    cantidad=cantidad,
+                ))
+            else:
+                producto_stock, cantidad_efectiva = _resolver_stock(producto, cantidad)
+                producto_stock.stock_actual = float(producto_stock.stock_actual) - cantidad_efectiva
+
+                db.session.add(MovimientoInventario(
+                    producto_id=producto_stock.id,
+                    trabajadora_id=trabajadora_id,
+                    venta_id=venta.id,
+                    tipo="salida",
+                    motivo="venta",
+                    cantidad=cantidad_efectiva,
+                ))
 
         orden.total = total_orden
         db.session.commit()
@@ -190,9 +221,9 @@ class OrdenService:
         else:
             pagada = True
 
-        # 1. Stock "hipotético" — como si las líneas viejas no hubieran existido,
-        #    usando lo que de verdad se descontó (guardado en cada movimiento),
-        #    no lo que dice la línea de venta (que puede ser un paquete).
+        # 1. Stock "hipotético" de productos — como si las líneas viejas no
+        #    hubieran existido, usando lo que de verdad se descontó (guardado
+        #    en cada movimiento), no lo que dice la línea de venta.
         stock_hipotetico = {}
         for venta in orden.ventas:
             if not venta.movimiento:
@@ -203,9 +234,19 @@ class OrdenService:
                 base = stock_hipotetico.get(pid, float(producto_stock.stock_actual))
                 stock_hipotetico[pid] = base + float(venta.movimiento.cantidad)
 
-        # 2. Resolver las líneas nuevas a su producto de stock real y validar.
+        # 1b. Mismo cálculo, pero para insumos — usando los MovimientoInsumo
+        #     ligados a las ventas viejas de esta orden.
+        insumo_hipotetico = {}
+        for venta in orden.ventas:
+            movimientos_insumo = MovimientoInsumo.query.filter_by(venta_id=venta.id, motivo="venta").all()
+            for m in movimientos_insumo:
+                base = insumo_hipotetico.get(m.insumo_id, float(m.insumo.stock_actual))
+                insumo_hipotetico[m.insumo_id] = base + float(m.cantidad)
+
+        # 2. Resolver las líneas nuevas a su producto/insumo real y validar.
         productos_vendidos = {}
         cantidad_efectiva_por_stock = defaultdict(float)
+        cantidad_por_insumo = defaultdict(float)
 
         for item in items:
             if item.get("producto_id") is None or item.get("cantidad") is None:
@@ -217,8 +258,12 @@ class OrdenService:
             productos_vendidos[item["producto_id"]] = producto
 
             cantidad = float(item["cantidad"])
-            producto_stock, cantidad_efectiva = _resolver_stock(producto, cantidad)
-            cantidad_efectiva_por_stock[producto_stock.id] += cantidad_efectiva
+
+            if _usa_insumo(producto):
+                cantidad_por_insumo[producto.insumo_id] += cantidad
+            else:
+                producto_stock, cantidad_efectiva = _resolver_stock(producto, cantidad)
+                cantidad_efectiva_por_stock[producto_stock.id] += cantidad_efectiva
 
         for producto_stock_id, cantidad_total in cantidad_efectiva_por_stock.items():
             producto_stock = Producto.query.get(producto_stock_id)
@@ -228,17 +273,32 @@ class OrdenService:
             if not hay_stock_suficiente(disponible, cantidad_total):
                 return None, f"Stock insuficiente: quedan {disponible} de {producto_stock.nombre}"
 
-        # 3. Revertir stock real de las líneas viejas (usando el movimiento, no la venta).
+        for insumo_id, cantidad_total in cantidad_por_insumo.items():
+            producto_con_insumo = next(
+                p for p in productos_vendidos.values() if p.insumo_id == insumo_id
+            )
+            insumo = producto_con_insumo.insumo
+            disponible = insumo_hipotetico.get(insumo_id, float(insumo.stock_actual))
+            if not hay_stock_suficiente(disponible, cantidad_total):
+                return None, f"Stock insuficiente de {insumo.nombre}: quedan {disponible} {insumo.unidad_medida}"
+
+        # 3. Revertir stock real de las líneas viejas (producto e insumo).
         for venta in list(orden.ventas):
+            movimientos_insumo = MovimientoInsumo.query.filter_by(venta_id=venta.id, motivo="venta").all()
+            for m in movimientos_insumo:
+                m.insumo.stock_actual = float(m.insumo.stock_actual) + float(m.cantidad)
+                db.session.delete(m)
+
             if venta.movimiento:
                 producto_stock = Producto.query.get(venta.movimiento.producto_id)
                 if producto_stock:
                     producto_stock.stock_actual = float(producto_stock.stock_actual) + float(venta.movimiento.cantidad)
                 db.session.delete(venta.movimiento)
+
             db.session.delete(venta)
         db.session.flush()
 
-        # 4. Crear las líneas nuevas, descontando stock real.
+        # 4. Crear las líneas nuevas, descontando stock real (producto o insumo).
         total_orden = 0
         for item in items:
             producto = productos_vendidos[item["producto_id"]]
@@ -259,18 +319,30 @@ class OrdenService:
             db.session.add(venta)
             db.session.flush()
 
-            producto_stock, cantidad_efectiva = _resolver_stock(producto, cantidad)
-            producto_stock.stock_actual = float(producto_stock.stock_actual) - cantidad_efectiva
+            if _usa_insumo(producto):
+                insumo = producto.insumo
+                insumo.stock_actual = float(insumo.stock_actual) - cantidad
 
-            movimiento = MovimientoInventario(
-                producto_id=producto_stock.id,
-                trabajadora_id=trabajadora_id,
-                venta_id=venta.id,
-                tipo="salida",
-                motivo="venta",
-                cantidad=cantidad_efectiva,
-            )
-            db.session.add(movimiento)
+                db.session.add(MovimientoInsumo(
+                    insumo_id=insumo.id,
+                    trabajadora_id=trabajadora_id,
+                    venta_id=venta.id,
+                    tipo="salida",
+                    motivo="venta",
+                    cantidad=cantidad,
+                ))
+            else:
+                producto_stock, cantidad_efectiva = _resolver_stock(producto, cantidad)
+                producto_stock.stock_actual = float(producto_stock.stock_actual) - cantidad_efectiva
+
+                db.session.add(MovimientoInventario(
+                    producto_id=producto_stock.id,
+                    trabajadora_id=trabajadora_id,
+                    venta_id=venta.id,
+                    tipo="salida",
+                    motivo="venta",
+                    cantidad=cantidad_efectiva,
+                ))
 
         orden.metodo_pago = metodo_pago
         orden.trabajadora_id = trabajadora_id
@@ -306,11 +378,17 @@ class OrdenService:
             return False, "Orden no encontrada"
 
         for venta in orden.ventas:
+            movimientos_insumo = MovimientoInsumo.query.filter_by(venta_id=venta.id, motivo="venta").all()
+            for m in movimientos_insumo:
+                m.insumo.stock_actual = float(m.insumo.stock_actual) + float(m.cantidad)
+                db.session.delete(m)
+
             if venta.movimiento:
                 producto_stock = Producto.query.get(venta.movimiento.producto_id)
                 if producto_stock:
                     producto_stock.stock_actual = float(producto_stock.stock_actual) + float(venta.movimiento.cantidad)
                 db.session.delete(venta.movimiento)
+
             db.session.delete(venta)
 
         db.session.delete(orden)
