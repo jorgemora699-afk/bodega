@@ -372,27 +372,19 @@ export default function RegistrarVenta() {
     );
   }
 
-  function obtenerEstadoStock(stock) {
+  function obtenerEstadoStock(stock, stockMinimo) {
     const cantidad = Number(stock);
+    const minimo = Number(stockMinimo) || 5; // respaldo por si algún producto viejo no lo trae
 
     if (cantidad <= 0) {
-      return {
-        clase: "agotado",
-        texto: "Agotado",
-      };
+      return { clase: "agotado", texto: "Agotado" };
     }
 
-    if (cantidad <= 5) {
-      return {
-        clase: "bajo",
-        texto: `Poco stock · ${cantidad} disponibles`,
-      };
+    if (cantidad <= minimo) {
+      return { clase: "bajo", texto: `Poco stock · ${cantidad} disponibles` };
     }
 
-    return {
-      clase: "disponible",
-      texto: `${cantidad} disponibles`,
-    };
+    return { clase: "disponible", texto: `${cantidad} disponibles` };
   }
 
   function quitarDelCarrito(productoId) {
@@ -744,7 +736,8 @@ export default function RegistrarVenta() {
           <div className="venta-grid-productos">
             {productosFiltrados.map((producto) => {
               const stock = obtenerEstadoStock(
-                producto.stock_actual
+                producto.stock_actual,
+                producto.stock_minimo
               );
 
               const agotado =
