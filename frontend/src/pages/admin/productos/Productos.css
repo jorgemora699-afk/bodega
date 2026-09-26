@@ -327,3 +327,21 @@
     padding: 0.85rem;
   }
 }
+
+.prodad-form select {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.9rem;
+  background: var(--color-surface);
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.prodad-stock-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}

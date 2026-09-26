@@ -26,6 +26,10 @@ class Producto(db.Model):
     es_paquete = db.Column(db.Boolean, nullable=False, default=False)
     producto_base_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=True)
     unidades_por_paquete = db.Column(db.Integer, nullable=True)
+
+    # NUEVO — insumo que se descuenta 1:1 al vender este producto (ej. pulpa de mora)
+    insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=True)
+
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -34,6 +38,7 @@ class Producto(db.Model):
     proveedores = db.relationship("Proveedor", secondary=proveedor_productos, back_populates="productos")
     receta = db.relationship("Receta", back_populates="producto", uselist=False)
     producto_base = db.relationship("Producto", remote_side=[id], backref="paquetes")
+    insumo = db.relationship("Insumo")  # NUEVO
 
     def to_dict(self):
         stock_mostrado = float(self.stock_actual)
@@ -50,6 +55,8 @@ class Producto(db.Model):
                 "producto_base_id": self.producto_base_id,
                 "producto_base_nombre": self.producto_base.nombre if self.producto_base else None,
                 "unidades_por_paquete": self.unidades_por_paquete,
+                "insumo_id": self.insumo_id,                              # NUEVO
+                "insumo_nombre": self.insumo.nombre if self.insumo else None,  # NUEVO
                 "activo": self.activo,
         }
 
@@ -425,8 +432,9 @@ class MovimientoInsumo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=False)
     trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=True)
-    tipo = db.Column(db.String(20), nullable=False)  # "entrada" o "salida"
-    motivo = db.Column(db.String(50), nullable=False)  # "compra", "uso", "merma", "ajuste"
+    venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id"), nullable=True)  # NUEVO
+    tipo = db.Column(db.String(20), nullable=False)
+    motivo = db.Column(db.String(50), nullable=False)
     cantidad = db.Column(db.Numeric(10, 3), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 

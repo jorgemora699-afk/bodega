@@ -6,17 +6,25 @@ import {
   actualizarProducto,
   eliminarProducto,
 } from "../../../api/productos";
+import { listarInsumos } from "../../../api/insumos";
 import Sheet from "../../../components/Sheet";
 import "./Productos.css";
 
 const UMBRAL_BAJO_STOCK = 5;
 
 function formVacio() {
-  return { nombre: "", categoria: "", precio_unitario: "", stock_actual: "" };
+  return {
+    nombre: "",
+    categoria: "",
+    precio_unitario: "",
+    stock_actual: "",
+    insumo_id: "",
+  };
 }
 
 export default function Productos() {
   const [productos, setProductos] = useState([]);
+  const [insumos, setInsumos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [categoriasAbiertas, setCategoriasAbiertas] = useState({});
@@ -32,6 +40,7 @@ export default function Productos() {
 
   useEffect(() => {
     cargarDatos();
+    cargarInsumos();
   }, []);
 
   async function cargarDatos() {
@@ -61,6 +70,17 @@ export default function Productos() {
     }
   }
 
+  async function cargarInsumos() {
+    try {
+      const datos = await listarInsumos();
+      setInsumos(datos);
+    } catch (err) {
+      // Si falla, simplemente no se muestra el selector de insumo con datos —
+      // no bloqueamos el resto de la pantalla de productos por esto.
+      setInsumos([]);
+    }
+  }
+
   function toggleCategoria(categoria) {
     setCategoriasAbiertas((prev) => ({
       ...prev,
@@ -86,6 +106,7 @@ export default function Productos() {
       nombre: producto.nombre,
       categoria: producto.categoria || "",
       precio_unitario: producto.precio_unitario,
+      insumo_id: producto.insumo_id || "",
       // stock_actual no se edita aquí — los cambios de stock pasan por Inventario
     });
     setSheetAbierto(true);
@@ -114,6 +135,7 @@ export default function Productos() {
           nombre: form.nombre,
           categoria: form.categoria || null,
           precio_unitario: Number(form.precio_unitario),
+          insumo_id: form.insumo_id ? Number(form.insumo_id) : null,
         });
         setMensaje("Producto actualizado");
       } else {
@@ -122,6 +144,7 @@ export default function Productos() {
           categoria: form.categoria || null,
           precio_unitario: Number(form.precio_unitario),
           stock_actual: Number(form.stock_actual) || 0,
+          insumo_id: form.insumo_id ? Number(form.insumo_id) : null,
         });
         setMensaje("Producto creado");
       }
@@ -232,6 +255,12 @@ export default function Productos() {
                   {stockBajo && <AlertTriangle size={12} />}
                   Stock: {p.stock_actual}
                 </span>
+                {p.insumo_nombre && (
+                  <span className="prodad-categoria" title="Insumo que se descuenta al vender">
+                    <Tag size={11} />
+                    Usa: {p.insumo_nombre}
+                  </span>
+                )}
               </div>
 
               {confirmandoEliminar === p.id ? (
@@ -338,6 +367,23 @@ export default function Productos() {
               Para cambiar el stock, usa la sección de Inventario.
             </p>
           )}
+
+          <label>Insumo que se descuenta al vender (opcional)</label>
+          <select
+            value={form.insumo_id}
+            onChange={(e) => setForm((f) => ({ ...f, insumo_id: e.target.value }))}
+          >
+            <option value="">Ninguno</option>
+            {insumos.map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.nombre} ({i.unidad_medida})
+              </option>
+            ))}
+          </select>
+          <p className="prodad-nota-stock">
+            Ej: si este producto es "Jugo de mora en leche", elige "Pulpa de mora". Cada
+            unidad vendida descuenta 1 unidad de ese insumo automáticamente.
+          </p>
 
           <button
             className="prodad-btn-primario prodad-btn-guardar-sheet"

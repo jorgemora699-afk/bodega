@@ -1,6 +1,6 @@
 from datetime import datetime
 from app import db
-from app.infrastructure.models import Venta, Producto, MovimientoInventario
+from app.infrastructure.models import Venta, Producto, MovimientoInventario, MovimientoInsumo
 from app.domain.inventario import hay_stock_suficiente
 from app.domain.periodos import rango_por_periodo
 from sqlalchemy.orm import joinedload
@@ -19,6 +19,40 @@ class VentaService:
     @staticmethod
     def obtener_por_id(venta_id):
         return Venta.query.get(venta_id)
+
+    @staticmethod
+    def _consumir_insumo(producto, cantidad_vendida, trabajadora_id, venta_id):
+        """Si el producto tiene un insumo asociado (ej. jugo -> pulpa), descuenta 1:1."""
+        if not producto.insumo_id:
+            return
+
+        insumo = producto.insumo
+        cantidad_a_descontar = float(cantidad_vendida)  # 1 jugo = 1 unidad de pulpa
+
+        if not hay_stock_suficiente(float(insumo.stock_actual), cantidad_a_descontar):
+            raise ValueError(
+                f"Stock insuficiente de {insumo.nombre}: "
+                f"quedan {float(insumo.stock_actual)} {insumo.unidad_medida}"
+            )
+
+        insumo.stock_actual = float(insumo.stock_actual) - cantidad_a_descontar
+
+        db.session.add(MovimientoInsumo(
+            insumo_id=insumo.id,
+            trabajadora_id=trabajadora_id,
+            venta_id=venta_id,
+            tipo="salida",
+            motivo="venta",
+            cantidad=cantidad_a_descontar,
+        ))
+
+    @staticmethod
+    def _revertir_consumo_insumo(venta_id):
+        """Devuelve al insumo lo consumido por una venta y borra el movimiento."""
+        movimientos = MovimientoInsumo.query.filter_by(venta_id=venta_id, motivo="venta").all()
+        for m in movimientos:
+            m.insumo.stock_actual = float(m.insumo.stock_actual) + float(m.cantidad)
+            db.session.delete(m)
 
     @staticmethod
     def crear(data):
@@ -55,6 +89,13 @@ class VentaService:
             cantidad=cantidad,
         )
         db.session.add(movimiento)
+
+        try:
+            VentaService._consumir_insumo(producto, cantidad, data["trabajadora_id"], venta.id)
+        except ValueError as e:
+            db.session.rollback()
+            return None, str(e)
+
         db.session.commit()
         return venta, None
 
@@ -84,6 +125,9 @@ class VentaService:
         if not hay_stock_suficiente(stock_disponible, nueva_cantidad):
             return None, f"Stock insuficiente: quedan {stock_disponible} de {producto_nuevo.nombre}"
 
+        # revertir el consumo de insumo de la venta original antes de aplicar el nuevo
+        VentaService._revertir_consumo_insumo(venta.id)
+
         # revertir el efecto anterior y aplicar el nuevo — si es el mismo producto,
         # producto_anterior y producto_nuevo son el mismo objeto, así que las dos
         # líneas se acumulan correctamente sobre la misma fila
@@ -104,6 +148,12 @@ class VentaService:
             venta.movimiento.cantidad = nueva_cantidad
             venta.movimiento.fecha = datetime.utcnow()
 
+        try:
+            VentaService._consumir_insumo(producto_nuevo, nueva_cantidad, venta.trabajadora_id, venta.id)
+        except ValueError as e:
+            db.session.rollback()
+            return None, str(e)
+
         db.session.commit()
         return venta, None
 
@@ -115,6 +165,8 @@ class VentaService:
 
         producto = Producto.query.get(venta.producto_id)
         producto.stock_actual = float(producto.stock_actual) + float(venta.cantidad)
+
+        VentaService._revertir_consumo_insumo(venta.id)
 
         if venta.movimiento:
             db.session.delete(venta.movimiento)
