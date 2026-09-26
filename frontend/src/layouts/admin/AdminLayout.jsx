@@ -17,7 +17,6 @@ import {
   Wheat,
   UserCircle,
   CreditCard,
-  ShoppingCart
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -34,11 +33,6 @@ const LINKS = [
     to: "/admin/ventas",
     label: "Ventas",
     Icon: Receipt,
-  },
-  {
-    to: "/admin/ventas/registrar",
-    label: "Registrar venta",
-    Icon: ShoppingCart,
   },
   {
     to: "/admin/cuentas-cobrar",
