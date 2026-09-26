@@ -334,22 +334,27 @@ class Receta(db.Model):
     __tablename__ = "recetas"
 
     id = db.Column(db.Integer, primary_key=True)
-    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False, unique=True)
+    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=True, unique=True)
+    nombre = db.Column(db.String(150), nullable=True)  # NUEVO — solo se usa si no hay producto_id
 
     producto = db.relationship("Producto", back_populates="receta")
     ingredientes = db.relationship("RecetaIngrediente", back_populates="receta", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        db.CheckConstraint("producto_id IS NOT NULL OR nombre IS NOT NULL", name="ck_receta_producto_o_nombre"),
+    )
 
     def to_dict(self):
         return {
             "id": self.id,
             "producto_id": self.producto_id,
-            "producto_nombre": self.producto.nombre if self.producto else None,
+            "nombre": self.producto.nombre if self.producto else self.nombre,
+            "es_standalone": self.producto_id is None,
             "ingredientes": [i.to_dict() for i in self.ingredientes],
         }
-    
-    def __repr__(self):
-        return f"<Receta {self.producto_id}>"
 
+    def __repr__(self):
+        return f"<Receta {self.producto_id or self.nombre}>"
 
 class RecetaIngrediente(db.Model):
     __tablename__ = "receta_ingredientes"

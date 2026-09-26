@@ -45,3 +45,65 @@ class RecetaService:
         db.session.delete(receta)  # cascade borra también los ingredientes
         db.session.commit()
         return True
+
+    @staticmethod
+    def listar_todas():
+        return Receta.query.order_by(Receta.id.desc()).all()
+
+    @staticmethod
+    def obtener_por_id(receta_id):
+        return Receta.query.get(receta_id)
+
+    @staticmethod
+    def crear_standalone(nombre, ingredientes_data):
+        if not nombre or not nombre.strip():
+            return None, "El nombre es obligatorio para una receta sin producto"
+
+        receta = Receta(producto_id=None, nombre=nombre.strip())
+        db.session.add(receta)
+        db.session.flush()
+
+        for item in ingredientes_data:
+            db.session.add(RecetaIngrediente(
+                receta_id=receta.id,
+                nombre_ingrediente=item["nombre_ingrediente"],
+                cantidad=item["cantidad"],
+                unidad=item["unidad"],
+            ))
+
+        db.session.commit()
+        return receta, None
+
+    @staticmethod
+    def actualizar_por_id(receta_id, nombre, ingredientes_data):
+        receta = Receta.query.get(receta_id)
+        if not receta:
+            return None, "Receta no encontrada"
+
+        if receta.producto_id is None:
+            if not nombre or not nombre.strip():
+                return None, "El nombre es obligatorio para una receta sin producto"
+            receta.nombre = nombre.strip()
+
+        for ingrediente in receta.ingredientes:
+            db.session.delete(ingrediente)
+
+        for item in ingredientes_data:
+            db.session.add(RecetaIngrediente(
+                receta_id=receta.id,
+                nombre_ingrediente=item["nombre_ingrediente"],
+                cantidad=item["cantidad"],
+                unidad=item["unidad"],
+            ))
+
+        db.session.commit()
+        return receta, None
+
+    @staticmethod
+    def eliminar_por_id(receta_id):
+        receta = Receta.query.get(receta_id)
+        if not receta:
+            return False
+        db.session.delete(receta)
+        db.session.commit()
+        return True
