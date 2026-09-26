@@ -3,6 +3,7 @@ import { Pencil, Trash2, ShoppingBag, Plus, Minus, X, Check, Calendar, Clock3 } 
 import { listarVentas, actualizarVenta, eliminarVenta } from "../../../api/ventas";
 import { listarOrdenes, actualizarOrden, anularOrden, marcarOrdenPagada } from "../../../api/ordenes";
 import { listarProductos } from "../../../api/productos";
+import { useNavigate } from "react-router-dom";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import "./Ventas.css";
 
@@ -49,6 +50,7 @@ export default function Ventas() {
 
   const [editandoVentaId, setEditandoVentaId] = useState(null);
   const [formEdicion, setFormEdicion] = useState({});
+  const navigate = useNavigate();
 
   const [editandoOrdenId, setEditandoOrdenId] = useState(null);
   const [formOrden, setFormOrden] = useState(formOrdenVacio());
@@ -299,6 +301,13 @@ export default function Ventas() {
           <h1>Ventas</h1>
           <p>Historial de pedidos y ventas registradas</p>
         </div>
+         <button
+           className="vad-btn-primario"
+           onClick={() => navigate("/admin/ventas/registrar")}
+         >
+           <Plus size={15} />
+           Nueva venta
+         </button>
       </header>
 
       <div className="vad-filtro-fecha">

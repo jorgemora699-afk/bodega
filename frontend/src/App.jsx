@@ -44,6 +44,7 @@ export default function App() {
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<Dashboard />} />
             <Route path="/admin/ventas" element={<Ventas />} />
+            <Route path="/admin/ventas/registrar" element={<RegistrarVenta />} />
             <Route path="/admin/reportes" element={<Reportes />} />
             <Route path="/admin/cuentas-cobrar" element={<CuentasPorCobrar />} />
             <Route path="/admin/salarios" element={<Salarios />} />
