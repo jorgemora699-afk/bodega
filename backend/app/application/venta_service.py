@@ -21,38 +21,71 @@ class VentaService:
         return Venta.query.get(venta_id)
 
     @staticmethod
-    def _consumir_insumo(producto, cantidad_vendida, trabajadora_id, venta_id):
-        """Si el producto tiene un insumo asociado (ej. jugo -> pulpa), descuenta 1:1."""
-        if not producto.insumo_id:
+    def _validar_stock(producto, cantidad):
+        """
+        Devuelve (ok, mensaje_error). Si el producto usa un insumo (ej. jugo -> pulpa),
+        valida contra el insumo; si no, valida contra el stock propio del producto.
+        """
+        if producto.insumo_id and producto.insumo:
+            insumo = producto.insumo
+            if not hay_stock_suficiente(float(insumo.stock_actual), cantidad):
+                return False, f"Stock insuficiente de {insumo.nombre}: quedan {float(insumo.stock_actual)} {insumo.unidad_medida}"
+            return True, None
+
+        if not hay_stock_suficiente(float(producto.stock_actual), cantidad):
+            return False, f"Stock insuficiente: quedan {float(producto.stock_actual)} de {producto.nombre}"
+        return True, None
+
+    @staticmethod
+    def _aplicar_venta(producto, cantidad, trabajadora_id, venta_id):
+        """
+        Descuenta el stock correspondiente. Si el producto tiene insumo asociado,
+        descuenta el insumo (ej. pulpa) y NO toca producto.stock_actual, porque ese
+        numero se deriva del insumo en Producto.to_dict(). Si no tiene insumo,
+        descuenta producto.stock_actual como siempre.
+        """
+        if producto.insumo_id and producto.insumo:
+            insumo = producto.insumo
+            insumo.stock_actual = float(insumo.stock_actual) - float(cantidad)
+
+            db.session.add(MovimientoInsumo(
+                insumo_id=insumo.id,
+                trabajadora_id=trabajadora_id,
+                venta_id=venta_id,
+                tipo="salida",
+                motivo="venta",
+                cantidad=cantidad,
+            ))
             return
 
-        insumo = producto.insumo
-        cantidad_a_descontar = float(cantidad_vendida)  # 1 jugo = 1 unidad de pulpa
+        producto.stock_actual = float(producto.stock_actual) - float(cantidad)
 
-        if not hay_stock_suficiente(float(insumo.stock_actual), cantidad_a_descontar):
-            raise ValueError(
-                f"Stock insuficiente de {insumo.nombre}: "
-                f"quedan {float(insumo.stock_actual)} {insumo.unidad_medida}"
-            )
-
-        insumo.stock_actual = float(insumo.stock_actual) - cantidad_a_descontar
-
-        db.session.add(MovimientoInsumo(
-            insumo_id=insumo.id,
+        db.session.add(MovimientoInventario(
+            producto_id=producto.id,
             trabajadora_id=trabajadora_id,
             venta_id=venta_id,
             tipo="salida",
             motivo="venta",
-            cantidad=cantidad_a_descontar,
+            cantidad=cantidad,
         ))
 
     @staticmethod
-    def _revertir_consumo_insumo(venta_id):
-        """Devuelve al insumo lo consumido por una venta y borra el movimiento."""
-        movimientos = MovimientoInsumo.query.filter_by(venta_id=venta_id, motivo="venta").all()
-        for m in movimientos:
+    def _revertir_venta(venta):
+        """
+        Revierte el efecto de una venta ya aplicada, sin importar si en su momento
+        descontó un insumo o el stock propio del producto - revisa que movimientos
+        quedaron ligados a esta venta y los deshace.
+        """
+        movimientos_insumo = MovimientoInsumo.query.filter_by(venta_id=venta.id, motivo="venta").all()
+        for m in movimientos_insumo:
             m.insumo.stock_actual = float(m.insumo.stock_actual) + float(m.cantidad)
             db.session.delete(m)
+
+        if venta.movimiento:
+            producto = Producto.query.get(venta.producto_id)
+            if producto:
+                producto.stock_actual = float(producto.stock_actual) + float(venta.cantidad)
+            db.session.delete(venta.movimiento)
 
     @staticmethod
     def crear(data):
@@ -62,8 +95,9 @@ class VentaService:
 
         cantidad = float(data["cantidad"])
 
-        if not hay_stock_suficiente(float(producto.stock_actual), cantidad):
-            return None, f"Stock insuficiente: quedan {float(producto.stock_actual)} de {producto.nombre}"
+        ok, error = VentaService._validar_stock(producto, cantidad)
+        if not ok:
+            return None, error
 
         total = float(producto.precio_unitario) * cantidad
 
@@ -78,23 +112,7 @@ class VentaService:
         db.session.add(venta)
         db.session.flush()
 
-        producto.stock_actual = float(producto.stock_actual) - cantidad
-
-        movimiento = MovimientoInventario(
-            producto_id=producto.id,
-            trabajadora_id=data["trabajadora_id"],
-            venta_id=venta.id,
-            tipo="salida",
-            motivo="venta",
-            cantidad=cantidad,
-        )
-        db.session.add(movimiento)
-
-        try:
-            VentaService._consumir_insumo(producto, cantidad, data["trabajadora_id"], venta.id)
-        except ValueError as e:
-            db.session.rollback()
-            return None, str(e)
+        VentaService._aplicar_venta(producto, cantidad, data["trabajadora_id"], venta.id)
 
         db.session.commit()
         return venta, None
@@ -105,34 +123,22 @@ class VentaService:
         if not venta:
             return None, "Venta no encontrada"
 
-        producto_anterior = Producto.query.get(venta.producto_id)
-        cantidad_anterior = float(venta.cantidad)
-
         nuevo_producto_id = data.get("producto_id", venta.producto_id)
-        nueva_cantidad = float(data.get("cantidad", cantidad_anterior))
+        nueva_cantidad = float(data.get("cantidad", float(venta.cantidad)))
 
         producto_nuevo = Producto.query.get(nuevo_producto_id)
         if not producto_nuevo:
             return None, "Producto no encontrado"
 
-        # stock "disponible" como si ya se hubiera revertido la venta original,
-        # calculado antes de tocar la BD, para validar antes de aplicar nada
-        if nuevo_producto_id == venta.producto_id:
-            stock_disponible = float(producto_anterior.stock_actual) + cantidad_anterior
-        else:
-            stock_disponible = float(producto_nuevo.stock_actual)
+        # revertimos el efecto de la venta original primero (insumo o producto,
+        # segun lo que haya quedado registrado), asi el stock queda "limpio"
+        # antes de validar y aplicar el nuevo producto/cantidad
+        VentaService._revertir_venta(venta)
 
-        if not hay_stock_suficiente(stock_disponible, nueva_cantidad):
-            return None, f"Stock insuficiente: quedan {stock_disponible} de {producto_nuevo.nombre}"
-
-        # revertir el consumo de insumo de la venta original antes de aplicar el nuevo
-        VentaService._revertir_consumo_insumo(venta.id)
-
-        # revertir el efecto anterior y aplicar el nuevo — si es el mismo producto,
-        # producto_anterior y producto_nuevo son el mismo objeto, así que las dos
-        # líneas se acumulan correctamente sobre la misma fila
-        producto_anterior.stock_actual = float(producto_anterior.stock_actual) + cantidad_anterior
-        producto_nuevo.stock_actual = float(producto_nuevo.stock_actual) - nueva_cantidad
+        ok, error = VentaService._validar_stock(producto_nuevo, nueva_cantidad)
+        if not ok:
+            db.session.rollback()
+            return None, error
 
         venta.producto_id = nuevo_producto_id
         venta.trabajadora_id = data.get("trabajadora_id", venta.trabajadora_id)
@@ -142,17 +148,7 @@ class VentaService:
         venta.metodo_pago = data.get("metodo_pago", venta.metodo_pago)
         venta.editado = True
 
-        if venta.movimiento:
-            venta.movimiento.producto_id = nuevo_producto_id
-            venta.movimiento.trabajadora_id = venta.trabajadora_id
-            venta.movimiento.cantidad = nueva_cantidad
-            venta.movimiento.fecha = datetime.utcnow()
-
-        try:
-            VentaService._consumir_insumo(producto_nuevo, nueva_cantidad, venta.trabajadora_id, venta.id)
-        except ValueError as e:
-            db.session.rollback()
-            return None, str(e)
+        VentaService._aplicar_venta(producto_nuevo, nueva_cantidad, venta.trabajadora_id, venta.id)
 
         db.session.commit()
         return venta, None
@@ -163,13 +159,7 @@ class VentaService:
         if not venta:
             return False, "Venta no encontrada"
 
-        producto = Producto.query.get(venta.producto_id)
-        producto.stock_actual = float(producto.stock_actual) + float(venta.cantidad)
-
-        VentaService._revertir_consumo_insumo(venta.id)
-
-        if venta.movimiento:
-            db.session.delete(venta.movimiento)
+        VentaService._revertir_venta(venta)
 
         db.session.delete(venta)
         db.session.commit()

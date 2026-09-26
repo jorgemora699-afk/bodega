@@ -44,6 +44,8 @@ class Producto(db.Model):
         stock_mostrado = float(self.stock_actual)
         if self.es_paquete and self.producto_base and self.unidades_por_paquete:
             stock_mostrado = float(int(float(self.producto_base.stock_actual) // self.unidades_por_paquete))
+        elif self.insumo_id and self.insumo:
+            stock_mostrado = float(self.insumo.stock_actual)
 
         return {
                 "id": self.id,
