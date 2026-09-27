@@ -16,8 +16,10 @@
   border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);
   max-height: 88vh;
+  max-height: 88dvh; /* unidad consciente del teclado/barra móvil; el navegador ignora la línea si no la soporta */
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* contiene el scroll dentro de sheet-body, sin desbordar las esquinas redondeadas */
   z-index: 310;
   outline: none;
 }
@@ -58,6 +60,9 @@
 }
 
 .sheet-body {
-  padding: 0 1.1rem 1.5rem;
+  flex: 1;
+  min-height: 0; /* la pieza que faltaba: permite que overflow-y realmente actúe dentro de un flex column */
+  padding: 0 1.1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }

@@ -2,9 +2,9 @@ import { Drawer } from "vaul";
 import { X } from "lucide-react";
 import "./Sheet.css";
 
-export default function Sheet({ open, onOpenChange, title, children }) {
+export default function Sheet({ open, onOpenChange, title, children, cerrarAlTocarFuera = false }) {
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+    <Drawer.Root open={open} onOpenChange={onOpenChange} dismissible={cerrarAlTocarFuera}>
       <Drawer.Portal>
         <Drawer.Overlay className="sheet-overlay" />
         <Drawer.Content className="sheet-content">
