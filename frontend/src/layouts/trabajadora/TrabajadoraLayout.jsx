@@ -1,6 +1,5 @@
-
-import { useState } from "react";
-import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Navigate, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   ShoppingCart,
   Package,
@@ -9,10 +8,11 @@ import {
   LogOut,
   Wheat,
   Receipt,
-  StickyNote
+  StickyNote,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { listarNotas } from "../../api/notas";
 import "./TrabajadoraLayout.css";
 
 const TABS = [
@@ -52,11 +52,32 @@ const TABS = [
   },
 ];
 
+const INTERVALO_REFRESCO_MS = 30000; // 30s — mantiene el contador razonablemente al día sin saturar el backend
+
 export default function TrabajadoraLayout() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
+  const [notasPendientes, setNotasPendientes] = useState(0);
+
+  useEffect(() => {
+    cargarContadorNotas();
+
+    const intervalo = setInterval(cargarContadorNotas, INTERVALO_REFRESCO_MS);
+    return () => clearInterval(intervalo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]); // se refresca también al cambiar de pestaña, así al volver de "Notas" el número ya está al día
+
+  async function cargarContadorNotas() {
+    try {
+      const notas = await listarNotas();
+      setNotasPendientes(notas.filter((n) => !n.resuelta).length);
+    } catch (err) {
+      // si falla, simplemente no se muestra el número — no bloquea el resto del layout
+    }
+  }
 
   if (!usuario) {
     return <Navigate to="/login" replace />;
@@ -175,6 +196,12 @@ export default function TrabajadoraLayout() {
 
             <span className="trab-tab-icon">
               <Icon size={20} strokeWidth={2} />
+
+              {to === "/notas" && notasPendientes > 0 && (
+                <span className="trab-tab-badge">
+                  {notasPendientes > 9 ? "9+" : notasPendientes}
+                </span>
+              )}
             </span>
 
             <span className="trab-tab-label">
@@ -190,4 +217,3 @@ export default function TrabajadoraLayout() {
     </div>
   );
 }
-
