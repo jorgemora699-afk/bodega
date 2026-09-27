@@ -265,3 +265,81 @@
   padding: 2rem 0;
   font-size: 0.85rem;
 }
+
+.cxc-fila-clicable {
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+}
+
+.cxc-fila-derecha {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-secondary);
+}
+
+.cxc-expandido {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cxc-productos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cxc-producto-fila {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+}
+
+.cxc-producto-cantidad {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.cxc-producto-total {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.cxc-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.cxc-nota svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.cxc-cliente-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}

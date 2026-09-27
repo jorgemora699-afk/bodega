@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Clock3, Check, User, Building2, Calendar } from "lucide-react";
+import { Clock3, Check, User, Building2, Calendar, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { listarOrdenesPendientes, marcarOrdenPagada } from "../../../api/ordenes";
 import "./CuentasPorCobrar.css";
 
@@ -28,6 +28,7 @@ export default function CuentasPorCobrar() {
   const [ordenes, setOrdenes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [marcandoId, setMarcandoId] = useState(null);
+  const [expandidoId, setExpandidoId] = useState(null);
 
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
@@ -61,6 +62,10 @@ export default function CuentasPorCobrar() {
     } finally {
       setMarcandoId(null);
     }
+  }
+
+  function toggleExpandido(ordenId) {
+    setExpandidoId((actual) => (actual === ordenId ? null : ordenId));
   }
 
   const totalPendiente = ordenes.reduce((sum, o) => sum + Number(o.total), 0);
@@ -122,18 +127,28 @@ export default function CuentasPorCobrar() {
           ordenes.map((orden) => {
             const dias = diasDeAntiguedad(orden.fecha);
             const marcandoEsta = marcandoId === orden.id;
+            const expandido = expandidoId === orden.id;
 
             return (
               <div key={orden.id} className="cxc-tarjeta">
-                <div className="cxc-fila-principal">
+                <button
+                  type="button"
+                  className="cxc-fila-principal cxc-fila-clicable"
+                  onClick={() => toggleExpandido(orden.id)}
+                  aria-expanded={expandido}
+                >
                   <div className="cxc-cliente">
                     <span className="cxc-cliente-icono">
                       {orden.cliente_tipo === "juridica" ? <Building2 size={16} /> : <User size={16} />}
                     </span>
                     <span className="cxc-cliente-nombre">{orden.cliente_nombre || "Sin cliente"}</span>
                   </div>
-                  <span className="cxc-total">{formatearMoneda(orden.total)}</span>
-                </div>
+
+                  <span className="cxc-fila-derecha">
+                    <span className="cxc-total">{formatearMoneda(orden.total)}</span>
+                    {expandido ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
+                </button>
 
                 <div className="cxc-detalle">
                   <span>Pedido #{orden.id}</span>
@@ -150,6 +165,39 @@ export default function CuentasPorCobrar() {
                     </span>
                   )}
                 </div>
+
+                {expandido && (
+                  <div className="cxc-expandido">
+                    <div className="cxc-productos-lista">
+                      {orden.ventas?.map((v) => (
+                        <div key={v.id} className="cxc-producto-fila">
+                          <span className="cxc-producto-cantidad">{v.cantidad} ×</span>
+                          <span className="cxc-producto-nombre">{v.producto_nombre}</span>
+                          <span className="cxc-producto-total">{formatearMoneda(v.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {orden.descripcion && (
+                      <div className="cxc-nota">
+                        <FileText size={13} />
+                        <span>{orden.descripcion}</span>
+                      </div>
+                    )}
+
+                    {(orden.cliente_documento || orden.cliente_celular || orden.cliente_direccion) && (
+                      <div className="cxc-cliente-datos">
+                        {orden.cliente_documento && (
+                          <span>
+                            {orden.cliente_tipo === "juridica" ? "NIT" : "Cédula"}: {orden.cliente_documento}
+                          </span>
+                        )}
+                        {orden.cliente_celular && <span>Cel: {orden.cliente_celular}</span>}
+                        {orden.cliente_direccion && <span>{orden.cliente_direccion}</span>}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="cxc-acciones">
                   <button
