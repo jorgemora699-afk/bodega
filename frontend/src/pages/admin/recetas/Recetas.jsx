@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChefHat, Plus, Trash2, X, Search, ListChecks, Check, PackageSearch } from "lucide-react";
+import { ChefHat, Plus, Trash2, X, Search, ListChecks, Check, PackageSearch, ArrowLeft } from "lucide-react";
 import {
   obtenerReceta,
   guardarReceta,
@@ -23,6 +23,23 @@ function snapshotDe(ingredientes, nombre = "") {
   return JSON.stringify({ ingredientes, nombre });
 }
 
+/*
+ * Permite solo dígitos y un único punto decimal.
+ *
+ * El campo de cantidad usa type="text" en vez de type="number" a propósito:
+ * en Chrome para tablet hay un bug conocido donde pegar contenido no numérico
+ * (o con caracteres invisibles del portapapeles) dentro de un <input
+ * type="number"> puede colgar el proceso de renderizado y dejar la pantalla
+ * en blanco. Validando el valor a mano evitamos depender de la validación
+ * nativa del navegador sobre contenido pegado.
+ */
+function sanitizarCantidad(valorCrudo) {
+  const limpio = valorCrudo.replace(/[^0-9.]/g, "");
+  const partes = limpio.split(".");
+  if (partes.length <= 2) return limpio;
+  return partes[0] + "." + partes.slice(1).join("");
+}
+
 export default function Recetas() {
   const [modo, setModo] = useState("producto"); // "producto" | "independiente"
 
@@ -40,6 +57,11 @@ export default function Recetas() {
   const [snapshotGuardado, setSnapshotGuardado] = useState(snapshotDe([ingredienteVacio()]));
 
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
+
+  /* Controla si la lista (sidebar) está visible. Se oculta en cuanto se
+     selecciona un producto o una receta, para dejar el detalle a pantalla
+     completa; "Ver todos" la vuelve a mostrar. */
+  const [verLista, setVerLista] = useState(true);
 
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -93,6 +115,11 @@ export default function Recetas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productoId, modo]);
 
+  function seleccionarProducto(id) {
+    setProductoId(String(id));
+    setVerLista(false);
+  }
+
   async function cargarRecetaDeProducto(id) {
     setCargando(true);
     setMensaje(null);
@@ -142,6 +169,7 @@ export default function Recetas() {
     setMensaje(null);
     setError(null);
     setConfirmandoEliminar(false);
+    setVerLista(false);
     try {
       const completa = await obtenerRecetaPorId(receta.id);
       const lista =
@@ -172,6 +200,7 @@ export default function Recetas() {
     setMensaje(null);
     setError(null);
     setConfirmandoEliminar(false);
+    setVerLista(true);
 
     if (nuevoModo === "producto") {
       setProductoId("");
@@ -319,6 +348,8 @@ export default function Recetas() {
   const mostrarPanelDetalle =
     (modo === "producto" && productoId) || modo === "independiente";
 
+  const mostrarSidebar = verLista || !mostrarPanelDetalle;
+
   return (
     <div className="rec-container">
       <header className="rec-header">
@@ -348,88 +379,101 @@ export default function Recetas() {
         </button>
       </div>
 
-      <div className="rec-layout">
+      <div className={`rec-layout ${!mostrarSidebar ? "rec-layout-full" : ""}`}>
         {/* ================= SIDEBAR ================= */}
 
-        <aside className="rec-sidebar">
-          <div className="rec-buscador">
-            <Search size={15} />
-            <input
-              type="text"
-              placeholder={modo === "producto" ? "Buscar producto..." : "Buscar receta..."}
-              value={busquedaLista}
-              onChange={(e) => setBusquedaLista(e.target.value)}
-            />
-          </div>
+        {mostrarSidebar && (
+          <aside className="rec-sidebar">
+            <div className="rec-buscador">
+              <Search size={15} />
+              <input
+                type="text"
+                placeholder={modo === "producto" ? "Buscar producto..." : "Buscar receta..."}
+                value={busquedaLista}
+                onChange={(e) => setBusquedaLista(e.target.value)}
+              />
+            </div>
 
-          {modo === "independiente" && (
-            <button
-              type="button"
-              className="rec-btn-nueva-sidebar"
-              onClick={iniciarRecetaStandaloneNueva}
-            >
-              <Plus size={14} />
-              Nueva receta sin producto
-            </button>
-          )}
-
-          <div className="rec-lista-sidebar">
-            {cargandoLista && (
-              <>
-                <div className="rec-sk-item" />
-                <div className="rec-sk-item" />
-                <div className="rec-sk-item" />
-              </>
+            {modo === "independiente" && (
+              <button
+                type="button"
+                className="rec-btn-nueva-sidebar"
+                onClick={iniciarRecetaStandaloneNueva}
+              >
+                <Plus size={14} />
+                Nueva receta sin producto
+              </button>
             )}
 
-            {!cargandoLista && modo === "producto" &&
-              productosFiltrados.map((p) => {
-                const tiene = productoIdsConReceta.has(p.id);
-                return (
+            <div className="rec-lista-sidebar">
+              {cargandoLista && (
+                <>
+                  <div className="rec-sk-item" />
+                  <div className="rec-sk-item" />
+                  <div className="rec-sk-item" />
+                </>
+              )}
+
+              {!cargandoLista && modo === "producto" &&
+                productosFiltrados.map((p) => {
+                  const tiene = productoIdsConReceta.has(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`rec-item-sidebar ${productoId === Number(p.id) || productoId === String(p.id) ? "activo" : ""}`}
+                      onClick={() => seleccionarProducto(p.id)}
+                    >
+                      <span className="rec-item-nombre">{p.nombre}</span>
+                      <span className={`rec-item-tag ${tiene ? "con-receta" : "sin-receta"}`}>
+                        {tiene ? "Con receta" : "Sin receta"}
+                      </span>
+                    </button>
+                  );
+                })}
+
+              {!cargandoLista && modo === "producto" && productosFiltrados.length === 0 && (
+                <p className="rec-lista-sin-resultados">Ningún producto coincide</p>
+              )}
+
+              {!cargandoLista && modo === "independiente" &&
+                recetasStandaloneFiltradas.map((r) => (
                   <button
-                    key={p.id}
+                    key={r.id}
                     type="button"
-                    className={`rec-item-sidebar ${productoId === Number(p.id) || productoId === String(p.id) ? "activo" : ""}`}
-                    onClick={() => setProductoId(String(p.id))}
+                    className={`rec-item-sidebar ${recetaId === r.id ? "activo" : ""}`}
+                    onClick={() => abrirRecetaStandalone(r)}
                   >
-                    <span className="rec-item-nombre">{p.nombre}</span>
-                    <span className={`rec-item-tag ${tiene ? "con-receta" : "sin-receta"}`}>
-                      {tiene ? "Con receta" : "Sin receta"}
+                    <span className="rec-item-nombre">{r.nombre}</span>
+                    <span className="rec-item-tag neutro">
+                      {r.ingredientes?.length || 0} ingr.
                     </span>
                   </button>
-                );
-              })}
+                ))}
 
-            {!cargandoLista && modo === "producto" && productosFiltrados.length === 0 && (
-              <p className="rec-lista-sin-resultados">Ningún producto coincide</p>
-            )}
-
-            {!cargandoLista && modo === "independiente" &&
-              recetasStandaloneFiltradas.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  className={`rec-item-sidebar ${recetaId === r.id ? "activo" : ""}`}
-                  onClick={() => abrirRecetaStandalone(r)}
-                >
-                  <span className="rec-item-nombre">{r.nombre}</span>
-                  <span className="rec-item-tag neutro">
-                    {r.ingredientes?.length || 0} ingr.
-                  </span>
-                </button>
-              ))}
-
-            {!cargandoLista && modo === "independiente" && recetasStandaloneFiltradas.length === 0 && (
-              <p className="rec-lista-sin-resultados">
-                {busquedaLista ? "Ninguna receta coincide" : "Todavía no hay recetas independientes"}
-              </p>
-            )}
-          </div>
-        </aside>
+              {!cargandoLista && modo === "independiente" && recetasStandaloneFiltradas.length === 0 && (
+                <p className="rec-lista-sin-resultados">
+                  {busquedaLista ? "Ninguna receta coincide" : "Todavía no hay recetas independientes"}
+                </p>
+              )}
+            </div>
+          </aside>
+        )}
 
         {/* ================= DETALLE ================= */}
 
         <main className="rec-detalle">
+          {!mostrarSidebar && (
+            <button
+              type="button"
+              className="rec-btn-volver-lista"
+              onClick={() => setVerLista(true)}
+            >
+              <ArrowLeft size={14} />
+              {modo === "producto" ? "Ver todos los productos" : "Ver todas las recetas"}
+            </button>
+          )}
+
           {!mostrarPanelDetalle && (
             <div className="rec-vacio">
               <PackageSearch size={30} />
@@ -501,10 +545,13 @@ export default function Recetas() {
                       </td>
                       <td>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           placeholder="Cant."
                           value={ing.cantidad}
-                          onChange={(e) => actualizarIngrediente(index, "cantidad", e.target.value)}
+                          onChange={(e) =>
+                            actualizarIngrediente(index, "cantidad", sanitizarCantidad(e.target.value))
+                          }
                         />
                       </td>
                       <td>

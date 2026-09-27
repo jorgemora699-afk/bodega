@@ -92,6 +92,12 @@
   }
 }
 
+/* Cuando se selecciona un producto o receta, el sidebar se oculta y el
+   detalle pasa a ocupar todo el ancho disponible. */
+.rec-layout.rec-layout-full {
+  grid-template-columns: 1fr;
+}
+
 /* =========================
    SIDEBAR
    ========================= */
@@ -232,6 +238,24 @@
 
 .rec-detalle {
   min-width: 0;
+}
+
+.rec-btn-volver-lista {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 0.75rem;
+}
+
+.rec-btn-volver-lista:hover {
+  color: var(--color-primary);
 }
 
 .rec-vacio {
