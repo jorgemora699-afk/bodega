@@ -14,7 +14,7 @@ import CampoMoneda from "../../../components/CampoMoneda";
 function formVacio() {
   return { tipo: "egreso", monto: "", descripcion: "", metodo_pago: "", proveedor_id: "" };
 }
-const METODOS_PAGO = ["efectivo", "transferencia"];
+const METODOS_PAGO = ["Efectivo", "Transferencia"];
 
 function formatearFecha(isoString) {
   return new Date(isoString).toLocaleDateString("es-CO", {
