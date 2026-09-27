@@ -8,6 +8,11 @@ import { listarTrabajadoras } from "../../../api/trabajadoras";
 import "./Ventas.css";
 
 const METODOS_PAGO = ["efectivo", "transferencia"];
+const METODOS_PAGO_EDICION = ["efectivo", "transferencia", "credito"];
+
+function etiquetaMetodo(metodo) {
+  return metodo === "credito" ? "Cuenta por cobrar" : metodo;
+}
 
 function formatearFecha(isoString) {
   return new Date(isoString).toLocaleString("es-CO", {
@@ -51,10 +56,11 @@ export default function Ventas() {
   const [editandoVentaId, setEditandoVentaId] = useState(null);
   const [formEdicion, setFormEdicion] = useState({});
   const navigate = useNavigate();
+  const [busquedaProducto, setBusquedaProducto] = useState("");
+  const [sugerenciasProductoAbiertas, setSugerenciasProductoAbiertas] = useState(false);
 
   const [editandoOrdenId, setEditandoOrdenId] = useState(null);
   const [formOrden, setFormOrden] = useState(formOrdenVacio());
-  const [productoParaAgregar, setProductoParaAgregar] = useState("");
 
   const [confirmandoAnular, setConfirmandoAnular] = useState(null); // { tipo: 'orden'|'venta', id }
   const [marcandoPagadaId, setMarcandoPagadaId] = useState(null);
@@ -136,7 +142,8 @@ export default function Ventas() {
     setConfirmandoAnular(null);
     setMensaje(null);
     setError(null);
-    setProductoParaAgregar("");
+    setBusquedaProducto("");
+    setSugerenciasProductoAbiertas(false);
     setFormOrden({
       metodo_pago: orden.metodo_pago,
       trabajadora_id: orden.trabajadora_id,
@@ -152,7 +159,8 @@ export default function Ventas() {
   function cancelarEdicionOrden() {
     setEditandoOrdenId(null);
     setFormOrden(formOrdenVacio());
-    setProductoParaAgregar("");
+    setBusquedaProducto("");
+    setSugerenciasProductoAbiertas(false);
   }
 
   function ajustarCantidadItem(productoId, delta) {
@@ -175,10 +183,7 @@ export default function Ventas() {
     }));
   }
 
-  function agregarItem() {
-    if (!productoParaAgregar) return;
-
-    const producto = productos.find((p) => p.id === Number(productoParaAgregar));
+  function agregarItem(producto) {
     if (!producto) return;
 
     setFormOrden((f) => {
@@ -206,7 +211,8 @@ export default function Ventas() {
         ],
       };
     });
-    setProductoParaAgregar("");
+    setBusquedaProducto("");
+    setSugerenciasProductoAbiertas(false);
   }
 
   async function guardarEdicionOrden(ordenId) {
@@ -293,6 +299,10 @@ export default function Ventas() {
     (sum, i) => sum + Number(i.precio_unitario) * i.cantidad,
     0
   );
+
+  const productosSugeridos = productos
+    .filter((p) => p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase()))
+    .slice(0, 8);
 
   return (
     <div className="vad-container">
@@ -383,26 +393,48 @@ export default function Ventas() {
                       )}
                     </div>
 
-                    <div className="vad-orden-edit-agregar">
-                      <select
-                        value={productoParaAgregar}
-                        onChange={(e) => setProductoParaAgregar(e.target.value)}
-                      >
-                        <option value="">Agregar producto...</option>
-                        {productos.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.nombre}
-                          </option>
-                        ))}
-                      </select>
-                      <button type="button" onClick={agregarItem} disabled={!productoParaAgregar}>
-                        <Plus size={14} />
-                      </button>
+                    <div className="vad-orden-edit-combo">
+                      <input
+                        type="text"
+                        placeholder="Buscar producto para agregar..."
+                        value={busquedaProducto}
+                        onChange={(e) => setBusquedaProducto(e.target.value)}
+                        onFocus={() => setSugerenciasProductoAbiertas(true)}
+                        onBlur={() =>
+                          setTimeout(() => setSugerenciasProductoAbiertas(false), 150)
+                        }
+                        autoComplete="off"
+                      />
+
+                      {sugerenciasProductoAbiertas && (
+                        <div className="vad-orden-edit-sugerencias">
+                          {productosSugeridos.map((p) => (
+                            <button
+                              type="button"
+                              key={p.id}
+                              className="vad-orden-edit-sugerencia"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => agregarItem(p)}
+                            >
+                              <span>{p.nombre}</span>
+                              <span className="vad-orden-edit-sugerencia-precio">
+                                {formatearMoneda(p.precio_unitario)}
+                              </span>
+                            </button>
+                          ))}
+
+                          {productosSugeridos.length === 0 && (
+                            <p className="vad-orden-edit-sin-resultados">
+                              Ningún producto coincide
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <label>Método de pago</label>
                     <div className="vad-metodos">
-                      {METODOS_PAGO.map((metodo) => (
+                      {METODOS_PAGO_EDICION.map((metodo) => (
                         <button
                           key={metodo}
                           className={`vad-metodo-btn ${
@@ -410,7 +442,7 @@ export default function Ventas() {
                           }`}
                           onClick={() => setFormOrden((f) => ({ ...f, metodo_pago: metodo }))}
                         >
-                          {metodo}
+                          {etiquetaMetodo(metodo)}
                         </button>
                       ))}
                     </div>
