@@ -345,3 +345,45 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+.prodad-categoria-combo {
+  position: relative;
+}
+
+.prodad-categoria-sugerencias {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,0.12));
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 0.3rem;
+}
+
+.prodad-categoria-sugerencia {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.prodad-categoria-sugerencia:hover {
+  background: var(--color-bg);
+}
+
+.prodad-categoria-sin-coincidencia {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}

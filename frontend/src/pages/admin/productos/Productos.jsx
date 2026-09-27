@@ -29,6 +29,7 @@ export default function Productos() {
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [categoriasAbiertas, setCategoriasAbiertas] = useState({});
+  const [sugerenciasCategoriaAbiertas, setSugerenciasCategoriaAbiertas] = useState(false);
 
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -331,18 +332,44 @@ export default function Productos() {
           />
 
           <label>Categoría (opcional)</label>
-          <input
-            type="text"
-            value={form.categoria}
-            onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
-            placeholder="Ej: congelados"
-            list="prodad-categorias-sugeridas"
-          />
-          <datalist id="prodad-categorias-sugeridas">
-            {categorias.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
+          <div className="prodad-categoria-combo">
+            <input
+              type="text"
+              value={form.categoria}
+              onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value }))}
+              onFocus={() => setSugerenciasCategoriaAbiertas(true)}
+              onBlur={() => setTimeout(() => setSugerenciasCategoriaAbiertas(false), 150)}
+              placeholder="Ej: congelados"
+              autoComplete="off"
+            />
+
+            {sugerenciasCategoriaAbiertas && categorias.length > 0 && (
+              <div className="prodad-categoria-sugerencias">
+                {categorias
+                  .filter((c) => c.toLowerCase().includes(form.categoria.toLowerCase()))
+                  .map((c) => (
+                    <button
+                      type="button"
+                      key={c}
+                      className="prodad-categoria-sugerencia"
+                      onMouseDown={(e) => e.preventDefault()} // evita que el blur cierre antes del click
+                      onClick={() => {
+                        setForm((f) => ({ ...f, categoria: c }));
+                        setSugerenciasCategoriaAbiertas(false);
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+
+                {categorias.filter((c) => c.toLowerCase().includes(form.categoria.toLowerCase())).length === 0 && (
+                  <p className="prodad-categoria-sin-coincidencia">
+                    Se creará "{form.categoria}" como nueva categoría
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
 
           <label>Precio unitario</label>
           <CampoMoneda
