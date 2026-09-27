@@ -9,6 +9,7 @@ import {
 import { listarInsumos } from "../../../api/insumos";
 import Sheet from "../../../components/Sheet";
 import "./Productos.css";
+import CampoMoneda from "../../../components/CampoMoneda";
 
 
 function formVacio() {
@@ -344,12 +345,9 @@ export default function Productos() {
           </datalist>
 
           <label>Precio unitario</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
+          <CampoMoneda
             value={form.precio_unitario}
-            onChange={(e) => setForm((f) => ({ ...f, precio_unitario: e.target.value }))}
+            onChange={(valor) => setForm((f) => ({ ...f, precio_unitario: valor }))}
           />
 
           <label>Stock mínimo (alerta de bajo stock)</label>

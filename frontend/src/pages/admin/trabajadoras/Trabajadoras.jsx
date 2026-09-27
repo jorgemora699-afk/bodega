@@ -10,6 +10,7 @@ import {
 } from "../../../api/trabajadoras";
 import Sheet from "../../../components/Sheet";
 import "./Trabajadoras.css";
+import CampoMoneda from "../../../components/CampoMoneda";
 
 function formVacio() {
   return {
@@ -365,24 +366,18 @@ export default function Trabajadoras() {
           {form.tipo_pago === "hora" ? (
             <>
               <label>Valor por hora</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <CampoMoneda
                 value={form.valor_hora}
-                onChange={(e) => setForm((f) => ({ ...f, valor_hora: e.target.value }))}
+                onChange={(valor) => setForm((f) => ({ ...f, valor_hora: valor }))}
                 placeholder="Ej: 13000"
               />
             </>
           ) : (
             <>
               <label>Salario mensual</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <CampoMoneda
                 value={form.salario_mensual}
-                onChange={(e) => setForm((f) => ({ ...f, salario_mensual: e.target.value }))}
+                onChange={(valor) => setForm((f) => ({ ...f, salario_mensual: valor }))}
                 placeholder="Ej: 2000000"
               />
               <p className="trabad-nota-prorrateo">

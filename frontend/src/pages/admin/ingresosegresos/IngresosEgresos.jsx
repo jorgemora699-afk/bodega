@@ -9,6 +9,7 @@ import {
 import { listarProveedores } from "../../../api/proveedores";
 import Sheet from "../../../components/Sheet";
 import "./IngresosEgresos.css";
+import CampoMoneda from "../../../components/CampoMoneda";
 
 function formVacio() {
   return { tipo: "egreso", monto: "", descripcion: "", proveedor_id: "" };
@@ -284,12 +285,9 @@ export default function IngresosEgresos() {
           </div>
 
           <label>Monto</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
+          <CampoMoneda
             value={form.monto}
-            onChange={(e) => setForm((f) => ({ ...f, monto: e.target.value }))}
+            onChange={(valor) => setForm((f) => ({ ...f, monto: valor }))}
           />
 
           <label>Descripción</label>
