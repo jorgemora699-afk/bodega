@@ -286,3 +286,7 @@
   width: 100%;
   margin-top: 1rem;
 }
+
+.ie-capitalize {
+  text-transform: capitalize;
+}

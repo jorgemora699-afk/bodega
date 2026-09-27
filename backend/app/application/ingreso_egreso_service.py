@@ -26,6 +26,7 @@ class IngresoEgresoService:
             tipo=data["tipo"],
             monto=data["monto"],
             descripcion=data["descripcion"],
+            metodo_pago=data.get("metodo_pago"),
             proveedor_id=data.get("proveedor_id"),
         )
         db.session.add(registro)
@@ -44,6 +45,8 @@ class IngresoEgresoService:
             registro.monto = data["monto"]
         if "descripcion" in data:
             registro.descripcion = data["descripcion"]
+        if "metodo_pago" in data:
+            registro.metodo_pago = data["metodo_pago"]
         if "proveedor_id" in data:
             registro.proveedor_id = data["proveedor_id"]
 

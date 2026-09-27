@@ -12,8 +12,9 @@ import "./IngresosEgresos.css";
 import CampoMoneda from "../../../components/CampoMoneda";
 
 function formVacio() {
-  return { tipo: "egreso", monto: "", descripcion: "", proveedor_id: "" };
+  return { tipo: "egreso", monto: "", descripcion: "", metodo_pago: "", proveedor_id: "" };
 }
+const METODOS_PAGO = ["efectivo", "transferencia"];
 
 function formatearFecha(isoString) {
   return new Date(isoString).toLocaleDateString("es-CO", {
@@ -83,6 +84,7 @@ export default function IngresosEgresos() {
       tipo: registro.tipo,
       monto: registro.monto,
       descripcion: registro.descripcion,
+      metodo_pago: registro.metodo_pago || "",
       proveedor_id: registro.proveedor_id || "",
     });
     setSheetAbierto(true);
@@ -109,6 +111,7 @@ export default function IngresosEgresos() {
       tipo: form.tipo,
       monto: Number(form.monto),
       descripcion: form.descripcion.trim(),
+      metodo_pago: form.metodo_pago || null,
       proveedor_id: form.proveedor_id ? Number(form.proveedor_id) : null,
     };
 
@@ -209,6 +212,12 @@ export default function IngresosEgresos() {
 
             <div className="ie-detalle">
               <span>{formatearFecha(r.fecha)}</span>
+              {r.metodo_pago && (
+                <>
+                  <span>·</span>
+                  <span className="ie-capitalize">{r.metodo_pago}</span>
+                </>
+              )}
               {r.proveedor_nombre && (
                 <>
                   <span>·</span>
@@ -297,6 +306,25 @@ export default function IngresosEgresos() {
             onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
             placeholder="Ej: Compra de 1kg de pollo"
           />
+
+          <label>Método de pago (opcional)</label>
+          <div className="ie-tipos">
+            {METODOS_PAGO.map((metodo) => (
+              <button
+                key={metodo}
+                type="button"
+                className={`ie-tipo-btn ${form.metodo_pago === metodo ? "activo-ingreso" : ""}`}
+                onClick={() =>
+                  setForm((f) => ({
+                    ...f,
+                    metodo_pago: f.metodo_pago === metodo ? "" : metodo,
+                  }))
+                }
+              >
+                {metodo}
+              </button>
+            ))}
+          </div>
 
           {form.tipo === "egreso" && (
             <>

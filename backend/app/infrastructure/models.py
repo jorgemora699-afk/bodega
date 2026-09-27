@@ -386,6 +386,7 @@ class IngresoEgreso(db.Model):
     tipo = db.Column(db.String(10), nullable=False)  # "ingreso" o "egreso"
     monto = db.Column(db.Numeric(10, 2), nullable=False)
     descripcion = db.Column(db.String(200), nullable=False)
+    metodo_pago = db.Column(db.String(30), nullable=True)  # NUEVO — "efectivo" o "transferencia"
     proveedor_id = db.Column(db.Integer, db.ForeignKey("proveedores.id"), nullable=True)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -397,6 +398,7 @@ class IngresoEgreso(db.Model):
             "tipo": self.tipo,
             "monto": float(self.monto),
             "descripcion": self.descripcion,
+            "metodo_pago": self.metodo_pago,  # NUEVO
             "proveedor_id": self.proveedor_id,
             "proveedor_nombre": self.proveedor.nombre if self.proveedor else None,
             "fecha": self.fecha.isoformat() + "Z",
