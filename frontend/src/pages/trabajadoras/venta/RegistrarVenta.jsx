@@ -44,6 +44,33 @@ const CLIENTE_VACIO = {
 };
 
 /* =========================
+   FECHA (yyyy-mm-dd local, para el input type="date")
+   ========================= */
+
+function hoyISO() {
+  const hoy = new Date();
+  const offset = hoy.getTimezoneOffset();
+  const local = new Date(hoy.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 10);
+}
+
+function formatearFechaCorta(fechaISO) {
+  return new Date(fechaISO + "T00:00:00").toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function esAdminActual() {
+  try {
+    return localStorage.getItem("rol") === "jefe";
+  } catch {
+    return false;
+  }
+}
+
+/* =========================
    STORAGE (a prueba de fallos)
    ========================= */
 
@@ -165,6 +192,10 @@ export default function RegistrarVenta() {
   const [recibido, setRecibido] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [mostrarSelectorCliente, setMostrarSelectorCliente] = useState(false);
+
+  /* Solo el jefe puede elegir una fecha distinta a hoy (venta de días anteriores) */
+  const esAdmin = esAdminActual();
+  const [fechaVenta, setFechaVenta] = useState(hoyISO);
 
   /* Cuenta por cobrar: selección/creación de cliente */
   const [clienteId, setClienteId] = useState("");
@@ -372,19 +403,27 @@ export default function RegistrarVenta() {
     );
   }
 
-  function obtenerEstadoStock(stock, stockMinimo) {
+  function obtenerEstadoStock(stock) {
     const cantidad = Number(stock);
-    const minimo = Number(stockMinimo) || 5; // respaldo por si algún producto viejo no lo trae
 
     if (cantidad <= 0) {
-      return { clase: "agotado", texto: "Agotado" };
+      return {
+        clase: "agotado",
+        texto: "Agotado",
+      };
     }
 
-    if (cantidad <= minimo) {
-      return { clase: "bajo", texto: `Poco stock · ${cantidad} disponibles` };
+    if (cantidad <= 5) {
+      return {
+        clase: "bajo",
+        texto: `Poco stock · ${cantidad} disponibles`,
+      };
     }
 
-    return { clase: "disponible", texto: `${cantidad} disponibles` };
+    return {
+      clase: "disponible",
+      texto: `${cantidad} disponibles`,
+    };
   }
 
   function quitarDelCarrito(productoId) {
@@ -541,6 +580,9 @@ export default function RegistrarVenta() {
         metodo_pago: metodoPago,
         cliente_id: clienteId ? Number(clienteId) : undefined,
         descripcion: descripcion.trim() || undefined,
+        // Solo el jefe puede mandar una fecha distinta a hoy; para las
+        // trabajadoras esto no se envía y el backend usa la fecha/hora actual.
+        fecha: esAdmin && fechaVenta !== hoyISO() ? fechaVenta : undefined,
         items: carrito.map((i) => ({
           producto_id: i.producto_id,
           cantidad: i.cantidad,
@@ -557,6 +599,7 @@ export default function RegistrarVenta() {
       setMetodoPago("");
       setRecibido("");
       setDescripcion("");
+      setFechaVenta(hoyISO());
       limpiarCliente();
       setMensaje(null);
       setVista("recibo");
@@ -578,6 +621,7 @@ export default function RegistrarVenta() {
     setReciboEfectivo(null);
     setRecibido("");
     setDescripcion("");
+    setFechaVenta(hoyISO());
     limpiarCliente();
     setMensaje(null);
     setError(null);
@@ -640,6 +684,7 @@ export default function RegistrarVenta() {
   const billetesSugeridos = BILLETES.filter((b) => b > totalCarrito).slice(0, 3);
 
   const esCredito = metodoPago === "credito";
+  const fechaEsAtrasada = esAdmin && fechaVenta !== hoyISO();
 
   return (
     <div className="venta-container">
@@ -736,8 +781,7 @@ export default function RegistrarVenta() {
           <div className="venta-grid-productos">
             {productosFiltrados.map((producto) => {
               const stock = obtenerEstadoStock(
-                producto.stock_actual,
-                producto.stock_minimo
+                producto.stock_actual
               );
 
               const agotado =
@@ -1310,6 +1354,33 @@ export default function RegistrarVenta() {
             ))}
           </select>
 
+          {/* =========================
+              FECHA DE LA VENTA — solo admin
+              ========================= */}
+
+          {esAdmin && (
+            <>
+              <label htmlFor="venta-fecha">
+                Fecha de la venta
+              </label>
+
+              <input
+                id="venta-fecha"
+                type="date"
+                max={hoyISO()}
+                value={fechaVenta}
+                onChange={(e) => setFechaVenta(e.target.value)}
+              />
+
+              {fechaEsAtrasada && (
+                <p className="venta-nota-fecha">
+                  Se registrará como si se hubiera vendido el{" "}
+                  {formatearFechaCorta(fechaVenta)}, no hoy.
+                </p>
+              )}
+            </>
+          )}
+
           <div className="venta-total">
             <span>Total</span>
 
@@ -1394,6 +1465,13 @@ export default function RegistrarVenta() {
               }
             </span>
           </div>
+
+          {fechaEsAtrasada && (
+            <div className="venta-resumen-fila">
+              <span>Fecha de la venta</span>
+              <span>{formatearFechaCorta(fechaVenta)}</span>
+            </div>
+          )}
 
           {descripcion.trim() && (
             <div className="venta-resumen-fila">
