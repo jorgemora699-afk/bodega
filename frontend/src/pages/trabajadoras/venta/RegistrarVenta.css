@@ -1412,3 +1412,31 @@
   color: #222;
   margin-top: 0;
 }
+
+/* =========================
+   FECHA DE LA VENTA (admin)
+   ========================= */
+
+.venta-detalle input[type="date"] {
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.9rem;
+  background: var(--color-surface);
+  color: inherit;
+  font-family: inherit;
+}
+
+.venta-detalle input[type="date"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.venta-nota-fecha {
+  margin: 0.3rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-brand-dark);
+  background: var(--color-brand-tint);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
