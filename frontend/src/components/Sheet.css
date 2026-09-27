@@ -61,8 +61,9 @@
 
 .sheet-body {
   flex: 1;
-  min-height: 0; /* la pieza que faltaba: permite que overflow-y realmente actúe dentro de un flex column */
+  min-height: 0;
   padding: 0 1.1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y; /* nuevo: el gesto vertical es siempre scroll, nunca "arrastrar el sheet" */
 }

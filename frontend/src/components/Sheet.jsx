@@ -4,7 +4,12 @@ import "./Sheet.css";
 
 export default function Sheet({ open, onOpenChange, title, children, cerrarAlTocarFuera = false }) {
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange} dismissible={cerrarAlTocarFuera}>
+    <Drawer.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      dismissible={cerrarAlTocarFuera}
+      repositionInputs={false}
+    >
       <Drawer.Portal>
         <Drawer.Overlay className="sheet-overlay" />
         <Drawer.Content className="sheet-content">
