@@ -489,3 +489,33 @@ class Usuario(db.Model):
 
     def __repr__(self):
         return f"<Usuario {self.username} - {self.rol}>"
+
+class Nota(db.Model):
+    __tablename__ = "notas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    texto = db.Column(db.Text, nullable=False)
+    trabajadora_creadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=False)
+    creada_en = db.Column(db.DateTime, default=datetime.utcnow)
+    resuelta = db.Column(db.Boolean, nullable=False, default=False)
+    trabajadora_resuelve_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=True)
+    resuelta_en = db.Column(db.DateTime, nullable=True)
+
+    trabajadora_creadora = db.relationship("Trabajadora", foreign_keys=[trabajadora_creadora_id])
+    trabajadora_resuelve = db.relationship("Trabajadora", foreign_keys=[trabajadora_resuelve_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "texto": self.texto,
+            "trabajadora_creadora_id": self.trabajadora_creadora_id,
+            "trabajadora_creadora_nombre": self.trabajadora_creadora.nombre if self.trabajadora_creadora else None,
+            "creada_en": self.creada_en.isoformat() + "Z",
+            "resuelta": self.resuelta,
+            "trabajadora_resuelve_id": self.trabajadora_resuelve_id,
+            "trabajadora_resuelve_nombre": self.trabajadora_resuelve.nombre if self.trabajadora_resuelve else None,
+            "resuelta_en": self.resuelta_en.isoformat() + "Z" if self.resuelta_en else None,
+        }
+
+    def __repr__(self):
+        return f"<Nota {self.id} - resuelta={self.resuelta}>"

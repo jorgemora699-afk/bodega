@@ -9,6 +9,7 @@ import {
   LogOut,
   Wheat,
   Receipt,
+  StickyNote
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -43,6 +44,11 @@ const TABS = [
     to: "/recetas",
     label: "Recetas",
     Icon: ChefHat,
+  },
+  {
+    to: "/notas",
+    label: "Notas",
+    Icon: StickyNote,
   },
 ];
 

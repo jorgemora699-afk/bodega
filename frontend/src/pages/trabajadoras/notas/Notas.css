@@ -1,0 +1,233 @@
+.notas-container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.notas-header {
+  margin-bottom: 1rem;
+}
+
+.notas-header h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.2rem;
+  font-weight: 700;
+}
+
+.notas-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.notas-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.notas-container > select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.9rem;
+  margin: 0.4rem 0 1rem;
+}
+
+.notas-mensaje-exito,
+.notas-mensaje-error {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  margin-bottom: 0.9rem;
+}
+
+.notas-mensaje-exito {
+  background: #DCEFE9;
+  color: #1B6A5C;
+}
+
+.notas-mensaje-error {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.notas-nueva {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem;
+  margin-bottom: 1.1rem;
+}
+
+.notas-nueva textarea {
+  resize: vertical;
+  min-height: 70px;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.87rem;
+  font-family: inherit;
+}
+
+.notas-btn-enviar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.83rem;
+  cursor: pointer;
+}
+
+.notas-btn-enviar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notas-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.notas-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.notas-tab-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.notas-contador {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 0.05rem 0.4rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+}
+
+.notas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.notas-tarjeta {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem;
+}
+
+.notas-tarjeta.resuelta {
+  opacity: 0.75;
+}
+
+.notas-texto {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.notas-detalle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.6rem;
+}
+
+.notas-resuelta-info {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1B6A5C;
+}
+
+.notas-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.notas-btn-resolver {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notas-btn-resolver:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notas-btn-eliminar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  border: 1.5px solid var(--color-danger);
+  color: var(--color-danger);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.notas-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.notas-vacio p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.notas-sin-datos {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
