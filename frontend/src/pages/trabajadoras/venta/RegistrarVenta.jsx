@@ -21,7 +21,7 @@ import {
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import { crearOrden } from "../../../api/ordenes";
-import { listarClientes, crearCliente } from "../../../api/clientes";
+import { listarClientes, crearCliente, listarPreciosEspeciales } from "../../../api/clientes";
 import "./RegistrarVenta.css";
 
 const METODOS_PAGO = [
@@ -214,6 +214,7 @@ export default function RegistrarVenta() {
 
   const [reciboOrden, setReciboOrden] = useState(null);
   const [reciboEfectivo, setReciboEfectivo] = useState(null);
+  const [preciosEspeciales, setPreciosEspeciales] = useState({});
 
   useEffect(() => {
     cargarDatos();
@@ -287,6 +288,33 @@ export default function RegistrarVenta() {
       clearTimeout(temporizador);
     };
   }, [busquedaCliente, metodoPago, clienteSeleccionado]);
+
+  /* Precios especiales del cliente elegido — se recargan cada vez que cambia */
+  useEffect(() => {
+    if (!clienteId) {
+      setPreciosEspeciales({});
+      return undefined;
+    }
+
+    let activo = true;
+
+    listarPreciosEspeciales(Number(clienteId))
+      .then((data) => {
+        if (!activo) return;
+        const mapa = {};
+        data.forEach((pe) => {
+          mapa[pe.producto_id] = pe.precio;
+        });
+        setPreciosEspeciales(mapa);
+      })
+      .catch(() => {
+        if (activo) setPreciosEspeciales({});
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [clienteId]);
 
   async function cargarDatos() {
     try {
@@ -424,6 +452,17 @@ export default function RegistrarVenta() {
       clase: "disponible",
       texto: `${cantidad} disponibles`,
     };
+  }
+
+  function precioEfectivo(producto) {
+    const idProducto = producto.producto_id ?? producto.id;
+    const especial = preciosEspeciales[idProducto];
+    return especial != null ? Number(especial) : Number(producto.precio_unitario);
+  }
+
+  function tienePrecioEspecial(producto) {
+    const idProducto = producto.producto_id ?? producto.id;
+    return preciosEspeciales[idProducto] != null;
   }
 
   function quitarDelCarrito(productoId) {
@@ -667,8 +706,7 @@ export default function RegistrarVenta() {
   });
 
   const totalCarrito = carrito.reduce(
-    (sum, i) =>
-      sum + Number(i.precio_unitario) * i.cantidad,
+    (sum, i) => sum + precioEfectivo(i) * i.cantidad,
     0
   );
 
@@ -822,10 +860,12 @@ export default function RegistrarVenta() {
                     </span>
 
                     <span className="venta-prod-precio">
-                      $
-                      {Number(
-                        producto.precio_unitario
-                      ).toLocaleString("es-CO")}
+                      {tienePrecioEspecial(producto) && (
+                        <span className="venta-precio-tachado">
+                          ${Number(producto.precio_unitario).toLocaleString("es-CO")}
+                        </span>
+                      )}
+                      ${precioEfectivo(producto).toLocaleString("es-CO")}
                     </span>
 
                     <span
@@ -917,11 +957,10 @@ export default function RegistrarVenta() {
                   </span>
 
                   <span className="venta-carrito-item-precio">
-                    $
-                    {Number(
-                      item.precio_unitario
-                    ).toLocaleString("es-CO")}{" "}
-                    c/u
+                    ${precioEfectivo(item).toLocaleString("es-CO")} c/u
+                    {tienePrecioEspecial(item) && (
+                      <span className="venta-badge-precio-especial">Precio especial</span>
+                    )}
                   </span>
                 </div>
 
@@ -943,11 +982,7 @@ export default function RegistrarVenta() {
                 />
 
                 <span className="venta-carrito-item-subtotal">
-                  $
-                  {(
-                    Number(item.precio_unitario) *
-                    item.cantidad
-                  ).toLocaleString("es-CO")}
+                  ${(precioEfectivo(item) * item.cantidad).toLocaleString("es-CO")}
                 </span>
 
                 <button
@@ -1426,12 +1461,7 @@ export default function RegistrarVenta() {
                 </span>
 
                 <span>
-                  $
-                  {(
-                    Number(
-                      item.precio_unitario
-                    ) * item.cantidad
-                  ).toLocaleString("es-CO")}
+                  ${(precioEfectivo(item) * item.cantidad).toLocaleString("es-CO")}
                 </span>
               </div>
             ))}

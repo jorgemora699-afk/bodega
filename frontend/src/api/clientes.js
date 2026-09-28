@@ -24,3 +24,18 @@ export async function eliminarCliente(clienteId) {
   const response = await apiClient.delete(`/clientes/${clienteId}`);
   return response.data;
 }
+
+export async function listarPreciosEspeciales(clienteId) {
+  const response = await apiClient.get(`/clientes/${clienteId}/precios-especiales`);
+  return response.data;
+}
+
+export async function crearPrecioEspecial(clienteId, data) {
+  const response = await apiClient.post(`/clientes/${clienteId}/precios-especiales`, data);
+  return response.data;
+}
+
+export async function eliminarPrecioEspecial(precioEspecialId) {
+  const response = await apiClient.delete(`/clientes/precios-especiales/${precioEspecialId}`);
+  return response.data;
+}

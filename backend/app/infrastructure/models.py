@@ -169,6 +169,7 @@ class Cliente(db.Model):
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     ordenes = db.relationship("Orden", back_populates="cliente")
+    precios_especiales = db.relationship("PrecioEspecial", backref="cliente_rel", overlaps="cliente")
 
     def to_dict(self):
         return {
@@ -185,6 +186,35 @@ class Cliente(db.Model):
 
     def __repr__(self):
         return f"<Cliente {self.nombre}>"
+
+class PrecioEspecial(db.Model):
+    __tablename__ = "precios_especiales"
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    precio = db.Column(db.Numeric(10, 2), nullable=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cliente = db.relationship("Cliente")
+    producto = db.relationship("Producto")
+
+    __table_args__ = (
+        db.UniqueConstraint("cliente_id", "producto_id", name="uq_precio_especial_cliente_producto"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "cliente_id": self.cliente_id,
+            "producto_id": self.producto_id,
+            "producto_nombre": self.producto.nombre if self.producto else None,
+            "precio_normal": float(self.producto.precio_unitario) if self.producto else None,
+            "precio": float(self.precio),
+        }
+
+    def __repr__(self):
+        return f"<PrecioEspecial cliente={self.cliente_id} producto={self.producto_id}>"
 
 
 class Orden(db.Model):
@@ -478,6 +508,8 @@ class ProductoInsumo(db.Model):
  
     def __repr__(self):
         return f"<ProductoInsumo producto={self.producto_id} insumo={self.insumo_id}>"
+
+
 
 
 class MovimientoInsumo(db.Model):

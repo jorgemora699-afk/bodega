@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.application.cliente_service import ClienteService
 from app.interfaces.auth_helpers import exigir_rol
+from app.application.precio_especial_service import PrecioEspecialService
 
 cliente_bp = Blueprint("clientes", __name__, url_prefix="/api/clientes")
 
@@ -62,3 +63,33 @@ def eliminar_cliente(cliente_id):
         status = 404 if error == "Cliente no encontrado" else 400
         return jsonify({"error": error}), status
     return jsonify({"mensaje": "Cliente eliminado"}), 200
+
+@cliente_bp.route("/<int:cliente_id>/precios-especiales", methods=["GET"])
+def listar_precios_especiales(cliente_id):
+    if not ClienteService.obtener_por_id(cliente_id):
+        return jsonify({"error": "Cliente no encontrado"}), 404
+    precios = PrecioEspecialService.listar_por_cliente(cliente_id)
+    return jsonify([p.to_dict() for p in precios]), 200
+
+
+@cliente_bp.route("/<int:cliente_id>/precios-especiales", methods=["POST"])
+def crear_precio_especial(cliente_id):
+    data = request.get_json()
+    producto_id = data.get("producto_id")
+    precio = data.get("precio")
+
+    if not producto_id or precio is None:
+        return jsonify({"error": "producto_id y precio son obligatorios"}), 400
+
+    pe, error = PrecioEspecialService.crear_o_actualizar(cliente_id, producto_id, precio)
+    if error:
+        return jsonify({"error": error}), 400
+    return jsonify(pe.to_dict()), 201
+
+
+@cliente_bp.route("/precios-especiales/<int:precio_especial_id>", methods=["DELETE"])
+def eliminar_precio_especial(precio_especial_id):
+    exito = PrecioEspecialService.eliminar(precio_especial_id)
+    if not exito:
+        return jsonify({"error": "Precio especial no encontrado"}), 404
+    return jsonify({"mensaje": "Precio especial eliminado"}), 200

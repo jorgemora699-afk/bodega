@@ -25,6 +25,7 @@ import MiCuenta from "./pages/admin/cuenta/MiCuenta";
 import VentasTrabajadora from "./pages/trabajadoras/venta/Ventas";
 import CuentasPorCobrar from "./pages/admin/cuentascobrar/CuentasPorCobrar";
 import Notas from "./pages/trabajadoras/notas/Notas";
+import Clientes from "./pages/admin/clientes/Clientes";
 
 export default function App() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/admin/ventas" element={<Ventas />} />
             <Route path="/admin/ventas/registrar" element={<RegistrarVenta />} />
             <Route path="/admin/reportes" element={<Reportes />} />
+            <Route path="/admin/clientes" element={<Clientes />} />
             <Route path="/admin/cuentas-cobrar" element={<CuentasPorCobrar />} />
             <Route path="/admin/salarios" element={<Salarios />} />
             <Route path="/admin/ingresos-egresos" element={<IngresosEgresos />} />

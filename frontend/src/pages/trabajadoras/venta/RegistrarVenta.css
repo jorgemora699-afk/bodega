@@ -1440,3 +1440,23 @@
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
 }
+
+.venta-precio-tachado {
+  text-decoration: line-through;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.8em;
+  margin-right: 0.3rem;
+}
+
+.venta-badge-precio-especial {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 20px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.65rem;
+  font-weight: 700;
+  vertical-align: middle;
+}

@@ -3,6 +3,7 @@ from datetime import date, datetime
 from app import db
 from app.infrastructure.models import Orden, Venta, Producto, Cliente, MovimientoInventario, MovimientoInsumo, Insumo
 from app.domain.inventario import hay_stock_suficiente
+from app.infrastructure.models import PrecioEspecial
 from app.application.cliente_service import ClienteService
 
 
@@ -46,6 +47,15 @@ def _resolver_fecha(data):
 
     fecha_dia = date.fromisoformat(fecha_str)
     return datetime.combine(fecha_dia, datetime.utcnow().time())
+
+def _precio_para_cliente(producto, cliente_id):
+    """Si el cliente tiene un precio especial para este producto, lo usa;
+    si no, usa el precio normal del producto."""
+    if cliente_id:
+        pe = PrecioEspecial.query.filter_by(cliente_id=cliente_id, producto_id=producto.id).first()
+        if pe:
+            return float(pe.precio)
+    return float(producto.precio_unitario)
 
 
 class OrdenService:
@@ -180,14 +190,15 @@ class OrdenService:
         for item in items:
             producto = productos_vendidos[item["producto_id"]]
             cantidad = float(item["cantidad"])
-            subtotal = float(producto.precio_unitario) * cantidad
+            precio_aplicado = _precio_para_cliente(producto, cliente_id)
+            subtotal = precio_aplicado * cantidad
             total_orden += subtotal
 
             venta = Venta(
                 producto_id=producto.id,
                 trabajadora_id=trabajadora_id,
                 cantidad=cantidad,
-                precio_unitario=producto.precio_unitario,
+                precio_unitario=precio_aplicado,
                 total=subtotal,
                 metodo_pago=metodo_pago,
                 orden_id=orden.id,
@@ -334,14 +345,15 @@ class OrdenService:
         for item in items:
             producto = productos_vendidos[item["producto_id"]]
             cantidad = float(item["cantidad"])
-            subtotal = float(producto.precio_unitario) * cantidad
+            precio_aplicado = _precio_para_cliente(producto, cliente_id)
+            subtotal = precio_aplicado * cantidad
             total_orden += subtotal
 
             venta = Venta(
                 producto_id=producto.id,
                 trabajadora_id=trabajadora_id,
                 cantidad=cantidad,
-                precio_unitario=producto.precio_unitario,
+                precio_unitario=precio_aplicado,
                 total=subtotal,
                 metodo_pago=metodo_pago,
                 orden_id=orden.id,

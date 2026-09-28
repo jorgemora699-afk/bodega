@@ -17,7 +17,8 @@ import {
   Wheat,
   UserCircle,
   CreditCard,
-  StickyNote
+  StickyNote,
+  Users2
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -37,14 +38,19 @@ const LINKS = [
     Icon: Receipt,
   },
   {
+    to: "/admin/reportes",
+    label: "Reportes",
+    Icon: BarChart3,
+  },
+  {
     to: "/admin/cuentas-cobrar",
     label: "Cuentas por cobrar",
     Icon: CreditCard,
   },
   {
-    to: "/admin/reportes",
-    label: "Reportes",
-    Icon: BarChart3,
+    to: "/admin/clientes",
+    label: "Clientes",
+    Icon: Users2,
   },
   {
     to: "/admin/salarios",
