@@ -476,37 +476,15 @@
 
 
 /* =========================================================
-   TABLET
+   TABLET VERTICAL + MOBILE
    ========================================================= */
 
 @media (max-width: 900px) {
 
+  /* SIDEBAR CERRADO */
   .admin-sidebar {
-    width: 235px;
-  }
 
-  .admin-content {
-    margin-left: 235px;
-
-    padding: 22px;
-  }
-
-  .admin-logo {
-    width: 125px;
-  }
-
-}
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 700px) {
-
-  .admin-sidebar {
     width: 100%;
-
     height: 64px;
 
     bottom: auto;
@@ -517,14 +495,18 @@
   }
 
 
+  /* SIDEBAR ABIERTO */
   .admin-sidebar.sidebar-abierto {
+
     height: 100vh;
 
     overflow-y: auto;
   }
 
 
+  /* HEADER */
   .admin-sidebar-header {
+
     min-height: 64px;
 
     justify-content: flex-start;
@@ -533,8 +515,11 @@
   }
 
 
+  /* LOGO */
   .admin-brand {
+
     width: auto;
+
     height: 100%;
 
     justify-content: flex-start;
@@ -542,67 +527,83 @@
 
 
   .admin-logo {
+
     width: auto;
+
     height: 60px;
+
     max-width: 140px;
   }
 
 
+  /* BOTÓN ☰ / X */
   .admin-menu-toggle {
+
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
     margin-left: auto;
   }
 
 
+  /* DIVISOR */
   .admin-sidebar-divider {
+
     margin: 0 16px;
   }
 
 
+  /* NAVEGACIÓN */
   .admin-nav {
+
     padding: 18px 14px;
   }
 
 
   .admin-nav-link {
+
     min-height: 47px;
 
     font-size: 13px;
   }
 
 
+  /* PARTE INFERIOR */
   .admin-sidebar-bottom {
+
     padding-bottom: 20px;
   }
 
 
+  /* CONTENIDO */
   .admin-content {
+
     margin-left: 0;
 
     padding: 84px 15px 25px;
 
     width: 100%;
   }
-
 }
 
 
 /* =========================================================
-   MOBILE PEQUEÑO
+   TABLET MUY ESTRECHA / CELULAR PEQUEÑO
    ========================================================= */
 
 @media (max-width: 400px) {
 
   .admin-content {
+
     padding-left: 12px;
+
     padding-right: 12px;
   }
-
 }
+
 
 .admin-nav-badge {
   margin-left: auto;
