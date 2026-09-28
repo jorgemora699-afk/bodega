@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Search, Tag, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Tag, AlertTriangle, X } from "lucide-react";
 import {
   listarProductos,
   crearProducto,
@@ -19,8 +19,12 @@ function formVacio() {
     precio_unitario: "",
     stock_actual: "",
     stock_minimo: "5",
-    insumo_id: "",
+    insumos: [], // [{ insumo_id, cantidad }]
   };
+}
+
+function filaInsumoVacia() {
+  return { insumo_id: "", cantidad: "1" };
 }
 
 export default function Productos() {
@@ -109,7 +113,13 @@ export default function Productos() {
       categoria: producto.categoria || "",
       precio_unitario: producto.precio_unitario,
       stock_minimo: producto.stock_minimo ?? "5",
-      insumo_id: producto.insumo_id || "",
+      insumos:
+        producto.insumos && producto.insumos.length > 0
+          ? producto.insumos.map((i) => ({
+              insumo_id: String(i.insumo_id),
+              cantidad: String(i.cantidad),
+            }))
+          : [],
       // stock_actual no se edita aquí — los cambios de stock pasan por Inventario
     });
     setSheetAbierto(true);
@@ -123,11 +133,35 @@ export default function Productos() {
     }
   }
 
+  /* ---------- Insumos del producto (fila por fila) ---------- */
+
+  function agregarFilaInsumo() {
+    setForm((f) => ({ ...f, insumos: [...f.insumos, filaInsumoVacia()] }));
+  }
+
+  function actualizarFilaInsumo(index, campo, valor) {
+    setForm((f) => ({
+      ...f,
+      insumos: f.insumos.map((ins, i) => (i === index ? { ...ins, [campo]: valor } : ins)),
+    }));
+  }
+
+  function quitarFilaInsumo(index) {
+    setForm((f) => ({ ...f, insumos: f.insumos.filter((_, i) => i !== index) }));
+  }
+
   async function guardar() {
     if (!form.nombre.trim() || !form.precio_unitario) {
       setError("Nombre y precio son obligatorios");
       return;
     }
+
+    const insumosValidos = form.insumos
+      .filter((i) => i.insumo_id && i.cantidad)
+      .map((i) => ({
+        insumo_id: Number(i.insumo_id),
+        cantidad: Number(i.cantidad),
+      }));
 
     setGuardando(true);
     setError(null);
@@ -139,7 +173,7 @@ export default function Productos() {
           categoria: form.categoria || null,
           precio_unitario: Number(form.precio_unitario),
           stock_minimo: Number(form.stock_minimo) || 5,
-          insumo_id: form.insumo_id ? Number(form.insumo_id) : null,
+          insumos: insumosValidos,
         });
         setMensaje("Producto actualizado");
       } else {
@@ -149,7 +183,7 @@ export default function Productos() {
           precio_unitario: Number(form.precio_unitario),
           stock_actual: Number(form.stock_actual) || 0,
           stock_minimo: Number(form.stock_minimo) || 5,
-          insumo_id: form.insumo_id ? Number(form.insumo_id) : null,
+          insumos: insumosValidos,
         });
         setMensaje("Producto creado");
       }
@@ -184,6 +218,18 @@ export default function Productos() {
     const coincideCategoria = !categoriaFiltro || p.categoria === categoriaFiltro;
     return coincideBusqueda && coincideCategoria;
   });
+
+  // Insumos ya elegidos en otra fila, para no repetir el mismo insumo dos veces
+  // en el mismo producto (evita que "cantidad" quede ambigua entre dos filas).
+  function insumosDisponiblesPara(indexActual) {
+    const elegidosEnOtrasFilas = new Set(
+      form.insumos
+        .filter((_, i) => i !== indexActual)
+        .map((i) => i.insumo_id)
+        .filter(Boolean)
+    );
+    return insumos.filter((i) => !elegidosEnOtrasFilas.has(String(i.id)));
+  }
 
   return (
     <div className="prodad-container">
@@ -260,10 +306,13 @@ export default function Productos() {
                   {stockBajo && <AlertTriangle size={12} />}
                   Stock: {p.stock_actual}
                 </span>
-                {p.insumo_nombre && (
-                  <span className="prodad-categoria" title="Insumo que se descuenta al vender">
+                {p.insumos && p.insumos.length > 0 && (
+                  <span
+                    className="prodad-categoria"
+                    title="Insumos que se descuentan al vender"
+                  >
                     <Tag size={11} />
-                    Usa: {p.insumo_nombre}
+                    Usa: {p.insumos.map((i) => i.insumo_nombre).join(", ")}
                   </span>
                 )}
               </div>
@@ -386,7 +435,7 @@ export default function Productos() {
             onChange={(e) => setForm((f) => ({ ...f, stock_minimo: e.target.value }))}
           />
 
-          {!editandoId && (
+          {!editandoId && form.insumos.length === 0 && (
             <>
               <label>Stock inicial</label>
               <input
@@ -405,22 +454,53 @@ export default function Productos() {
             </p>
           )}
 
-          <label>Insumo que se descuenta al vender (opcional)</label>
-          <select
-            value={form.insumo_id}
-            onChange={(e) => setForm((f) => ({ ...f, insumo_id: e.target.value }))}
-          >
-            <option value="">Ninguno</option>
-            {insumos.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.nombre} ({i.unidad_medida})
-              </option>
-            ))}
-          </select>
-          <p className="prodad-nota-stock">
-            Ej: si este producto es "Jugo de mora en leche", elige "Pulpa de mora". Cada
-            unidad vendida descuenta 1 unidad de ese insumo automáticamente.
+          <label>Insumos que se descuentan al vender (opcional)</label>
+          <p className="prodad-nota-stock" style={{ marginTop: 0 }}>
+            Ej: una hamburguesa puede usar 1 pan + 1 carne + 1 queso. Cada venta
+            descuenta esa cantidad de cada insumo automáticamente.
           </p>
+
+          <div className="prodad-insumos-lista">
+            {form.insumos.map((ins, index) => (
+              <div key={index} className="prodad-insumo-fila">
+                <select
+                  value={ins.insumo_id}
+                  onChange={(e) => actualizarFilaInsumo(index, "insumo_id", e.target.value)}
+                >
+                  <option value="">Selecciona un insumo...</option>
+                  {insumosDisponiblesPara(index).map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.nombre} ({i.unidad_medida})
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="prodad-insumo-cantidad"
+                  placeholder="Cant."
+                  value={ins.cantidad}
+                  onChange={(e) => actualizarFilaInsumo(index, "cantidad", e.target.value)}
+                />
+
+                <button
+                  type="button"
+                  className="prodad-insumo-quitar"
+                  onClick={() => quitarFilaInsumo(index)}
+                  aria-label="Quitar insumo"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <button type="button" className="prodad-btn-agregar-insumo" onClick={agregarFilaInsumo}>
+            <Plus size={14} />
+            Agregar insumo
+          </button>
 
           <button
             className="prodad-btn-primario prodad-btn-guardar-sheet"

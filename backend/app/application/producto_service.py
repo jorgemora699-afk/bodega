@@ -1,5 +1,5 @@
 from app import db
-from app.infrastructure.models import Producto
+from app.infrastructure.models import Producto, ProductoInsumo
 
 
 class ProductoService:
@@ -16,6 +16,27 @@ class ProductoService:
         return Producto.query.get(producto_id)
 
     @staticmethod
+    def _reemplazar_insumos(producto, insumos_data):
+        """
+        Reemplaza por completo la lista de insumos que este producto consume
+        al venderse. insumos_data es una lista de {insumo_id, cantidad}.
+        Se borra todo lo anterior y se crea de nuevo, más simple y seguro
+        que tratar de calcular diffs.
+        """
+        ProductoInsumo.query.filter_by(producto_id=producto.id).delete()
+
+        for item in insumos_data or []:
+            insumo_id = item.get("insumo_id")
+            cantidad = item.get("cantidad")
+            if not insumo_id or not cantidad:
+                continue
+            db.session.add(ProductoInsumo(
+                producto_id=producto.id,
+                insumo_id=insumo_id,
+                cantidad=cantidad,
+            ))
+
+    @staticmethod
     def crear(data):
         producto = Producto(
             nombre=data["nombre"],
@@ -23,9 +44,13 @@ class ProductoService:
             precio_unitario=data["precio_unitario"],
             stock_actual=data.get("stock_actual", 0),
             stock_minimo=data.get("stock_minimo", 5),
-            insumo_id=data.get("insumo_id") or None,
         )
         db.session.add(producto)
+        db.session.flush()  # para tener producto.id antes de crear sus insumos
+
+        if "insumos" in data:
+            ProductoService._reemplazar_insumos(producto, data["insumos"])
+
         db.session.commit()
         return producto
 
@@ -45,8 +70,8 @@ class ProductoService:
             producto.stock_actual = data["stock_actual"]
         if "stock_minimo" in data:
             producto.stock_minimo = data["stock_minimo"]
-        if "insumo_id" in data:
-            producto.insumo_id = data["insumo_id"] or None
+        if "insumos" in data:
+            ProductoService._reemplazar_insumos(producto, data["insumos"])
         if "activo" in data:
             producto.activo = data["activo"]
 

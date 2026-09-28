@@ -1,9 +1,23 @@
-from datetime import datetime
+from datetime import date, datetime
 from app import db
 from app.infrastructure.models import Venta, Producto, MovimientoInventario, MovimientoInsumo
 from app.domain.inventario import hay_stock_suficiente
 from app.domain.periodos import rango_por_periodo
 from sqlalchemy.orm import joinedload
+
+
+def _resolver_fecha(data):
+    """
+    Si viene 'fecha' en el payload (YYYY-MM-DD), la combina con la hora actual
+    para poder registrar ventas de días anteriores. Si no viene, devuelve None
+    para que el modelo use su default (datetime.utcnow).
+    """
+    fecha_str = data.get("fecha")
+    if not fecha_str:
+        return None
+
+    fecha_dia = date.fromisoformat(fecha_str)
+    return datetime.combine(fecha_dia, datetime.utcnow().time())
 
 
 class VentaService:
@@ -23,13 +37,17 @@ class VentaService:
     @staticmethod
     def _validar_stock(producto, cantidad):
         """
-        Devuelve (ok, mensaje_error). Si el producto usa un insumo (ej. jugo -> pulpa),
-        valida contra el insumo; si no, valida contra el stock propio del producto.
+        Devuelve (ok, mensaje_error). Si el producto usa uno o varios insumos
+        (ej. hamburguesa -> pan, carne, queso), valida cada uno por separado;
+        si no, valida contra el stock propio del producto.
         """
-        if producto.insumo_id and producto.insumo:
-            insumo = producto.insumo
-            if not hay_stock_suficiente(float(insumo.stock_actual), cantidad):
-                return False, f"Stock insuficiente de {insumo.nombre}: quedan {float(insumo.stock_actual)} {insumo.unidad_medida}"
+        if producto.insumos_usados:
+            for pi in producto.insumos_usados:
+                if not pi.insumo:
+                    continue
+                necesaria = float(cantidad) * float(pi.cantidad)
+                if not hay_stock_suficiente(float(pi.insumo.stock_actual), necesaria):
+                    return False, f"Stock insuficiente de {pi.insumo.nombre}: quedan {float(pi.insumo.stock_actual)} {pi.insumo.unidad_medida}"
             return True, None
 
         if not hay_stock_suficiente(float(producto.stock_actual), cantidad):
@@ -39,23 +57,27 @@ class VentaService:
     @staticmethod
     def _aplicar_venta(producto, cantidad, trabajadora_id, venta_id):
         """
-        Descuenta el stock correspondiente. Si el producto tiene insumo asociado,
-        descuenta el insumo (ej. pulpa) y NO toca producto.stock_actual, porque ese
-        numero se deriva del insumo en Producto.to_dict(). Si no tiene insumo,
-        descuenta producto.stock_actual como siempre.
+        Descuenta el stock correspondiente. Si el producto tiene uno o varios
+        insumos asociados, descuenta cada uno según su propia cantidad (ej.
+        hamburguesa: 1 pan + 1 carne + 1 queso) y NO toca producto.stock_actual,
+        porque ese número se deriva de los insumos en Producto.to_dict(). Si no
+        tiene insumos, descuenta producto.stock_actual como siempre.
         """
-        if producto.insumo_id and producto.insumo:
-            insumo = producto.insumo
-            insumo.stock_actual = float(insumo.stock_actual) - float(cantidad)
+        if producto.insumos_usados:
+            for pi in producto.insumos_usados:
+                if not pi.insumo:
+                    continue
+                necesaria = float(cantidad) * float(pi.cantidad)
+                pi.insumo.stock_actual = float(pi.insumo.stock_actual) - necesaria
 
-            db.session.add(MovimientoInsumo(
-                insumo_id=insumo.id,
-                trabajadora_id=trabajadora_id,
-                venta_id=venta_id,
-                tipo="salida",
-                motivo="venta",
-                cantidad=cantidad,
-            ))
+                db.session.add(MovimientoInsumo(
+                    insumo_id=pi.insumo.id,
+                    trabajadora_id=trabajadora_id,
+                    venta_id=venta_id,
+                    tipo="salida",
+                    motivo="venta",
+                    cantidad=necesaria,
+                ))
             return
 
         producto.stock_actual = float(producto.stock_actual) - float(cantidad)
@@ -72,9 +94,9 @@ class VentaService:
     @staticmethod
     def _revertir_venta(venta):
         """
-        Revierte el efecto de una venta ya aplicada, sin importar si en su momento
-        descontó un insumo o el stock propio del producto - revisa que movimientos
-        quedaron ligados a esta venta y los deshace.
+        Revierte el efecto de una venta ya aplicada, sin importar si en su
+        momento descontó uno, varios insumos, o el stock propio del producto
+        - revisa qué movimientos quedaron ligados a esta venta y los deshace.
         """
         movimientos_insumo = MovimientoInsumo.query.filter_by(venta_id=venta.id, motivo="venta").all()
         for m in movimientos_insumo:
@@ -99,6 +121,11 @@ class VentaService:
         if not ok:
             return None, error
 
+        try:
+            fecha_personalizada = _resolver_fecha(data)
+        except ValueError:
+            return None, "Formato de fecha inválido, usa YYYY-MM-DD"
+
         total = float(producto.precio_unitario) * cantidad
 
         venta = Venta(
@@ -109,6 +136,9 @@ class VentaService:
             total=total,
             metodo_pago=data["metodo_pago"],
         )
+        if fecha_personalizada:
+            venta.fecha = fecha_personalizada
+
         db.session.add(venta)
         db.session.flush()
 
@@ -130,9 +160,9 @@ class VentaService:
         if not producto_nuevo:
             return None, "Producto no encontrado"
 
-        # revertimos el efecto de la venta original primero (insumo o producto,
-        # segun lo que haya quedado registrado), asi el stock queda "limpio"
-        # antes de validar y aplicar el nuevo producto/cantidad
+        # revertimos el efecto de la venta original primero (insumos o
+        # producto, según lo que haya quedado registrado), así el stock
+        # queda "limpio" antes de validar y aplicar el nuevo producto/cantidad
         VentaService._revertir_venta(venta)
 
         ok, error = VentaService._validar_stock(producto_nuevo, nueva_cantidad)
