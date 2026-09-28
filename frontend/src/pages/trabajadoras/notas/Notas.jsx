@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { StickyNote, Check, User, Clock3, Trash2, Send } from "lucide-react";
 import { listarNotas, crearNota, resolverNota, eliminarNota } from "../../../api/notas";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
+import { useAuth } from "../../../context/AuthContext";
 import "./Notas.css";
 
 const CLAVE_TRABAJADORA = "pa_venta_trabajadora"; // misma clave que usa RegistrarVenta
@@ -24,6 +25,9 @@ function leerTrabajadoraGuardada() {
 }
 
 export default function Notas() {
+  const { usuario } = useAuth();
+  const esJefe = usuario?.rol === "jefe";
+
   const [trabajadoras, setTrabajadoras] = useState([]);
   const [quienSoy, setQuienSoy] = useState(leerTrabajadoraGuardada);
 
@@ -41,6 +45,7 @@ export default function Notas() {
 
   useEffect(() => {
     cargarDatos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -54,7 +59,7 @@ export default function Notas() {
     setError(null);
     try {
       const [trabajadorasData, notasData] = await Promise.all([
-        listarTrabajadoras(),
+        esJefe ? Promise.resolve([]) : listarTrabajadoras(),
         listarNotas(),
       ]);
       setTrabajadoras(trabajadorasData);
@@ -80,7 +85,7 @@ export default function Notas() {
   }
 
   async function handleCrearNota() {
-    if (!quienSoy) {
+    if (!esJefe && !quienSoy) {
       setError("Selecciona quién eres antes de dejar una nota");
       return;
     }
@@ -92,10 +97,10 @@ export default function Notas() {
     setEnviando(true);
     setError(null);
     try {
-      await crearNota({
-        trabajadora_creadora_id: Number(quienSoy),
-        texto: textoNueva.trim(),
-      });
+      const payload = { texto: textoNueva.trim() };
+      if (!esJefe) payload.trabajadora_creadora_id = Number(quienSoy);
+
+      await crearNota(payload);
       setTextoNueva("");
       setMensaje("Nota dejada correctamente");
       cargarDatos();
@@ -107,7 +112,7 @@ export default function Notas() {
   }
 
   async function handleResolver(notaId) {
-    if (!quienSoy) {
+    if (!esJefe && !quienSoy) {
       setError("Selecciona quién eres antes de marcar una nota como realizada");
       return;
     }
@@ -115,7 +120,7 @@ export default function Notas() {
     setResolviendoId(notaId);
     setError(null);
     try {
-      await resolverNota(notaId, Number(quienSoy));
+      await resolverNota(notaId, esJefe ? null : Number(quienSoy));
       setMensaje("Nota marcada como realizada");
       cargarDatos();
     } catch (err) {
@@ -150,15 +155,19 @@ export default function Notas() {
         <p>Deja aviso de movimientos pendientes para quien tenga permiso de hacerlos</p>
       </header>
 
-      <label className="notas-label">¿Quién eres?</label>
-      <select value={quienSoy} onChange={(e) => elegirQuienSoy(e.target.value)}>
-        <option value="">Selecciona...</option>
-        {trabajadoras.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.nombre}
-          </option>
-        ))}
-      </select>
+      {!esJefe && (
+        <>
+          <label className="notas-label">¿Quién eres?</label>
+          <select value={quienSoy} onChange={(e) => elegirQuienSoy(e.target.value)}>
+            <option value="">Selecciona...</option>
+            {trabajadoras.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
 
       {mensaje && (
         <div className="notas-mensaje-exito">
@@ -225,7 +234,7 @@ export default function Notas() {
 
               <div className="notas-detalle">
                 <User size={12} />
-                <span>{n.trabajadora_creadora_nombre}</span>
+                <span>{n.creada_por_nombre}</span>
                 <span>·</span>
                 <Clock3 size={12} />
                 <span>{formatearFecha(n.creada_en)}</span>
@@ -234,7 +243,7 @@ export default function Notas() {
               {n.resuelta ? (
                 <div className="notas-resuelta-info">
                   <Check size={13} />
-                  Realizada por {n.trabajadora_resuelve_nombre} · {formatearFecha(n.resuelta_en)}
+                  Realizada por {n.resuelta_por_nombre} · {formatearFecha(n.resuelta_en)}
                 </div>
               ) : (
                 <div className="notas-acciones">

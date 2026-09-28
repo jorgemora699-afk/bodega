@@ -10,7 +10,7 @@ export async function crearNota(data) {
   return response.data;
 }
 
-export async function resolverNota(notaId, trabajadoraId) {
+export async function resolverNota(notaId, trabajadoraId = null) {
   const response = await apiClient.put(`/notas/${notaId}/resolver`, {
     trabajadora_id: trabajadoraId,
   });

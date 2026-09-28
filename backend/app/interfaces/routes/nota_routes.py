@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from app.application.nota_service import NotaService
 from app.interfaces.auth_helpers import exigir_rol
 
@@ -16,23 +17,28 @@ def listar_notas():
 
 
 @nota_bp.route("", methods=["POST"])
+@jwt_required()
 def crear_nota():
     data = request.get_json()
-    nota, error = NotaService.crear(data)
+    rol = get_jwt().get("rol")
+    usuario_id = int(get_jwt_identity())
+
+    nota, error = NotaService.crear(data, usuario_id, rol)
     if error:
         return jsonify({"error": error}), 400
     return jsonify(nota.to_dict()), 201
 
 
 @nota_bp.route("/<int:nota_id>/resolver", methods=["PUT"])
+@jwt_required()
 def resolver_nota(nota_id):
-    data = request.get_json()
-    trabajadora_id = data.get("trabajadora_id")
+    data = request.get_json() or {}
+    rol = get_jwt().get("rol")
+    usuario_id = int(get_jwt_identity())
 
-    if not trabajadora_id:
-        return jsonify({"error": "trabajadora_id es obligatorio"}), 400
-
-    nota, error = NotaService.marcar_resuelta(nota_id, trabajadora_id)
+    nota, error = NotaService.marcar_resuelta(
+        nota_id, usuario_id, rol, trabajadora_id=data.get("trabajadora_id")
+    )
     if error:
         status = 404 if error == "Nota no encontrada" else 400
         return jsonify({"error": error}), status

@@ -7,28 +7,30 @@ class NotaService:
 
     @staticmethod
     def listar_todas():
-        # pendientes primero (resuelta=False ordena antes), más recientes arriba dentro de cada grupo
         return Nota.query.order_by(Nota.resuelta.asc(), Nota.creada_en.desc()).all()
 
     @staticmethod
-    def crear(data):
-        trabajadora_id = data.get("trabajadora_creadora_id")
+    def crear(data, usuario_id, rol):
         texto = data.get("texto")
+        if not texto or not texto.strip():
+            return None, "El texto de la nota es obligatorio"
 
-        if not trabajadora_id or not texto or not texto.strip():
-            return None, "trabajadora_creadora_id y texto son obligatorios"
+        if rol == "jefe":
+            nota = Nota(texto=texto.strip(), creada_por_usuario_id=usuario_id)
+        else:
+            trabajadora_id = data.get("trabajadora_creadora_id")
+            if not trabajadora_id:
+                return None, "trabajadora_creadora_id es obligatorio"
+            if not Trabajadora.query.get(trabajadora_id):
+                return None, "Trabajadora no encontrada"
+            nota = Nota(texto=texto.strip(), trabajadora_creadora_id=trabajadora_id)
 
-        trabajadora = Trabajadora.query.get(trabajadora_id)
-        if not trabajadora:
-            return None, "Trabajadora no encontrada"
-
-        nota = Nota(texto=texto.strip(), trabajadora_creadora_id=trabajadora_id)
         db.session.add(nota)
         db.session.commit()
         return nota, None
 
     @staticmethod
-    def marcar_resuelta(nota_id, trabajadora_id):
+    def marcar_resuelta(nota_id, usuario_id, rol, trabajadora_id=None):
         nota = Nota.query.get(nota_id)
         if not nota:
             return None, "Nota no encontrada"
@@ -36,12 +38,16 @@ class NotaService:
         if nota.resuelta:
             return None, "Esta nota ya está marcada como realizada"
 
-        trabajadora = Trabajadora.query.get(trabajadora_id)
-        if not trabajadora:
-            return None, "Trabajadora no encontrada"
+        if rol == "jefe":
+            nota.resuelta_por_usuario_id = usuario_id
+        else:
+            if not trabajadora_id:
+                return None, "trabajadora_id es obligatorio"
+            if not Trabajadora.query.get(trabajadora_id):
+                return None, "Trabajadora no encontrada"
+            nota.trabajadora_resuelve_id = trabajadora_id
 
         nota.resuelta = True
-        nota.trabajadora_resuelve_id = trabajadora_id
         nota.resuelta_en = datetime.utcnow()
         db.session.commit()
         return nota, None

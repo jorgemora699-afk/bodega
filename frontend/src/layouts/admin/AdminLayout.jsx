@@ -17,10 +17,12 @@ import {
   Wheat,
   UserCircle,
   CreditCard,
+  StickyNote
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
 import "./AdminLayout.css";
+import { listarNotas } from "../../api/notas";
 
 const LINKS = [
   {
@@ -85,6 +87,11 @@ const LINKS = [
     Icon: ChefHat,
   },
   {
+    to: "/admin/notas",
+    label: "Notas",
+    Icon: StickyNote,
+  },
+  {
     to: "/admin/mi-cuenta",
     label: "Mi cuenta",
     Icon: UserCircle,
@@ -97,6 +104,27 @@ export default function AdminLayout() {
 
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
+
+  const location = useLocation();
+  const [notasPendientes, setNotasPendientes] = useState(0);
+
+  useEffect(() => {
+    if (!usuario || usuario.rol !== "jefe") return undefined;
+
+    async function cargarContador() {
+      try {
+        const notas = await listarNotas();
+        setNotasPendientes(notas.filter((n) => !n.resuelta).length);
+      } catch (err) {
+        /* si falla, no se muestra el número */
+      }
+    }
+
+    cargarContador();
+    const intervalo = setInterval(cargarContador, 30000);
+    return () => clearInterval(intervalo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, usuario?.rol]);
 
   if (!usuario) {
     return <Navigate to="/login" replace />;
@@ -170,6 +198,11 @@ export default function AdminLayout() {
                 <span className="admin-nav-label">
                   {label}
                 </span>
+                {to === "/admin/notas" && notasPendientes > 0 && (
+                  <span className="admin-nav-badge">
+                    {notasPendientes > 9 ? "9+" : notasPendientes}
+                  </span>
+                )}
               </NavLink>
             ))}
           </div>
