@@ -86,6 +86,6 @@ def verificar_codigo(trabajadora_id):
 
     valido, error = TrabajadoraService.verificar_codigo(trabajadora_id, codigo)
     if not valido:
-        return jsonify({"error": error}), 401
+        return jsonify({"error": error}), 400
 
     return jsonify({"valido": True}), 200
