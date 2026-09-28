@@ -426,113 +426,179 @@ export default function Clientes() {
       <Sheet
         open={precioSheetAbierto}
         onOpenChange={cerrarPrecioSheet}
-        title={`Precios especiales — ${clienteParaPrecios?.nombre || ""}`}
+        title="Precios especiales"
       >
-        <div className="cli-form">
+        <div className="cli-precios-panel">
           {errorPrecio && <div className="cli-mensaje-error">{errorPrecio}</div>}
 
-          <p className="cli-nota-precios">
-            Estos precios solo aplican cuando eliges a <strong>{clienteParaPrecios?.nombre}</strong> como
-            cliente al registrar una venta. El stock sigue siendo el mismo producto — no se duplica nada.
-          </p>
+          <div className="cli-precios-cliente-header">
+            <span className="cli-icono">
+              {clienteParaPrecios?.tipo === "juridica" ? (
+                <Building2 size={16} />
+              ) : (
+                <User size={16} />
+              )}
+            </span>
+            <div>
+              <strong>{clienteParaPrecios?.nombre}</strong>
+              <span className="cli-precios-cliente-sub">
+                Estos precios solo aplican al vender a este cliente. El stock sigue siendo el mismo producto.
+              </span>
+            </div>
+          </div>
 
-          <label>Agregar precio especial</label>
-          <div className="cli-precio-combo">
-            <input
-              type="text"
-              placeholder="Buscar producto..."
-              value={productoElegido ? productoElegido.nombre : busquedaProducto}
-              onChange={(e) => {
-                setBusquedaProducto(e.target.value);
-                setProductoElegido(null);
-              }}
-              onFocus={() => setSugerenciasAbiertas(true)}
-              onBlur={() => setTimeout(() => setSugerenciasAbiertas(false), 150)}
-              autoComplete="off"
-            />
+          {/* ---------- Agregar nuevo ---------- */}
 
-            {sugerenciasAbiertas && !productoElegido && (
-              <div className="cli-precio-sugerencias">
-                {productosSugeridos.map((p) => (
-                  <button
-                    type="button"
-                    key={p.id}
-                    className="cli-precio-sugerencia"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setProductoElegido(p);
-                      setSugerenciasAbiertas(false);
-                    }}
-                  >
-                    <span>{p.nombre}</span>
-                    <span className="cli-precio-sugerencia-normal">
-                      {formatearMoneda(p.precio_unitario)}
-                    </span>
-                  </button>
-                ))}
-                {productosSugeridos.length === 0 && (
-                  <p className="cli-precio-sin-resultados">Ningún producto disponible</p>
-                )}
-              </div>
-            )}
+          <div className="cli-precios-seccion">
+            <p className="cli-precios-seccion-titulo">Agregar precio especial</p>
+
+            <div className="cli-precio-combo">
+              <Search size={15} className="cli-precio-combo-icono" />
+              <input
+                type="text"
+                placeholder="Buscar producto por nombre..."
+                value={productoElegido ? productoElegido.nombre : busquedaProducto}
+                onChange={(e) => {
+                  setBusquedaProducto(e.target.value);
+                  setProductoElegido(null);
+                }}
+                onFocus={() => setSugerenciasAbiertas(true)}
+                onBlur={() => setTimeout(() => setSugerenciasAbiertas(false), 150)}
+                autoComplete="off"
+              />
+
+              {productoElegido && (
+                <button
+                  type="button"
+                  className="cli-precio-quitar-seleccion"
+                  onClick={() => setProductoElegido(null)}
+                  aria-label="Quitar selección"
+                >
+                  <X size={14} />
+                </button>
+              )}
+
+              {sugerenciasAbiertas && !productoElegido && (
+                <div className="cli-precio-sugerencias">
+                  {productosSugeridos.length > 0 ? (
+                    productosSugeridos.map((p) => (
+                      <button
+                        type="button"
+                        key={p.id}
+                        className="cli-precio-sugerencia"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setProductoElegido(p);
+                          setSugerenciasAbiertas(false);
+                        }}
+                      >
+                        <span className="cli-precio-sugerencia-nombre">{p.nombre}</span>
+                        <span className="cli-precio-sugerencia-normal">
+                          {formatearMoneda(p.precio_unitario)}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="cli-precio-sin-resultados">
+                      {busquedaProducto
+                        ? "Ningún producto coincide"
+                        : "Todos los productos ya tienen precio especial"}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             {productoElegido && (
-              <button
-                type="button"
-                className="cli-precio-quitar-seleccion"
-                onClick={() => setProductoElegido(null)}
-                aria-label="Quitar selección"
-              >
-                <X size={14} />
-              </button>
+              <div className="cli-precio-nuevo-card">
+                <div className="cli-precio-nuevo-info">
+                  <span className="cli-precio-nuevo-nombre">{productoElegido.nombre}</span>
+                  <span className="cli-precio-nuevo-normal">
+                    Precio normal: {formatearMoneda(productoElegido.precio_unitario)}
+                  </span>
+                </div>
+
+                <label className="cli-precios-label-inline">Precio especial</label>
+                <CampoMoneda value={precioNuevo} onChange={setPrecioNuevo} />
+
+                {precioNuevo > 0 && (
+                  <span className="cli-precio-preview-descuento">
+                    {Math.round(
+                      (1 - Number(precioNuevo) / Number(productoElegido.precio_unitario)) * 100
+                    )}
+                    % menos que el precio normal
+                  </span>
+                )}
+
+                <button
+                  type="button"
+                  className="cli-btn-primario cli-precio-btn-agregar"
+                  onClick={handleAgregarPrecio}
+                  disabled={guardandoPrecio}
+                >
+                  {guardandoPrecio ? "Guardando..." : "Agregar precio especial"}
+                </button>
+              </div>
             )}
           </div>
 
-          {productoElegido && (
-            <>
-              <label>Precio especial para "{productoElegido.nombre}" (normal: {formatearMoneda(productoElegido.precio_unitario)})</label>
-              <CampoMoneda value={precioNuevo} onChange={setPrecioNuevo} />
+          {/* ---------- Ya configurados ---------- */}
 
-              <button
-                type="button"
-                className="cli-btn-primario"
-                onClick={handleAgregarPrecio}
-                disabled={guardandoPrecio}
-              >
-                {guardandoPrecio ? "Guardando..." : "Agregar precio especial"}
-              </button>
-            </>
-          )}
+          <div className="cli-precios-seccion">
+            <p className="cli-precios-seccion-titulo">
+              Configurados
+              {preciosEspeciales.length > 0 && (
+                <span className="cli-precios-contador">{preciosEspeciales.length}</span>
+              )}
+            </p>
 
-          <div className="cli-precios-lista">
-            <p className="cli-precios-lista-titulo">Precios especiales configurados</p>
-
-            {cargandoPrecios && <p className="cli-sin-datos">Cargando...</p>}
-
-            {!cargandoPrecios && preciosEspeciales.length === 0 && (
-              <p className="cli-sin-datos">Este cliente no tiene precios especiales todavía</p>
+            {cargandoPrecios && (
+              <div className="cli-precios-skeleton">
+                <div className="cli-sk-fila" />
+                <div className="cli-sk-fila" />
+              </div>
             )}
 
-            {!cargandoPrecios &&
-              preciosEspeciales.map((pe) => (
-                <div key={pe.id} className="cli-precio-fila">
-                  <div>
-                    <span className="cli-precio-producto">{pe.producto_nombre}</span>
-                    <span className="cli-precio-normal-tachado">
-                      Normal: {formatearMoneda(pe.precio_normal)}
-                    </span>
-                  </div>
-                  <span className="cli-precio-valor">{formatearMoneda(pe.precio)}</span>
-                  <button
-                    type="button"
-                    className="cli-precio-eliminar"
-                    onClick={() => handleEliminarPrecio(pe.id)}
-                    aria-label="Eliminar precio especial"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
+            {!cargandoPrecios && preciosEspeciales.length === 0 && (
+              <div className="cli-precios-vacio">
+                <Tag size={22} />
+                <p>Este cliente no tiene precios especiales todavía</p>
+              </div>
+            )}
+
+            {!cargandoPrecios && preciosEspeciales.length > 0 && (
+              <div className="cli-precios-lista">
+                {preciosEspeciales.map((pe) => {
+                  const descuento = Math.round((1 - pe.precio / pe.precio_normal) * 100);
+                  return (
+                    <div key={pe.id} className="cli-precio-fila">
+                      <div className="cli-precio-fila-info">
+                        <span className="cli-precio-producto">{pe.producto_nombre}</span>
+                        <span className="cli-precio-normal-tachado">
+                          {formatearMoneda(pe.precio_normal)}
+                        </span>
+                      </div>
+
+                      <div className="cli-precio-fila-derecha">
+                        <span className="cli-precio-valor">{formatearMoneda(pe.precio)}</span>
+                        {descuento > 0 && (
+                          <span className="cli-precio-badge-descuento">-{descuento}%</span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="cli-precio-eliminar"
+                        onClick={() => handleEliminarPrecio(pe.id)}
+                        aria-label="Eliminar precio especial"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </Sheet>

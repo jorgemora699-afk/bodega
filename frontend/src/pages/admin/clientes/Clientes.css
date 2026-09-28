@@ -414,3 +414,312 @@
   color: var(--color-danger);
   cursor: pointer;
 }
+
+/* =========================
+   SHEET DE PRECIOS ESPECIALES
+   ========================= */
+
+.cli-precios-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.cli-precios-cliente-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+}
+
+.cli-precios-cliente-header strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.15rem;
+}
+
+.cli-precios-cliente-sub {
+  font-size: 0.76rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.cli-precios-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cli-precios-seccion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.cli-precios-contador {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 20px;
+}
+
+/* Combo de búsqueda */
+
+.cli-precio-combo {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cli-precio-combo-icono {
+  position: absolute;
+  left: 0.7rem;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.cli-precio-combo input {
+  width: 100%;
+  padding: 0.6rem 2rem 0.6rem 2.1rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.87rem;
+}
+
+.cli-precio-combo input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.cli-precio-quitar-seleccion {
+  position: absolute;
+  right: 0.4rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.3rem;
+}
+
+.cli-precio-sugerencias {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.4rem;
+}
+
+.cli-precio-sugerencia {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.7rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.cli-precio-sugerencia:hover {
+  background: var(--color-bg);
+}
+
+.cli-precio-sugerencia-nombre {
+  font-weight: 600;
+}
+
+.cli-precio-sugerencia-normal {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cli-precio-sin-resultados {
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* Tarjeta del producto elegido para agregar precio */
+
+.cli-precio-nuevo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.9rem;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-brand-tint);
+}
+
+.cli-precio-nuevo-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.cli-precio-nuevo-nombre {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.cli-precio-nuevo-normal {
+  font-size: 0.78rem;
+  color: var(--color-brand-dark);
+}
+
+.cli-precios-label-inline {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.cli-precio-preview-descuento {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1B6A5C;
+}
+
+.cli-precio-btn-agregar {
+  margin-top: 0.2rem;
+}
+
+/* Skeleton mientras carga */
+
+.cli-precios-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cli-sk-fila {
+  height: 52px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--color-bg) 25%, var(--color-border) 50%, var(--color-bg) 75%);
+  background-size: 200% 100%;
+  animation: cli-shimmer 1.3s linear infinite;
+}
+
+@keyframes cli-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* Estado vacío de precios */
+
+.cli-precios-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.75rem 1rem;
+  color: var(--color-text-secondary);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.cli-precios-vacio p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+/* Lista de precios configurados */
+
+.cli-precios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cli-precio-fila {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.cli-precio-fila-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cli-precio-producto {
+  font-weight: 700;
+  font-size: 0.87rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cli-precio-normal-tachado {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-decoration: line-through;
+}
+
+.cli-precio-fila-derecha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
+
+.cli-precio-valor {
+  font-weight: 800;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.cli-precio-badge-descuento {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.05rem 0.4rem;
+  border-radius: 20px;
+  background: #DCEFE9;
+  color: #1B6A5C;
+  white-space: nowrap;
+}
+
+.cli-precio-eliminar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.cli-precio-eliminar:hover {
+  background: var(--color-danger-tint);
+}
