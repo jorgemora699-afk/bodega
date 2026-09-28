@@ -314,18 +314,12 @@
 }
 
 .cli-precio-sugerencias {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 20;
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,0.12));
-  max-height: 200px;
+  position: static;   /* NUEVO — anula el position:absolute de la regla vieja de arriba en el archivo */
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 260px;
   overflow-y: auto;
-  padding: 0.3rem;
 }
 
 .cli-precio-sugerencia {
@@ -529,6 +523,11 @@
 /* Panel desplegable: categorías + resultados */
 
 .cli-precio-panel-busqueda {
+  position: absolute;      /* NUEVO */
+  top: calc(100% + 8px);   /* NUEVO */
+  left: 0;                 /* NUEVO */
+  right: 0;                /* NUEVO */
+  z-index: 20;             /* NUEVO */
   display: flex;
   flex-direction: column;
   gap: 0.7rem;

@@ -48,6 +48,7 @@ export default function Clientes() {
   const [clienteParaPrecios, setClienteParaPrecios] = useState(null);
   const [preciosEspeciales, setPreciosEspeciales] = useState([]);
   const [cargandoPrecios, setCargandoPrecios] = useState(false);
+  const [categoriaFiltroPrecio, setCategoriaFiltroPrecio] = useState("");
 
   const [busquedaProducto, setBusquedaProducto] = useState("");
   const [sugerenciasAbiertas, setSugerenciasAbiertas] = useState(false);
@@ -161,6 +162,7 @@ export default function Clientes() {
     setClienteParaPrecios(cliente);
     setPrecioSheetAbierto(true);
     setBusquedaProducto("");
+    setCategoriaFiltroPrecio("");
     setProductoElegido(null);
     setPrecioNuevo("");
     setErrorPrecio(null);
@@ -229,10 +231,13 @@ export default function Clientes() {
       c.documento.toLowerCase().includes(busqueda.toLowerCase())
   );
 
+  const categoriasDisponibles = [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort();
+
   const productosSugeridos = productos
     .filter((p) => p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase()))
+    .filter((p) => !categoriaFiltroPrecio || p.categoria === categoriaFiltroPrecio)
     .filter((p) => !preciosEspeciales.some((pe) => pe.producto_id === p.id))
-    .slice(0, 8);
+    .slice(0, 30);
 
   return (
     <div className="cli-container">
@@ -432,11 +437,11 @@ export default function Clientes() {
           {errorPrecio && <div className="cli-mensaje-error">{errorPrecio}</div>}
 
           <div className="cli-precios-cliente-header">
-            <span className="cli-icono">
+            <span className="cli-icono cli-icono-grande">
               {clienteParaPrecios?.tipo === "juridica" ? (
-                <Building2 size={16} />
+                <Building2 size={20} />
               ) : (
-                <User size={16} />
+                <User size={20} />
               )}
             </span>
             <div>
@@ -479,32 +484,58 @@ export default function Clientes() {
               )}
 
               {sugerenciasAbiertas && !productoElegido && (
-                <div className="cli-precio-sugerencias">
-                  {productosSugeridos.length > 0 ? (
-                    productosSugeridos.map((p) => (
+                <div className="cli-precio-panel-busqueda">
+                  {categoriasDisponibles.length > 0 && (
+                    <div className="cli-precio-categorias">
                       <button
                         type="button"
-                        key={p.id}
-                        className="cli-precio-sugerencia"
+                        className={`cli-precio-chip ${categoriaFiltroPrecio === "" ? "activo" : ""}`}
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          setProductoElegido(p);
-                          setSugerenciasAbiertas(false);
-                        }}
+                        onClick={() => setCategoriaFiltroPrecio("")}
                       >
-                        <span className="cli-precio-sugerencia-nombre">{p.nombre}</span>
-                        <span className="cli-precio-sugerencia-normal">
-                          {formatearMoneda(p.precio_unitario)}
-                        </span>
+                        Todas
                       </button>
-                    ))
-                  ) : (
-                    <p className="cli-precio-sin-resultados">
-                      {busquedaProducto
-                        ? "Ningún producto coincide"
-                        : "Todos los productos ya tienen precio especial"}
-                    </p>
+                      {categoriasDisponibles.map((c) => (
+                        <button
+                          type="button"
+                          key={c}
+                          className={`cli-precio-chip ${categoriaFiltroPrecio === c ? "activo" : ""}`}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => setCategoriaFiltroPrecio(c)}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
                   )}
+
+                  <div className="cli-precio-sugerencias">
+                    {productosSugeridos.length > 0 ? (
+                      productosSugeridos.map((p) => (
+                        <button
+                          type="button"
+                          key={p.id}
+                          className="cli-precio-sugerencia"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setProductoElegido(p);
+                            setSugerenciasAbiertas(false);
+                          }}
+                        >
+                          <span className="cli-precio-sugerencia-nombre">{p.nombre}</span>
+                          <span className="cli-precio-sugerencia-normal">
+                            {formatearMoneda(p.precio_unitario)}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="cli-precio-sin-resultados">
+                        {busquedaProducto || categoriaFiltroPrecio
+                          ? "Ningún producto coincide"
+                          : "Todos los productos ya tienen precio especial"}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -568,10 +599,14 @@ export default function Clientes() {
 
             {!cargandoPrecios && preciosEspeciales.length > 0 && (
               <div className="cli-precios-lista">
-                {preciosEspeciales.map((pe) => {
+                {preciosEspeciales.map((pe, index) => {
                   const descuento = Math.round((1 - pe.precio / pe.precio_normal) * 100);
                   return (
-                    <div key={pe.id} className="cli-precio-fila">
+                    <div
+                      key={pe.id}
+                      className="cli-precio-fila"
+                      style={{ animationDelay: `${index * 40}ms` }}
+                    >
                       <div className="cli-precio-fila-info">
                         <span className="cli-precio-producto">{pe.producto_nombre}</span>
                         <span className="cli-precio-normal-tachado">
