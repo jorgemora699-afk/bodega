@@ -604,11 +604,25 @@ export default function Salarios() {
     if (hora_entrada && hora_salida) {
       const [he, me] = hora_entrada.split(":").map(Number);
       const [hs, ms] = hora_salida.split(":").map(Number);
-      const minutos = hs * 60 + ms - (he * 60 + me);
+      const minutos =
+        hs * 60 +
+        ms -
+        (he * 60 + me);
+
+      // Si la salida es menor que la entrada,
+      // asumimos que terminó después de medianoche.
+      const minutosTurno =
+        minutos < 0
+          ? minutos + 24 * 60
+          : minutos;
 
       let mensaje = null;
-      if (minutos <= 0) mensaje = "La salida es anterior o igual a la entrada.";
-      else if (minutos > 12 * 60) mensaje = "Este turno dura más de 12 horas.";
+
+      if (minutos === 0) {
+        mensaje = "La salida no puede ser igual a la entrada.";
+      } else if (minutosTurno > 12 * 60) {
+        mensaje = "Este turno dura más de 12 horas.";
+      }
 
       if (mensaje && advertenciaTurno !== mensaje) {
         setAdvertenciaTurno(mensaje);
