@@ -79,10 +79,28 @@ def stock_producto():
     if not nombre_buscado:
         return jsonify({"error": "Falta el parámetro 'producto'"}), 400
 
+    # Buscar por cada palabra del producto.
+    # Ejemplo:
+    # "empanada desmechada"
+    # encontrará "Paquete de empanadas cocteleras Desmechada"
+
+    palabras = [
+        palabra
+        for palabra in nombre_buscado.split()
+        if len(palabra) > 2
+    ]
+
+    consulta = Producto.query.filter(
+        Producto.activo == True  # noqa: E712
+    )
+
+    for palabra in palabras:
+        consulta = consulta.filter(
+            Producto.nombre.ilike(f"%{palabra}%")
+        )
+
     productos = (
-        Producto.query
-        .filter(Producto.activo == True)  # noqa: E712
-        .filter(Producto.nombre.ilike(f"%{nombre_buscado}%"))
+        consulta
         .order_by(Producto.nombre)
         .limit(5)
         .all()
