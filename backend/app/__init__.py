@@ -35,6 +35,7 @@ def create_app():
     from app.interfaces.routes.insumo_routes import insumo_bp
     from app.interfaces.routes.cliente_routes import cliente_bp
     from app.interfaces.routes.nota_routes import nota_bp
+    from app.interfaces.routes.alexa_bp import alexa_bp
 
     app.register_blueprint(producto_bp)
     app.register_blueprint(trabajadora_bp)
@@ -50,5 +51,6 @@ def create_app():
     app.register_blueprint(insumo_bp)
     app.register_blueprint(cliente_bp)
     app.register_blueprint(nota_bp)
+    app.register_blueprint(alexa_bp)
 
     return app
