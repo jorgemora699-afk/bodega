@@ -70,6 +70,26 @@ def ventas_hoy():
         "total": total,
     }), 200
 
+@alexa_bp.route("/bajo-stock", methods=["GET"])
+@exigir_api_key
+def productos_bajo_stock():
+    productos = Producto.query.filter(
+        Producto.activo == True,
+        Producto.stock_actual <= Producto.stock_minimo
+    ).order_by(Producto.nombre).all()
+
+    return jsonify({
+        "productos": [
+            {
+                "id": p.id,
+                "nombre": p.nombre,
+                "stock_actual": float(p.to_dict()["stock_actual"]),
+                "stock_minimo": float(p.stock_minimo),
+            }
+            for p in productos
+        ]
+    }), 200
+
 
 @alexa_bp.route("/stock", methods=["GET"])
 @exigir_api_key
