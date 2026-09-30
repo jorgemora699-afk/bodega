@@ -239,6 +239,22 @@ export default function RegistrarVenta() {
     cargarDatos();
   }, []);
 
+  /* Oculta el topbar y la tab bar del layout mientras el selector de sabores
+     está abierto — evita que la barra inferior (z-index más alto que el
+     overlay) tape las opciones de sabor, y además da más espacio en pantalla
+     para elegir con calma. Se limpia siempre al desmontar, por seguridad. */
+  useEffect(() => {
+    if (selectorPaquete) {
+      document.body.classList.add("venta-selector-abierto");
+    } else {
+      document.body.classList.remove("venta-selector-abierto");
+    }
+
+    return () => {
+      document.body.classList.remove("venta-selector-abierto");
+    };
+  }, [selectorPaquete]);
+
   /* Guardar el carrito para que sobreviva a una recarga */
   useEffect(() => {
     try {

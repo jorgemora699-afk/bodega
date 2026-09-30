@@ -1481,6 +1481,9 @@
   color: var(--color-text-secondary);
 }
 
+/* El z-index sube por encima de .trab-tabbar (200) para que el selector
+   nunca quede tapado por la barra inferior del layout, incluso si en algún
+   momento no se aplica la clase que oculta el layout por completo. */
 .venta-selector-overlay {
   position: fixed;
   inset: 0;
@@ -1488,7 +1491,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .venta-selector-panel {

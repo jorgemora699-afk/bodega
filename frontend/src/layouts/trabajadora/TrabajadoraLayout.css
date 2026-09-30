@@ -507,3 +507,16 @@
   line-height: 1;
   border: 1.5px solid var(--color-surface, white);
 }
+
+/* =========================================================
+   OCULTAR TOPBAR/TABBAR CUANDO EL SELECTOR DE SABORES ESTÁ ABIERTO
+
+   La clase la agrega RegistrarVenta.jsx sobre el <body> mientras el
+   overlay del selector de paquetes mixtos está visible (ver el useEffect
+   que hace document.body.classList.add("venta-selector-abierto")).
+   ========================================================= */
+
+body.venta-selector-abierto .trab-topbar,
+body.venta-selector-abierto .trab-tabbar {
+  display: none;
+}
