@@ -533,10 +533,13 @@ export default function Productos() {
 
           {form.requiere_seleccion && (
             <div className="prodad-seleccion-config">
-              <p className="prodad-nota-stock" style={{ marginTop: 0 }}>
-                Ej: "Paquete de empanadas mixta" — la trabajadora elige los
-                sabores en el momento de la venta, en vez de tener stock propio.
-              </p>
+              <div className="prodad-info-box">
+                <Shuffle size={14} />
+                <p>
+                  Ej: "Paquete de empanadas mixta" — la trabajadora elige los sabores en
+                  el momento de la venta, en vez de tener stock propio.
+                </p>
+              </div>
 
               <label>Categoría de la que se eligen los sabores</label>
               <div className="prodad-categoria-combo">
@@ -578,30 +581,43 @@ export default function Productos() {
                 )}
               </div>
 
-              <label>Cantidad de sabores a elegir</label>
-              <input
-                type="number"
-                min="2"
-                step="1"
-                value={form.cantidad_seleccion}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, cantidad_seleccion: e.target.value }))
-                }
-              />
-               <label>Unidades de cada sabor por paquete</label>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={form.cantidad_por_seleccion}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, cantidad_por_seleccion: e.target.value }))
-                }
-              />
-              <p className="prodad-nota-stock" style={{ marginTop: 0 }}>
-                Ej: si el paquete es de 12 unidades repartidas en 2 sabores, aquí va 6
-                (se descuentan 6 unidades de cada sabor elegido por cada paquete vendido).
-              </p>
+              <div className="prodad-seleccion-cantidades">
+                <div className="prodad-seleccion-campo">
+                  <label>Sabores a elegir</label>
+                  <input
+                    type="number"
+                    min="2"
+                    step="1"
+                    value={form.cantidad_seleccion}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, cantidad_seleccion: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="prodad-seleccion-campo">
+                  <label>Unidades por sabor</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={form.cantidad_por_seleccion}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, cantidad_por_seleccion: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+
+              {Number(form.cantidad_seleccion) > 0 && Number(form.cantidad_por_seleccion) > 0 && (
+                <div className="prodad-seleccion-total">
+                  Total del paquete:{" "}
+                  <strong>
+                    {Number(form.cantidad_seleccion) * Number(form.cantidad_por_seleccion)} unidades
+                  </strong>{" "}
+                  ({form.cantidad_seleccion} sabores × {form.cantidad_por_seleccion} c/u)
+                </div>
+              )}
             </div>
           )}
 
