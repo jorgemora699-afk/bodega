@@ -44,6 +44,21 @@ const CLIENTE_VACIO = {
 };
 
 /* =========================
+   CARRITO — clave de línea
+
+   Un producto normal se identifica solo por su id. Un paquete "mixto" (ej.
+   Paquete de empanadas mixta) puede tener varias líneas con el mismo
+   producto_id pero sabores distintos (Pollo+Carne vs Pollo+Queso son líneas
+   separadas), así que su clave incluye también la selección, ordenada para
+   que el orden en que se eligieron los sabores no importe.
+   ========================= */
+
+function claveCarrito(productoId, seleccion) {
+  if (!seleccion || seleccion.length === 0) return String(productoId);
+  return `${productoId}:${[...seleccion].sort((a, b) => a - b).join("-")}`;
+}
+
+/* =========================
    FECHA (yyyy-mm-dd local, para el input type="date")
    ========================= */
 
@@ -216,6 +231,10 @@ export default function RegistrarVenta() {
   const [reciboEfectivo, setReciboEfectivo] = useState(null);
   const [preciosEspeciales, setPreciosEspeciales] = useState({});
 
+  /* Selector de sabores para paquetes "mixtos" (ej. Paquete de empanadas mixta) */
+  const [selectorPaquete, setSelectorPaquete] = useState(null);
+  const [seleccionActual, setSeleccionActual] = useState([]);
+
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -244,6 +263,21 @@ export default function RegistrarVenta() {
         const p = productos.find((x) => x.id === item.producto_id);
         if (!p) return acc;
 
+        if (p.requiere_seleccion) {
+          // El stock real de un paquete mixto lo determinan los sabores
+          // elegidos, no el producto en sí; se conserva la línea tal cual
+          // (el backend valida el stock real de cada sabor al confirmar).
+          acc.push({
+            ...p,
+            producto_id: p.id,
+            cantidad: item.cantidad,
+            clave: item.clave,
+            seleccion: item.seleccion,
+            seleccion_nombres: item.seleccion_nombres,
+          });
+          return acc;
+        }
+
         const stock = Number(p.stock_actual);
         if (stock <= 0) return acc;
 
@@ -251,6 +285,7 @@ export default function RegistrarVenta() {
           ...p,
           producto_id: p.id,
           cantidad: Math.min(item.cantidad, stock),
+          clave: item.clave,
         });
 
         return acc;
@@ -355,23 +390,35 @@ export default function RegistrarVenta() {
     return carrito.find((i) => i.producto_id === productoId)?.cantidad || 0;
   }
 
-  function agregarAlCarrito(producto) {
-    if (Number(producto.stock_actual) <= 0) {
+  /* Total en el carrito de un producto "mixto", sumando todas sus
+     combinaciones de sabores (para el contador en la tarjeta del catálogo) */
+  function totalEnCarritoMixto(productoId) {
+    return carrito
+      .filter((i) => i.producto_id === productoId)
+      .reduce((sum, i) => sum + i.cantidad, 0);
+  }
+
+  function agregarAlCarrito(producto, seleccion = null) {
+    if (!producto.requiere_seleccion && Number(producto.stock_actual) <= 0) {
       return;
     }
 
+    const clave = claveCarrito(producto.id, seleccion);
+    const seleccionNombres = seleccion
+      ? seleccion.map((id) => productos.find((p) => p.id === id)?.nombre || "")
+      : undefined;
+
     setCarrito((actual) => {
-      const existente = actual.find(
-        (item) => item.producto_id === producto.id
-      );
+      const existente = actual.find((item) => item.clave === clave);
+      const max = producto.requiere_seleccion ? 9999 : Number(producto.stock_actual);
 
       if (existente) {
-        if (existente.cantidad >= Number(producto.stock_actual)) {
+        if (existente.cantidad >= max) {
           return actual;
         }
 
         return actual.map((item) =>
-          item.producto_id === producto.id
+          item.clave === clave
             ? { ...item, cantidad: item.cantidad + 1 }
             : item
         );
@@ -383,31 +430,35 @@ export default function RegistrarVenta() {
           ...producto,
           producto_id: producto.id,
           cantidad: 1,
+          clave,
+          seleccion: seleccion || undefined,
+          seleccion_nombres: seleccionNombres,
         },
       ];
     });
   }
 
-  /* Resta una unidad desde la tarjeta; si llega a 0, lo quita */
-  function restarDelCarrito(productoId) {
+  /* Resta una unidad desde la tarjeta o el carrito; si llega a 0, la quita */
+  function restarDelCarrito(clave) {
     setCarrito((actual) =>
       actual.flatMap((item) => {
-        if (item.producto_id !== productoId) return [item];
+        if (item.clave !== clave) return [item];
         if (item.cantidad <= 1) return [];
         return [{ ...item, cantidad: item.cantidad - 1 }];
       })
     );
   }
 
-  function ajustarCantidadCarrito(id, delta) {
+  function ajustarCantidadCarrito(clave, delta) {
     setCarrito((actual) =>
       actual.map((item) => {
-        if (item.producto_id !== id) return item;
+        if (item.clave !== clave) return item;
 
         const nuevaCantidad = item.cantidad + delta;
+        const max = item.requiere_seleccion ? 9999 : Number(item.stock_actual);
 
         if (nuevaCantidad < 1) return item;
-        if (nuevaCantidad > Number(item.stock_actual)) return item;
+        if (nuevaCantidad > max) return item;
 
         return {
           ...item,
@@ -418,12 +469,12 @@ export default function RegistrarVenta() {
   }
 
   /* Fija una cantidad exacta (cuando la escriben con el teclado) */
-  function establecerCantidad(productoId, cantidad) {
+  function establecerCantidad(clave, cantidad) {
     setCarrito((actual) =>
       actual.map((item) => {
-        if (item.producto_id !== productoId) return item;
+        if (item.clave !== clave) return item;
 
-        const max = Number(item.stock_actual);
+        const max = item.requiere_seleccion ? 9999 : Number(item.stock_actual);
         const nueva = Math.max(1, Math.min(cantidad, max));
 
         return { ...item, cantidad: nueva };
@@ -465,10 +516,8 @@ export default function RegistrarVenta() {
     return preciosEspeciales[idProducto] != null;
   }
 
-  function quitarDelCarrito(productoId) {
-    setCarrito((prev) =>
-      prev.filter((i) => i.producto_id !== productoId)
-    );
+  function quitarDelCarrito(clave) {
+    setCarrito((prev) => prev.filter((i) => i.clave !== clave));
   }
 
   function irAlCarrito() {
@@ -578,6 +627,47 @@ export default function RegistrarVenta() {
     }
   }
 
+  /* ---------- Paquetes "mixtos" (ej. Paquete de empanadas mixta) ---------- */
+
+  function abrirSelectorPaquete(producto) {
+    setSelectorPaquete(producto);
+    setSeleccionActual([]);
+  }
+
+  function cerrarSelectorPaquete() {
+    setSelectorPaquete(null);
+    setSeleccionActual([]);
+  }
+
+  function alternarSaborSeleccionado(id) {
+    setSeleccionActual((actual) => {
+      if (actual.includes(id)) {
+        return actual.filter((x) => x !== id);
+      }
+      if (actual.length >= (selectorPaquete?.cantidad_seleccion || 0)) {
+        return actual;
+      }
+      return [...actual, id];
+    });
+  }
+
+  function confirmarSelectorPaquete() {
+    if (!selectorPaquete) return;
+    if (seleccionActual.length !== selectorPaquete.cantidad_seleccion) return;
+
+    agregarAlCarrito(selectorPaquete, seleccionActual);
+    cerrarSelectorPaquete();
+  }
+
+  const saboresDisponibles = selectorPaquete
+    ? productos.filter(
+        (p) =>
+          p.categoria === selectorPaquete.categoria_seleccion &&
+          p.activo !== false &&
+          Number(p.stock_actual) > 0
+      )
+    : [];
+
   /* ---------- Confirmar / enviar ---------- */
 
   function irAConfirmar() {
@@ -625,6 +715,7 @@ export default function RegistrarVenta() {
         items: carrito.map((i) => ({
           producto_id: i.producto_id,
           cantidad: i.cantidad,
+          ...(i.seleccion ? { seleccion: i.seleccion } : {}),
         })),
       });
 
@@ -823,23 +914,31 @@ export default function RegistrarVenta() {
               );
 
               const agotado =
+                !producto.requiere_seleccion &&
                 Number(producto.stock_actual) <= 0;
 
               const enCarrito =
                 cantidadEnCarrito(producto.id);
 
+              const enCarritoMixto = producto.requiere_seleccion
+                ? totalEnCarritoMixto(producto.id)
+                : 0;
+
               return (
                 <div
                   key={producto.id}
                   className={`venta-prod-card ${
-                    enCarrito > 0
+                    enCarrito > 0 || enCarritoMixto > 0
                       ? "en-carrito"
                       : ""
                   } ${
                     agotado ? "agotado" : ""
                   }`}
                   onClick={() => {
-                    if (!agotado) {
+                    if (agotado) return;
+                    if (producto.requiere_seleccion) {
+                      abrirSelectorPaquete(producto);
+                    } else {
                       agregarAlCarrito(producto);
                     }
                   }}
@@ -868,27 +967,40 @@ export default function RegistrarVenta() {
                       ${precioEfectivo(producto).toLocaleString("es-CO")}
                     </span>
 
-                    <span
-                      className={`venta-prod-stock ${stock.clase}`}
-                    >
-                      <span className="venta-stock-dot"></span>
-                      {stock.texto}
-                    </span>
+                    {producto.requiere_seleccion ? (
+                      <span className="venta-prod-stock disponible">
+                        <span className="venta-stock-dot"></span>
+                        Elige {producto.cantidad_seleccion} sabores
+                      </span>
+                    ) : (
+                      <span
+                        className={`venta-prod-stock ${stock.clase}`}
+                      >
+                        <span className="venta-stock-dot"></span>
+                        {stock.texto}
+                      </span>
+                    )}
 
-                    {enCarrito > 0 && (
+                    {producto.requiere_seleccion && enCarritoMixto > 0 && (
+                      <span className="venta-badge-en-carrito">
+                        {enCarritoMixto} en el carrito
+                      </span>
+                    )}
+
+                    {!producto.requiere_seleccion && enCarrito > 0 && (
                       <CantidadControl
                         className="venta-cantidad-tarjeta"
                         nombre={producto.nombre}
                         cantidad={enCarrito}
                         max={Number(producto.stock_actual)}
                         onDecrementar={() =>
-                          restarDelCarrito(producto.id)
+                          restarDelCarrito(claveCarrito(producto.id))
                         }
                         onIncrementar={() =>
                           agregarAlCarrito(producto)
                         }
                         onEscribir={(n) =>
-                          establecerCantidad(producto.id, n)
+                          establecerCantidad(claveCarrito(producto.id), n)
                         }
                       />
                     )}
@@ -931,6 +1043,71 @@ export default function RegistrarVenta() {
       )}
 
       {/* =========================
+          SELECTOR DE SABORES (paquetes mixtos)
+          ========================= */}
+
+      {selectorPaquete && (
+        <div className="venta-selector-overlay" onClick={cerrarSelectorPaquete}>
+          <div className="venta-selector-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="venta-selector-header">
+              <div>
+                <h3>{selectorPaquete.nombre}</h3>
+                <p>
+                  Elige {selectorPaquete.cantidad_seleccion} sabores distintos
+                  ({seleccionActual.length}/{selectorPaquete.cantidad_seleccion})
+                </p>
+              </div>
+              <button
+                type="button"
+                className="venta-selector-cerrar"
+                onClick={cerrarSelectorPaquete}
+                aria-label="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="venta-selector-lista">
+              {saboresDisponibles.length === 0 && (
+                <p className="venta-sin-resultados">
+                  No hay sabores disponibles en este momento
+                </p>
+              )}
+
+              {saboresDisponibles.map((sabor) => {
+                const elegido = seleccionActual.includes(sabor.id);
+                const deshabilitado =
+                  !elegido &&
+                  seleccionActual.length >= selectorPaquete.cantidad_seleccion;
+
+                return (
+                  <button
+                    type="button"
+                    key={sabor.id}
+                    className={`venta-selector-opcion ${elegido ? "elegido" : ""}`}
+                    disabled={deshabilitado}
+                    onClick={() => alternarSaborSeleccionado(sabor.id)}
+                  >
+                    <span>{sabor.nombre}</span>
+                    {elegido && <Check size={16} />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              className="venta-btn-primario"
+              disabled={seleccionActual.length !== selectorPaquete.cantidad_seleccion}
+              onClick={confirmarSelectorPaquete}
+            >
+              Agregar al carrito
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =========================
           CARRITO
           ========================= */}
 
@@ -948,12 +1125,17 @@ export default function RegistrarVenta() {
           <div className="venta-carrito-lista">
             {carrito.map((item) => (
               <div
-                key={item.producto_id}
+                key={item.clave}
                 className="venta-carrito-item"
               >
                 <div className="venta-carrito-item-info">
                   <span className="venta-carrito-item-nombre">
                     {item.nombre}
+                    {item.seleccion_nombres && (
+                      <span className="venta-carrito-item-sabores">
+                        {item.seleccion_nombres.join(" y ")}
+                      </span>
+                    )}
                   </span>
 
                   <span className="venta-carrito-item-precio">
@@ -968,16 +1150,16 @@ export default function RegistrarVenta() {
                   className="venta-cantidad-carrito"
                   nombre={item.nombre}
                   cantidad={item.cantidad}
-                  max={Number(item.stock_actual)}
+                  max={item.requiere_seleccion ? 9999 : Number(item.stock_actual)}
                   deshabilitarMenos={item.cantidad <= 1}
                   onDecrementar={() =>
-                    ajustarCantidadCarrito(item.producto_id, -1)
+                    ajustarCantidadCarrito(item.clave, -1)
                   }
                   onIncrementar={() =>
-                    ajustarCantidadCarrito(item.producto_id, 1)
+                    ajustarCantidadCarrito(item.clave, 1)
                   }
                   onEscribir={(n) =>
-                    establecerCantidad(item.producto_id, n)
+                    establecerCantidad(item.clave, n)
                   }
                 />
 
@@ -988,9 +1170,7 @@ export default function RegistrarVenta() {
                 <button
                   className="venta-carrito-item-quitar"
                   onClick={() =>
-                    quitarDelCarrito(
-                      item.producto_id
-                    )
+                    quitarDelCarrito(item.clave)
                   }
                 >
                   <Trash2 size={15} />
@@ -1452,12 +1632,14 @@ export default function RegistrarVenta() {
           <div className="venta-confirmacion-items">
             {carrito.map((item) => (
               <div
-                key={item.producto_id}
+                key={item.clave}
                 className="venta-resumen-fila"
               >
                 <span>
                   {item.cantidad} ×{" "}
                   {item.nombre}
+                  {item.seleccion_nombres &&
+                    ` (${item.seleccion_nombres.join(" y ")})`}
                 </span>
 
                 <span>
@@ -1631,6 +1813,12 @@ export default function RegistrarVenta() {
               >
                 <div className="recibo-item-nombre">
                   {v.cantidad} × {v.producto_nombre}
+                  {v.selecciones?.length > 0 && (
+                    <span className="recibo-item-sabores">
+                      {" "}
+                      ({v.selecciones.map((s) => s.producto_nombre).join(" y ")})
+                    </span>
+                  )}
                 </div>
                 <div className="recibo-item-detalle">
                   <span className="recibo-item-precio">

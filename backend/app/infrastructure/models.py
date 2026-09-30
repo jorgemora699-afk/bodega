@@ -62,7 +62,14 @@ class Producto(db.Model):
     def to_dict(self):
         stock_mostrado = float(self.stock_actual)
  
-        if self.es_paquete and self.producto_base and self.unidades_por_paquete:
+        if self.requiere_seleccion:
+            # El stock real lo determinan los productos que se elijan al vender
+            # (ej. los 2 sabores de empanada), no este producto en sí. Se muestra
+            # siempre disponible aquí; el backend valida el stock real de cada
+            # sabor elegido al confirmar la venta.
+            stock_mostrado = 9999.0
+
+        elif self.es_paquete and self.producto_base and self.unidades_por_paquete:
             stock_mostrado = float(int(float(self.producto_base.stock_actual) // self.unidades_por_paquete))
  
         elif self.insumos_usados:
@@ -287,7 +294,11 @@ class Venta(db.Model):
 
     producto = db.relationship("Producto", back_populates="ventas")
     trabajadora = db.relationship("Trabajadora", back_populates="ventas")
-    movimiento = db.relationship("MovimientoInventario", back_populates="venta", uselist=False)
+    movimientos_producto = db.relationship(
+        "MovimientoInventario",
+        back_populates="venta",
+        order_by="MovimientoInventario.id",
+    )
     orden = db.relationship("Orden", back_populates="ventas")
 
     # NUEVO — para paquetes mixtos: qué productos se eligieron en esta venta
@@ -334,7 +345,7 @@ class MovimientoInventario(db.Model):
 
     producto = db.relationship("Producto", back_populates="movimientos")
     trabajadora = db.relationship("Trabajadora", back_populates="movimientos")
-    venta = db.relationship("Venta", back_populates="movimiento")
+    venta = db.relationship("Venta", back_populates="movimientos_producto")
 
     def to_dict(self):
         return {

@@ -1,38 +1,50 @@
 from collections import defaultdict
 from datetime import date, datetime
 from app import db
-from app.infrastructure.models import Orden, Venta, Producto, Cliente, MovimientoInventario, MovimientoInsumo, Insumo
+from app.infrastructure.models import (
+    Orden, Venta, Producto, Cliente, MovimientoInventario, MovimientoInsumo,
+    Insumo, VentaSeleccion,
+)
 from app.domain.inventario import hay_stock_suficiente
 from app.infrastructure.models import PrecioEspecial
 from app.application.cliente_service import ClienteService
+from app.application.venta_service import VentaService
 
 
-def _resolver_recursos(producto, cantidad):
+def _resolver_recursos(producto, cantidad, seleccion_ids=None):
     """
     Determina sobre qué recurso(s) real(es) se debe descontar stock al vender
-    este producto, y devuelve una LISTA de (tipo, recurso, cantidad_efectiva)
-    -una entrada por cada recurso a descontar-:
+    este producto, y devuelve (lista, error). La lista trae una entrada por
+    cada recurso a descontar: (tipo, recurso, cantidad_efectiva).
 
-    - Si el producto es un paquete armado a partir de otro producto base
-      (ej. 'Paquete empanadas ranchera x12'), devuelve una sola entrada
-      ("producto", producto_base, cantidad de paquetes x unidades por paquete).
-    - Si el producto tiene uno o varios insumos asociados (ej. hamburguesa ->
-      pan, carne, queso), devuelve una entrada ("insumo", insumo, cantidad x
-      cantidad_por_unidad) por cada insumo que usa.
-    - Si no aplica ninguno de los anteriores, devuelve una sola entrada
-      ("producto", producto, cantidad tal cual) - el comportamiento de siempre.
+    - Paquete armado de un solo sabor (ej. 'Paquete empanadas ranchera x12'):
+      una entrada ("producto", producto_base, cantidad x unidades_por_paquete).
+    - Paquete mixto (ej. 'Paquete de empanadas mixta', requiere_seleccion):
+      una entrada ("producto", <cada elegido>, cantidad) por cada producto
+      elegido — se valida aquí mismo la selección (cantidad exacta, sin
+      repetidos, categoría correcta).
+    - Insumos (ej. hamburguesa -> pan, carne): una entrada ("insumo", insumo,
+      cantidad x cantidad_por_unidad) por cada insumo que usa.
+    - Si no aplica ninguno de los anteriores: una sola entrada ("producto",
+      producto, cantidad tal cual) - el comportamiento de siempre.
     """
     if producto.es_paquete and producto.producto_base and producto.unidades_por_paquete:
-        return [("producto", producto.producto_base, cantidad * producto.unidades_por_paquete)]
+        return [("producto", producto.producto_base, cantidad * producto.unidades_por_paquete)], None
+
+    if producto.requiere_seleccion:
+        seleccionados, error = VentaService._validar_seleccion(producto, seleccion_ids)
+        if error:
+            return None, error
+        return [("producto", elegido, cantidad) for elegido in seleccionados], None
 
     if producto.insumos_usados:
         return [
             ("insumo", pi.insumo, cantidad * float(pi.cantidad))
             for pi in producto.insumos_usados
             if pi.insumo
-        ]
+        ], None
 
-    return [("producto", producto, cantidad)]
+    return [("producto", producto, cantidad)], None
 
 
 def _resolver_fecha(data):
@@ -156,7 +168,11 @@ class OrdenService:
             productos_vendidos[item["producto_id"]] = producto
 
             cantidad = float(item["cantidad"])
-            for tipo, recurso, cantidad_efectiva in _resolver_recursos(producto, cantidad):
+            recursos, error = _resolver_recursos(producto, cantidad, item.get("seleccion"))
+            if error:
+                return None, error
+
+            for tipo, recurso, cantidad_efectiva in recursos:
                 if tipo == "insumo":
                     cantidad_efectiva_por_insumo[recurso.id] += cantidad_efectiva
                 else:
@@ -209,7 +225,8 @@ class OrdenService:
             db.session.add(venta)
             db.session.flush()
 
-            for tipo, recurso, cantidad_efectiva in _resolver_recursos(producto, cantidad):
+            recursos, _ = _resolver_recursos(producto, cantidad, item.get("seleccion"))
+            for tipo, recurso, cantidad_efectiva in recursos:
                 recurso.stock_actual = float(recurso.stock_actual) - cantidad_efectiva
 
                 if tipo == "insumo":
@@ -230,6 +247,11 @@ class OrdenService:
                         motivo="venta",
                         cantidad=cantidad_efectiva,
                     ))
+                    if producto.requiere_seleccion:
+                        db.session.add(VentaSeleccion(
+                            venta_id=venta.id,
+                            producto_id=recurso.id,
+                        ))
 
         orden.total = total_orden
         db.session.commit()
@@ -264,17 +286,21 @@ class OrdenService:
 
         # 1. Stock "hipotético" — como si las líneas viejas no hubieran existido,
         #    usando lo que de verdad se descontó (guardado en cada movimiento),
-        #    no lo que dice la línea de venta (que puede ser un paquete o insumos).
+        #    no lo que dice la línea de venta. Una venta puede tener más de un
+        #    movimiento de producto (ej. paquete mixto -> 2 empanadas), así
+        #    que se consultan todos, no solo "el" movimiento.
         stock_hipotetico_producto = {}
         stock_hipotetico_insumo = {}
 
         for venta in orden.ventas:
-            if venta.movimiento:
-                pid = venta.movimiento.producto_id
-                producto_stock = Producto.query.get(pid)
+            movimientos_producto_venta = MovimientoInventario.query.filter_by(
+                venta_id=venta.id, motivo="venta"
+            ).all()
+            for m in movimientos_producto_venta:
+                producto_stock = Producto.query.get(m.producto_id)
                 if producto_stock:
-                    base = stock_hipotetico_producto.get(pid, float(producto_stock.stock_actual))
-                    stock_hipotetico_producto[pid] = base + float(venta.movimiento.cantidad)
+                    base = stock_hipotetico_producto.get(m.producto_id, float(producto_stock.stock_actual))
+                    stock_hipotetico_producto[m.producto_id] = base + float(m.cantidad)
 
             movimientos_insumo_venta = MovimientoInsumo.query.filter_by(
                 venta_id=venta.id, motivo="venta"
@@ -300,7 +326,11 @@ class OrdenService:
             productos_vendidos[item["producto_id"]] = producto
 
             cantidad = float(item["cantidad"])
-            for tipo, recurso, cantidad_efectiva in _resolver_recursos(producto, cantidad):
+            recursos, error = _resolver_recursos(producto, cantidad, item.get("seleccion"))
+            if error:
+                return None, error
+
+            for tipo, recurso, cantidad_efectiva in recursos:
                 if tipo == "insumo":
                     cantidad_efectiva_por_insumo[recurso.id] += cantidad_efectiva
                 else:
@@ -322,25 +352,15 @@ class OrdenService:
             if not hay_stock_suficiente(disponible, cantidad_total):
                 return None, f"Stock insuficiente de {insumo.nombre}: quedan {disponible} {insumo.unidad_medida}"
 
-        # 3. Revertir stock real de las líneas viejas (usando los movimientos, no la venta).
+        # 3. Revertir stock real de las líneas viejas (reutiliza la misma
+        #    lógica de reversión que usan las ventas sueltas).
         for venta in list(orden.ventas):
-            if venta.movimiento:
-                producto_stock = Producto.query.get(venta.movimiento.producto_id)
-                if producto_stock:
-                    producto_stock.stock_actual = float(producto_stock.stock_actual) + float(venta.movimiento.cantidad)
-                db.session.delete(venta.movimiento)
-
-            movimientos_insumo_venta = MovimientoInsumo.query.filter_by(
-                venta_id=venta.id, motivo="venta"
-            ).all()
-            for m in movimientos_insumo_venta:
-                m.insumo.stock_actual = float(m.insumo.stock_actual) + float(m.cantidad)
-                db.session.delete(m)
-
+            VentaService._revertir_venta(venta)
             db.session.delete(venta)
         db.session.flush()
 
-        # 4. Crear las líneas nuevas, descontando stock real (producto o insumos).
+        # 4. Crear las líneas nuevas, descontando stock real (producto, insumos
+        #    o selección de paquete mixto).
         total_orden = 0
         for item in items:
             producto = productos_vendidos[item["producto_id"]]
@@ -362,7 +382,8 @@ class OrdenService:
             db.session.add(venta)
             db.session.flush()
 
-            for tipo, recurso, cantidad_efectiva in _resolver_recursos(producto, cantidad):
+            recursos, _ = _resolver_recursos(producto, cantidad, item.get("seleccion"))
+            for tipo, recurso, cantidad_efectiva in recursos:
                 recurso.stock_actual = float(recurso.stock_actual) - cantidad_efectiva
 
                 if tipo == "insumo":
@@ -383,6 +404,11 @@ class OrdenService:
                         motivo="venta",
                         cantidad=cantidad_efectiva,
                     ))
+                    if producto.requiere_seleccion:
+                        db.session.add(VentaSeleccion(
+                            venta_id=venta.id,
+                            producto_id=recurso.id,
+                        ))
 
         orden.metodo_pago = metodo_pago
         orden.trabajadora_id = trabajadora_id
@@ -418,19 +444,7 @@ class OrdenService:
             return False, "Orden no encontrada"
 
         for venta in orden.ventas:
-            if venta.movimiento:
-                producto_stock = Producto.query.get(venta.movimiento.producto_id)
-                if producto_stock:
-                    producto_stock.stock_actual = float(producto_stock.stock_actual) + float(venta.movimiento.cantidad)
-                db.session.delete(venta.movimiento)
-
-            movimientos_insumo_venta = MovimientoInsumo.query.filter_by(
-                venta_id=venta.id, motivo="venta"
-            ).all()
-            for m in movimientos_insumo_venta:
-                m.insumo.stock_actual = float(m.insumo.stock_actual) + float(m.cantidad)
-                db.session.delete(m)
-
+            VentaService._revertir_venta(venta)
             db.session.delete(venta)
 
         db.session.delete(orden)

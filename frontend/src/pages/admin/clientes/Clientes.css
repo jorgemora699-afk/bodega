@@ -823,7 +823,7 @@
   background: var(--color-surface);
   border: 1.5px solid var(--color-primary);
   border-radius: var(--radius-lg);
-  padding: 0 0.9rem;
+  padding: 0.1rem 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -832,11 +832,12 @@
 }
 
 .cli-precio-nuevo-card .campo-moneda-simbolo {
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: var(--color-primary);
 }
 
 .cli-precio-nuevo-card .campo-moneda input {
-  padding: 0.7rem 0;
-  font-size: 1rem;
+  padding: 0.75rem 0;
+  font-size: 1.15rem;
+  font-weight: 800;
 }
