@@ -35,7 +35,8 @@ def _resolver_recursos(producto, cantidad, seleccion_ids=None):
         seleccionados, error = VentaService._validar_seleccion(producto, seleccion_ids)
         if error:
             return None, error
-        return [("producto", elegido, cantidad) for elegido in seleccionados], None
+        necesaria = cantidad * (producto.cantidad_por_seleccion or 1)
+        return [("producto", elegido, necesaria) for elegido in seleccionados], None
 
     if producto.insumos_usados:
         return [

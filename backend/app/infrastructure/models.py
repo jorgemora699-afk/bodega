@@ -40,6 +40,7 @@ class Producto(db.Model):
     requiere_seleccion = db.Column(db.Boolean, nullable=False, default=False)
     categoria_seleccion = db.Column(db.String(50), nullable=True)
     cantidad_seleccion = db.Column(db.Integer, nullable=True)
+    cantidad_por_seleccion = db.Column(db.Integer, nullable=True, default=1)
  
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
@@ -101,6 +102,7 @@ class Producto(db.Model):
                 "requiere_seleccion": self.requiere_seleccion,
                 "categoria_seleccion": self.categoria_seleccion,
                 "cantidad_seleccion": self.cantidad_seleccion,
+                "cantidad_por_seleccion": self.cantidad_por_seleccion,
                 "activo": self.activo,
         }
  

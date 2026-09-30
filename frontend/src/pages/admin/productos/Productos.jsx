@@ -23,6 +23,7 @@ function formVacio() {
     requiere_seleccion: false,
     categoria_seleccion: "",
     cantidad_seleccion: "2",
+    cantidad_por_seleccion: "1",
   };
 }
 
@@ -129,6 +130,9 @@ export default function Productos() {
       cantidad_seleccion: producto.cantidad_seleccion
         ? String(producto.cantidad_seleccion)
         : "2",
+      cantidad_por_seleccion: producto.cantidad_por_seleccion // NUEVO
+        ? String(producto.cantidad_por_seleccion)
+        : "1",
       // stock_actual no se edita aquí — los cambios de stock pasan por Inventario
     });
     setSheetAbierto(true);
@@ -186,6 +190,10 @@ export default function Productos() {
         setError("La cantidad a elegir debe ser al menos 2");
         return;
       }
+      if (!form.cantidad_por_seleccion || Number(form.cantidad_por_seleccion) < 1) { // NUEVO
+        setError("Las unidades de cada sabor deben ser al menos 1");
+        return;
+      }
     }
 
     const insumosValidos = form.insumos
@@ -201,6 +209,7 @@ export default function Productos() {
         ? {
             categoria_seleccion: form.categoria_seleccion.trim(),
             cantidad_seleccion: Number(form.cantidad_seleccion),
+            cantidad_por_seleccion: Number(form.cantidad_por_seleccion),
           }
         : {}),
     };
@@ -349,7 +358,7 @@ export default function Productos() {
                 {p.requiere_seleccion ? (
                   <span className="prodad-categoria" title="La trabajadora elige los sabores al vender">
                     <Shuffle size={11} />
-                    Elige {p.cantidad_seleccion} de "{p.categoria_seleccion}"
+                    x{p.cantidad_por_seleccion * p.cantidad_seleccion} · Elige {p.cantidad_seleccion} de "{p.categoria_seleccion}" ({p.cantidad_por_seleccion} c/u)
                   </span>
                 ) : (
                   <span className={stockBajo ? "prodad-stock-bajo" : "prodad-stock"}>
@@ -579,6 +588,20 @@ export default function Productos() {
                   setForm((f) => ({ ...f, cantidad_seleccion: e.target.value }))
                 }
               />
+               <label>Unidades de cada sabor por paquete</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={form.cantidad_por_seleccion}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, cantidad_por_seleccion: e.target.value }))
+                }
+              />
+              <p className="prodad-nota-stock" style={{ marginTop: 0 }}>
+                Ej: si el paquete es de 12 unidades repartidas en 2 sabores, aquí va 6
+                (se descuentan 6 unidades de cada sabor elegido por cada paquete vendido).
+              </p>
             </div>
           )}
 

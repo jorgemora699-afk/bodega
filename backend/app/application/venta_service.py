@@ -90,8 +90,9 @@ class VentaService:
         - Producto normal: valida su propio stock_actual.
         """
         if producto.requiere_seleccion:
+            necesaria = cantidad * (producto.cantidad_por_seleccion or 1)
             for elegido in (seleccionados or []):
-                if not hay_stock_suficiente(float(elegido.stock_actual), cantidad):
+                if not hay_stock_suficiente(float(elegido.stock_actual), necesaria):
                     return False, f"Stock insuficiente de {elegido.nombre}: quedan {float(elegido.stock_actual)}"
             return True, None
 
@@ -110,17 +111,10 @@ class VentaService:
 
     @staticmethod
     def _aplicar_venta(producto, cantidad, trabajadora_id, venta_id, seleccionados=None):
-        """
-        Descuenta el stock correspondiente:
-        - Paquete mixto: 1 unidad de cada producto elegido x `cantidad`
-          paquetes vendidos, y guarda la elección en VentaSeleccion (para
-          poder mostrarla y revertirla después).
-        - Insumos: cada insumo según su propia cantidad por unidad.
-        - Producto normal: producto.stock_actual como siempre.
-        """
         if producto.requiere_seleccion:
+            necesaria = cantidad * (producto.cantidad_por_seleccion or 1)
             for elegido in (seleccionados or []):
-                elegido.stock_actual = float(elegido.stock_actual) - float(cantidad)
+                elegido.stock_actual = float(elegido.stock_actual) - float(necesaria)
 
                 db.session.add(MovimientoInventario(
                     producto_id=elegido.id,
@@ -128,7 +122,7 @@ class VentaService:
                     venta_id=venta_id,
                     tipo="salida",
                     motivo="venta",
-                    cantidad=cantidad,
+                    cantidad=necesaria,
                 ))
                 db.session.add(VentaSeleccion(
                     venta_id=venta_id,

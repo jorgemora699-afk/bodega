@@ -40,15 +40,17 @@ class ProductoService:
     def _validar_config_seleccion(data):
         """
         Valida y normaliza los campos de "paquete mixto" (ej. Paquete de
-        empanadas mixta: la trabajadora elige N productos de una categoría
-        al momento de vender). Devuelve (valores, error):
+        empanadas mixta: la trabajadora elige N sabores distintos de una
+        categoría, y el paquete lleva K unidades de cada sabor elegido).
+        Devuelve (valores, error):
 
-        - valores: dict con requiere_seleccion, categoria_seleccion y
-          cantidad_seleccion listos para asignar al producto (o None si
-          data no trae "requiere_seleccion", para no tocar lo existente).
-        - Si requiere_seleccion es False/no viene, categoria y cantidad
-          se limpian a None, para no dejar configuración huérfana de un
-          cambio anterior.
+        - valores: dict con requiere_seleccion, categoria_seleccion,
+          cantidad_seleccion y cantidad_por_seleccion listos para asignar
+          al producto (o None si data no trae "requiere_seleccion", para
+          no tocar lo existente).
+        - Si requiere_seleccion es False/no viene, los demás campos se
+          limpian (cantidad_por_seleccion vuelve a 1), para no dejar
+          configuración huérfana de un cambio anterior.
         """
         if "requiere_seleccion" not in data:
             return None, None
@@ -60,6 +62,7 @@ class ProductoService:
                 "requiere_seleccion": False,
                 "categoria_seleccion": None,
                 "cantidad_seleccion": None,
+                "cantidad_por_seleccion": 1,
             }, None
 
         categoria = (data.get("categoria_seleccion") or "").strip()
@@ -74,10 +77,19 @@ class ProductoService:
         if cantidad < 2:
             return None, "cantidad_seleccion debe ser al menos 2"
 
+        try:
+            cantidad_por_seleccion = int(data.get("cantidad_por_seleccion", 1))
+        except (TypeError, ValueError):
+            return None, "cantidad_por_seleccion debe ser un número entero"
+
+        if cantidad_por_seleccion < 1:
+            return None, "cantidad_por_seleccion debe ser al menos 1"
+
         return {
             "requiere_seleccion": True,
             "categoria_seleccion": categoria,
             "cantidad_seleccion": cantidad,
+            "cantidad_por_seleccion": cantidad_por_seleccion,
         }, None
 
     @staticmethod
@@ -98,6 +110,7 @@ class ProductoService:
             producto.requiere_seleccion = config_seleccion["requiere_seleccion"]
             producto.categoria_seleccion = config_seleccion["categoria_seleccion"]
             producto.cantidad_seleccion = config_seleccion["cantidad_seleccion"]
+            producto.cantidad_por_seleccion = config_seleccion["cantidad_por_seleccion"]
 
         db.session.add(producto)
         db.session.flush()  # para tener producto.id antes de crear sus insumos
@@ -134,6 +147,7 @@ class ProductoService:
             producto.requiere_seleccion = config_seleccion["requiere_seleccion"]
             producto.categoria_seleccion = config_seleccion["categoria_seleccion"]
             producto.cantidad_seleccion = config_seleccion["cantidad_seleccion"]
+            producto.cantidad_por_seleccion = config_seleccion["cantidad_por_seleccion"]
         if "activo" in data:
             producto.activo = data["activo"]
 
