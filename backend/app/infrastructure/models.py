@@ -17,7 +17,7 @@ proveedor_insumos = db.Table(
 
 class Producto(db.Model):
     __tablename__ = "productos"
-
+ 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     categoria = db.Column(db.String(50), nullable=True)
@@ -27,60 +27,57 @@ class Producto(db.Model):
     es_paquete = db.Column(db.Boolean, nullable=False, default=False)
     producto_base_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=True)
     unidades_por_paquete = db.Column(db.Integer, nullable=True)
-
-    # DEPRECADO — reemplazado por insumos_receta (tabla producto_insumos).
-    # Se mantiene temporalmente hasta migrar la lógica de ventas; luego se elimina.
+ 
+    # Columna vieja de la versión "un solo insumo" — ya no se usa en el
+    # código, se deja en la base de datos sin tocar por seguridad.
     insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=True)
 
-    # NUEVO — paquete "mixto": la trabajadora elige N productos de una categoría
-    # al momento de vender (ej. "Paquete de empanadas mixta" -> 2 sabores de
-    # categoria "empanadas"). No confundir con es_paquete/producto_base_id, que
-    # es para un paquete de UN solo sabor multiplicado (ej. x12 del mismo).
+    # NUEVO — paquete "mixto": la trabajadora elige N productos de una
+    # categoría al momento de vender (ej. "Paquete de empanadas mixta" ->
+    # 2 sabores distintos de categoria "empanadas"). No confundir con
+    # es_paquete/producto_base_id (paquete de UN solo sabor multiplicado)
+    # ni con insumos_usados (receta fija de insumos, no de productos).
     requiere_seleccion = db.Column(db.Boolean, nullable=False, default=False)
     categoria_seleccion = db.Column(db.String(50), nullable=True)
     cantidad_seleccion = db.Column(db.Integer, nullable=True)
-
+ 
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
-
+ 
     ventas = db.relationship("Venta", back_populates="producto")
     movimientos = db.relationship("MovimientoInventario", back_populates="producto")
     proveedores = db.relationship("Proveedor", secondary=proveedor_productos, back_populates="productos")
     receta = db.relationship("Receta", back_populates="producto", uselist=False)
     producto_base = db.relationship("Producto", remote_side=[id], backref="paquetes")
-    insumo = db.relationship("Insumo")  # DEPRECADO
-
-    # insumos que se descuentan al vender este producto (con cantidad por unidad)
-    insumos_receta = db.relationship(
+ 
+    # varios insumos que se descuentan al vender este producto,
+    # cada uno con su propia cantidad (ej. hamburguesa -> pan x1, carne x1, queso x1)
+    insumos_usados = db.relationship(
         "ProductoInsumo",
         back_populates="producto",
         cascade="all, delete-orphan",
         order_by="ProductoInsumo.id",
     )
-
-    def _stock_por_insumos(self):
-        """Unidades vendibles según el insumo que primero se agote."""
-        disponibles = []
-        for pi in self.insumos_receta:
-            cantidad = float(pi.cantidad)
-            if cantidad <= 0 or not pi.insumo:
-                continue
-            disponibles.append(float(pi.insumo.stock_actual) // cantidad)
-        return min(disponibles) if disponibles else None
-
+ 
     def to_dict(self):
         stock_mostrado = float(self.stock_actual)
+ 
         if self.es_paquete and self.producto_base and self.unidades_por_paquete:
             stock_mostrado = float(int(float(self.producto_base.stock_actual) // self.unidades_por_paquete))
-        elif self.insumos_receta:
-            stock_insumos = self._stock_por_insumos()
-            if stock_insumos is not None:
-                stock_mostrado = float(stock_insumos)
-        elif self.insumo_id and self.insumo:
-            stock_mostrado = float(self.insumo.stock_actual)
-
-        primer = self.insumos_receta[0] if self.insumos_receta else None
-
+ 
+        elif self.insumos_usados:
+            # El stock "disponible" de un producto con varios insumos es el
+            # que permite el insumo más limitante (el que primero se acaba).
+            # Ej: si hay pan para 10 hamburguesas pero carne para solo 4,
+            # el stock mostrado de la hamburguesa es 4.
+            posibles = []
+            for pi in self.insumos_usados:
+                if not pi.insumo or float(pi.cantidad) <= 0:
+                    continue
+                posibles.append(int(float(pi.insumo.stock_actual) // float(pi.cantidad)))
+            if posibles:
+                stock_mostrado = float(min(posibles))
+ 
         return {
                 "id": self.id,
                 "nombre": self.nombre,
@@ -92,78 +89,16 @@ class Producto(db.Model):
                 "producto_base_id": self.producto_base_id,
                 "producto_base_nombre": self.producto_base.nombre if self.producto_base else None,
                 "unidades_por_paquete": self.unidades_por_paquete,
-                # Compatibilidad temporal con el frontend actual (primer insumo)
-                "insumo_id": primer.insumo_id if primer else self.insumo_id,
-                "insumo_nombre": (
-                    primer.insumo.nombre if primer and primer.insumo
-                    else (self.insumo.nombre if self.insumo else None)
-                ),
-                "insumos": [pi.to_dict() for pi in self.insumos_receta],
+                "insumos": [pi.to_dict() for pi in self.insumos_usados],
                 # NUEVO — paquete mixto
                 "requiere_seleccion": self.requiere_seleccion,
                 "categoria_seleccion": self.categoria_seleccion,
                 "cantidad_seleccion": self.cantidad_seleccion,
                 "activo": self.activo,
         }
-
+ 
     def __repr__(self):
         return f"<Producto {self.nombre}>"
-
-
-class ProductoInsumo(db.Model):
-    """Insumo que se descuenta al vender un producto, con la cantidad por unidad vendida."""
-    __tablename__ = "producto_insumos"
-
-    id = db.Column(db.Integer, primary_key=True)
-    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id", ondelete="CASCADE"), nullable=False)
-    insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=False)
-    cantidad = db.Column(db.Numeric(10, 3), nullable=False, default=1)
-
-    producto = db.relationship("Producto", back_populates="insumos_receta")
-    insumo = db.relationship("Insumo")
-
-    __table_args__ = (
-        db.UniqueConstraint("producto_id", "insumo_id", name="uq_producto_insumo"),
-        db.CheckConstraint("cantidad > 0", name="ck_producto_insumo_cantidad_positiva"),
-    )
-
-    def to_dict(self):
-        return {
-            "insumo_id": self.insumo_id,
-            "insumo_nombre": self.insumo.nombre if self.insumo else None,
-            "unidad_medida": self.insumo.unidad_medida if self.insumo else None,
-            "cantidad": float(self.cantidad),
-        }
-
-    def __repr__(self):
-        return f"<ProductoInsumo producto={self.producto_id} insumo={self.insumo_id} x{self.cantidad}>"
-
-
-class VentaSeleccion(db.Model):
-    """Para paquetes 'mixtos' (ej. Paquete de empanadas mixta): registra qué
-    productos concretos eligió la trabajadora al vender ESTA venta puntual.
-    La 'receta' no es fija como en ProductoInsumo, se decide en el momento."""
-    __tablename__ = "venta_selecciones"
-
-    id = db.Column(db.Integer, primary_key=True)
-    venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id", ondelete="CASCADE"), nullable=False)
-    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
-
-    venta = db.relationship("Venta", back_populates="selecciones")
-    producto = db.relationship("Producto")
-
-    __table_args__ = (
-        db.UniqueConstraint("venta_id", "producto_id", name="uq_venta_seleccion"),
-    )
-
-    def to_dict(self):
-        return {
-            "producto_id": self.producto_id,
-            "producto_nombre": self.producto.nombre if self.producto else None,
-        }
-
-    def __repr__(self):
-        return f"<VentaSeleccion venta={self.venta_id} producto={self.producto_id}>"
 
 
 class Trabajadora(db.Model):
@@ -247,6 +182,7 @@ class Cliente(db.Model):
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     ordenes = db.relationship("Orden", back_populates="cliente")
+    precios_especiales = db.relationship("PrecioEspecial", backref="cliente_rel", overlaps="cliente")
 
     def to_dict(self):
         return {
@@ -263,6 +199,35 @@ class Cliente(db.Model):
 
     def __repr__(self):
         return f"<Cliente {self.nombre}>"
+
+class PrecioEspecial(db.Model):
+    __tablename__ = "precios_especiales"
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    precio = db.Column(db.Numeric(10, 2), nullable=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cliente = db.relationship("Cliente")
+    producto = db.relationship("Producto")
+
+    __table_args__ = (
+        db.UniqueConstraint("cliente_id", "producto_id", name="uq_precio_especial_cliente_producto"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "cliente_id": self.cliente_id,
+            "producto_id": self.producto_id,
+            "producto_nombre": self.producto.nombre if self.producto else None,
+            "precio_normal": float(self.producto.precio_unitario) if self.producto else None,
+            "precio": float(self.precio),
+        }
+
+    def __repr__(self):
+        return f"<PrecioEspecial cliente={self.cliente_id} producto={self.producto_id}>"
 
 
 class Orden(db.Model):
@@ -544,6 +509,57 @@ class Insumo(db.Model):
     def __repr__(self):
         return f"<Insumo {self.nombre}>"
 
+class ProductoInsumo(db.Model):
+    __tablename__ = "producto_insumos"
+ 
+    id = db.Column(db.Integer, primary_key=True)
+    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=False)
+    cantidad = db.Column(db.Numeric(10, 3), nullable=False, default=1)
+ 
+    producto = db.relationship("Producto", back_populates="insumos_usados")
+    insumo = db.relationship("Insumo")
+ 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "insumo_id": self.insumo_id,
+            "insumo_nombre": self.insumo.nombre if self.insumo else None,
+            "unidad_medida": self.insumo.unidad_medida if self.insumo else None,
+            "cantidad": float(self.cantidad),
+        }
+ 
+    def __repr__(self):
+        return f"<ProductoInsumo producto={self.producto_id} insumo={self.insumo_id}>"
+
+
+class VentaSeleccion(db.Model):
+    """Para paquetes 'mixtos' (ej. Paquete de empanadas mixta): registra qué
+    productos concretos eligió la trabajadora al vender ESTA venta puntual.
+    A diferencia de ProductoInsumo (receta fija por producto), aquí la
+    elección se decide en el momento de cada venta."""
+    __tablename__ = "venta_selecciones"
+
+    id = db.Column(db.Integer, primary_key=True)
+    venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id", ondelete="CASCADE"), nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+
+    venta = db.relationship("Venta", back_populates="selecciones")
+    producto = db.relationship("Producto")
+
+    __table_args__ = (
+        db.UniqueConstraint("venta_id", "producto_id", name="uq_venta_seleccion"),
+    )
+
+    def to_dict(self):
+        return {
+            "producto_id": self.producto_id,
+            "producto_nombre": self.producto.nombre if self.producto else None,
+        }
+
+    def __repr__(self):
+        return f"<VentaSeleccion venta={self.venta_id} producto={self.producto_id}>"
+
 
 class MovimientoInsumo(db.Model):
     __tablename__ = "movimientos_insumo"
@@ -551,7 +567,7 @@ class MovimientoInsumo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     insumo_id = db.Column(db.Integer, db.ForeignKey("insumos.id"), nullable=False)
     trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=True)
-    venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id"), nullable=True)
+    venta_id = db.Column(db.Integer, db.ForeignKey("ventas.id"), nullable=True)  # NUEVO
     tipo = db.Column(db.String(20), nullable=False)
     motivo = db.Column(db.String(50), nullable=False)
     cantidad = db.Column(db.Numeric(10, 3), nullable=False)
