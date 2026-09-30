@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Search, Tag, AlertTriangle, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Tag, AlertTriangle, X, Shuffle } from "lucide-react";
 import {
   listarProductos,
   crearProducto,
@@ -20,6 +20,9 @@ function formVacio() {
     stock_actual: "",
     stock_minimo: "5",
     insumos: [], // [{ insumo_id, cantidad }]
+    requiere_seleccion: false,
+    categoria_seleccion: "",
+    cantidad_seleccion: "2",
   };
 }
 
@@ -34,6 +37,7 @@ export default function Productos() {
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [categoriasAbiertas, setCategoriasAbiertas] = useState({});
   const [sugerenciasCategoriaAbiertas, setSugerenciasCategoriaAbiertas] = useState(false);
+  const [sugerenciasCategoriaSeleccionAbiertas, setSugerenciasCategoriaSeleccionAbiertas] = useState(false);
 
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -120,6 +124,11 @@ export default function Productos() {
               cantidad: String(i.cantidad),
             }))
           : [],
+      requiere_seleccion: Boolean(producto.requiere_seleccion),
+      categoria_seleccion: producto.categoria_seleccion || "",
+      cantidad_seleccion: producto.cantidad_seleccion
+        ? String(producto.cantidad_seleccion)
+        : "2",
       // stock_actual no se edita aquí — los cambios de stock pasan por Inventario
     });
     setSheetAbierto(true);
@@ -150,10 +159,33 @@ export default function Productos() {
     setForm((f) => ({ ...f, insumos: f.insumos.filter((_, i) => i !== index) }));
   }
 
+  /* ---------- Paquete "mixto" (ej. Paquete de empanadas mixta) ---------- */
+
+  function alternarRequiereSeleccion() {
+    setForm((f) => ({
+      ...f,
+      requiere_seleccion: !f.requiere_seleccion,
+      // No tiene sentido combinar "paquete mixto" con insumos propios;
+      // al activarlo se limpian los insumos que hubiera cargados.
+      insumos: !f.requiere_seleccion ? [] : f.insumos,
+    }));
+  }
+
   async function guardar() {
     if (!form.nombre.trim() || !form.precio_unitario) {
       setError("Nombre y precio son obligatorios");
       return;
+    }
+
+    if (form.requiere_seleccion) {
+      if (!form.categoria_seleccion.trim()) {
+        setError("Indica de qué categoría se eligen los sabores");
+        return;
+      }
+      if (!form.cantidad_seleccion || Number(form.cantidad_seleccion) < 2) {
+        setError("La cantidad a elegir debe ser al menos 2");
+        return;
+      }
     }
 
     const insumosValidos = form.insumos
@@ -162,6 +194,16 @@ export default function Productos() {
         insumo_id: Number(i.insumo_id),
         cantidad: Number(i.cantidad),
       }));
+
+    const payloadSeleccion = {
+      requiere_seleccion: form.requiere_seleccion,
+      ...(form.requiere_seleccion
+        ? {
+            categoria_seleccion: form.categoria_seleccion.trim(),
+            cantidad_seleccion: Number(form.cantidad_seleccion),
+          }
+        : {}),
+    };
 
     setGuardando(true);
     setError(null);
@@ -174,6 +216,7 @@ export default function Productos() {
           precio_unitario: Number(form.precio_unitario),
           stock_minimo: Number(form.stock_minimo) || 5,
           insumos: insumosValidos,
+          ...payloadSeleccion,
         });
         setMensaje("Producto actualizado");
       } else {
@@ -184,6 +227,7 @@ export default function Productos() {
           stock_actual: Number(form.stock_actual) || 0,
           stock_minimo: Number(form.stock_minimo) || 5,
           insumos: insumosValidos,
+          ...payloadSeleccion,
         });
         setMensaje("Producto creado");
       }
@@ -302,10 +346,17 @@ export default function Productos() {
               </div>
 
               <div className="prodad-stock-fila">
-                <span className={stockBajo ? "prodad-stock-bajo" : "prodad-stock"}>
-                  {stockBajo && <AlertTriangle size={12} />}
-                  Stock: {p.stock_actual}
-                </span>
+                {p.requiere_seleccion ? (
+                  <span className="prodad-categoria" title="La trabajadora elige los sabores al vender">
+                    <Shuffle size={11} />
+                    Elige {p.cantidad_seleccion} de "{p.categoria_seleccion}"
+                  </span>
+                ) : (
+                  <span className={stockBajo ? "prodad-stock-bajo" : "prodad-stock"}>
+                    {stockBajo && <AlertTriangle size={12} />}
+                    Stock: {p.stock_actual}
+                  </span>
+                )}
                 {p.insumos && p.insumos.length > 0 && (
                   <span
                     className="prodad-categoria"
@@ -426,16 +477,20 @@ export default function Productos() {
             onChange={(valor) => setForm((f) => ({ ...f, precio_unitario: valor }))}
           />
 
-          <label>Stock mínimo (alerta de bajo stock)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.stock_minimo}
-            onChange={(e) => setForm((f) => ({ ...f, stock_minimo: e.target.value }))}
-          />
+          {!form.requiere_seleccion && (
+            <>
+              <label>Stock mínimo (alerta de bajo stock)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.stock_minimo}
+                onChange={(e) => setForm((f) => ({ ...f, stock_minimo: e.target.value }))}
+              />
+            </>
+          )}
 
-          {!editandoId && form.insumos.length === 0 && (
+          {!editandoId && form.insumos.length === 0 && !form.requiere_seleccion && (
             <>
               <label>Stock inicial</label>
               <input
@@ -448,59 +503,136 @@ export default function Productos() {
             </>
           )}
 
-          {editandoId && (
+          {editandoId && !form.requiere_seleccion && (
             <p className="prodad-nota-stock">
               Para cambiar el stock, usa la sección de Inventario.
             </p>
           )}
 
-          <label>Insumos que se descuentan al vender (opcional)</label>
-          <p className="prodad-nota-stock" style={{ marginTop: 0 }}>
-            Ej: una hamburguesa puede usar 1 pan + 1 carne + 1 queso. Cada venta
-            descuenta esa cantidad de cada insumo automáticamente.
-          </p>
+          {/* ---------- Paquete "mixto" (ej. Paquete de empanadas mixta) ---------- */}
 
-          <div className="prodad-insumos-lista">
-            {form.insumos.map((ins, index) => (
-              <div key={index} className="prodad-insumo-fila">
-                <select
-                  value={ins.insumo_id}
-                  onChange={(e) => actualizarFilaInsumo(index, "insumo_id", e.target.value)}
-                >
-                  <option value="">Selecciona un insumo...</option>
-                  {insumosDisponiblesPara(index).map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.nombre} ({i.unidad_medida})
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="prodad-insumo-cantidad"
-                  placeholder="Cant."
-                  value={ins.cantidad}
-                  onChange={(e) => actualizarFilaInsumo(index, "cantidad", e.target.value)}
-                />
-
-                <button
-                  type="button"
-                  className="prodad-insumo-quitar"
-                  onClick={() => quitarFilaInsumo(index)}
-                  aria-label="Quitar insumo"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
+          <div className="prodad-seleccion-toggle-fila">
+            <label className="prodad-seleccion-toggle-label">
+              <input
+                type="checkbox"
+                checked={form.requiere_seleccion}
+                onChange={alternarRequiereSeleccion}
+              />
+              Es un paquete mixto (se eligen sabores al vender)
+            </label>
           </div>
 
-          <button type="button" className="prodad-btn-agregar-insumo" onClick={agregarFilaInsumo}>
-            <Plus size={14} />
-            Agregar insumo
-          </button>
+          {form.requiere_seleccion && (
+            <div className="prodad-seleccion-config">
+              <p className="prodad-nota-stock" style={{ marginTop: 0 }}>
+                Ej: "Paquete de empanadas mixta" — la trabajadora elige los
+                sabores en el momento de la venta, en vez de tener stock propio.
+              </p>
+
+              <label>Categoría de la que se eligen los sabores</label>
+              <div className="prodad-categoria-combo">
+                <input
+                  type="text"
+                  value={form.categoria_seleccion}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, categoria_seleccion: e.target.value }))
+                  }
+                  onFocus={() => setSugerenciasCategoriaSeleccionAbiertas(true)}
+                  onBlur={() =>
+                    setTimeout(() => setSugerenciasCategoriaSeleccionAbiertas(false), 150)
+                  }
+                  placeholder="Ej: empanadas"
+                  autoComplete="off"
+                />
+
+                {sugerenciasCategoriaSeleccionAbiertas && categorias.length > 0 && (
+                  <div className="prodad-categoria-sugerencias">
+                    {categorias
+                      .filter((c) =>
+                        c.toLowerCase().includes(form.categoria_seleccion.toLowerCase())
+                      )
+                      .map((c) => (
+                        <button
+                          type="button"
+                          key={c}
+                          className="prodad-categoria-sugerencia"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setForm((f) => ({ ...f, categoria_seleccion: c }));
+                            setSugerenciasCategoriaSeleccionAbiertas(false);
+                          }}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              <label>Cantidad de sabores a elegir</label>
+              <input
+                type="number"
+                min="2"
+                step="1"
+                value={form.cantidad_seleccion}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, cantidad_seleccion: e.target.value }))
+                }
+              />
+            </div>
+          )}
+
+          {!form.requiere_seleccion && (
+            <>
+              <label>Insumos que se descuentan al vender (opcional)</label>
+              <p className="prodad-nota-stock" style={{ marginTop: 0 }}>
+                Ej: una hamburguesa puede usar 1 pan + 1 carne + 1 queso. Cada venta
+                descuenta esa cantidad de cada insumo automáticamente.
+              </p>
+
+              <div className="prodad-insumos-lista">
+                {form.insumos.map((ins, index) => (
+                  <div key={index} className="prodad-insumo-fila">
+                    <select
+                      value={ins.insumo_id}
+                      onChange={(e) => actualizarFilaInsumo(index, "insumo_id", e.target.value)}
+                    >
+                      <option value="">Selecciona un insumo...</option>
+                      {insumosDisponiblesPara(index).map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.nombre} ({i.unidad_medida})
+                        </option>
+                      ))}
+                    </select>
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="prodad-insumo-cantidad"
+                      placeholder="Cant."
+                      value={ins.cantidad}
+                      onChange={(e) => actualizarFilaInsumo(index, "cantidad", e.target.value)}
+                    />
+
+                    <button
+                      type="button"
+                      className="prodad-insumo-quitar"
+                      onClick={() => quitarFilaInsumo(index)}
+                      aria-label="Quitar insumo"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <button type="button" className="prodad-btn-agregar-insumo" onClick={agregarFilaInsumo}>
+                <Plus size={14} />
+                Agregar insumo
+              </button>
+            </>
+          )}
 
           <button
             className="prodad-btn-primario prodad-btn-guardar-sheet"

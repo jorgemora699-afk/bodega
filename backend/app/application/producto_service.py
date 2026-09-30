@@ -37,7 +37,55 @@ class ProductoService:
             ))
 
     @staticmethod
+    def _validar_config_seleccion(data):
+        """
+        Valida y normaliza los campos de "paquete mixto" (ej. Paquete de
+        empanadas mixta: la trabajadora elige N productos de una categoría
+        al momento de vender). Devuelve (valores, error):
+
+        - valores: dict con requiere_seleccion, categoria_seleccion y
+          cantidad_seleccion listos para asignar al producto (o None si
+          data no trae "requiere_seleccion", para no tocar lo existente).
+        - Si requiere_seleccion es False/no viene, categoria y cantidad
+          se limpian a None, para no dejar configuración huérfana de un
+          cambio anterior.
+        """
+        if "requiere_seleccion" not in data:
+            return None, None
+
+        requiere = bool(data.get("requiere_seleccion"))
+
+        if not requiere:
+            return {
+                "requiere_seleccion": False,
+                "categoria_seleccion": None,
+                "cantidad_seleccion": None,
+            }, None
+
+        categoria = (data.get("categoria_seleccion") or "").strip()
+        if not categoria:
+            return None, "categoria_seleccion es obligatoria cuando requiere_seleccion es true"
+
+        try:
+            cantidad = int(data.get("cantidad_seleccion"))
+        except (TypeError, ValueError):
+            return None, "cantidad_seleccion debe ser un número entero"
+
+        if cantidad < 2:
+            return None, "cantidad_seleccion debe ser al menos 2"
+
+        return {
+            "requiere_seleccion": True,
+            "categoria_seleccion": categoria,
+            "cantidad_seleccion": cantidad,
+        }, None
+
+    @staticmethod
     def crear(data):
+        config_seleccion, error = ProductoService._validar_config_seleccion(data)
+        if error:
+            raise ValueError(error)
+
         producto = Producto(
             nombre=data["nombre"],
             categoria=data.get("categoria"),
@@ -45,6 +93,12 @@ class ProductoService:
             stock_actual=data.get("stock_actual", 0),
             stock_minimo=data.get("stock_minimo", 5),
         )
+
+        if config_seleccion:
+            producto.requiere_seleccion = config_seleccion["requiere_seleccion"]
+            producto.categoria_seleccion = config_seleccion["categoria_seleccion"]
+            producto.cantidad_seleccion = config_seleccion["cantidad_seleccion"]
+
         db.session.add(producto)
         db.session.flush()  # para tener producto.id antes de crear sus insumos
 
@@ -60,6 +114,10 @@ class ProductoService:
         if not producto:
             return None
 
+        config_seleccion, error = ProductoService._validar_config_seleccion(data)
+        if error:
+            raise ValueError(error)
+
         if "nombre" in data:
             producto.nombre = data["nombre"]
         if "categoria" in data:
@@ -72,6 +130,10 @@ class ProductoService:
             producto.stock_minimo = data["stock_minimo"]
         if "insumos" in data:
             ProductoService._reemplazar_insumos(producto, data["insumos"])
+        if config_seleccion:
+            producto.requiere_seleccion = config_seleccion["requiere_seleccion"]
+            producto.categoria_seleccion = config_seleccion["categoria_seleccion"]
+            producto.cantidad_seleccion = config_seleccion["cantidad_seleccion"]
         if "activo" in data:
             producto.activo = data["activo"]
 

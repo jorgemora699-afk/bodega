@@ -32,14 +32,23 @@ def crear_producto():
     if not data.get("nombre") or data.get("precio_unitario") is None:
         return jsonify({"error": "nombre y precio_unitario son obligatorios"}), 400
 
-    producto = ProductoService.crear(data)
+    try:
+        producto = ProductoService.crear(data)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     return jsonify(producto.to_dict()), 201
 
 
 @producto_bp.route("/<int:producto_id>", methods=["PUT"])
 def actualizar_producto(producto_id):
     data = request.get_json()
-    producto = ProductoService.actualizar(producto_id, data)
+
+    try:
+        producto = ProductoService.actualizar(producto_id, data)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
     if not producto:
         return jsonify({"error": "Producto no encontrado"}), 404
     return jsonify(producto.to_dict()), 200
