@@ -19,11 +19,13 @@ function formVacio() {
     precio_unitario: "",
     stock_actual: "",
     stock_minimo: "5",
-    insumos: [], // [{ insumo_id, cantidad }]
+    insumos: [],
     requiere_seleccion: false,
     categoria_seleccion: "",
     cantidad_seleccion: "2",
     cantidad_por_seleccion: "1",
+    producto_base_id: "", // NUEVO
+    unidades_por_paquete: "1", // NUEVO
   };
 }
 
@@ -118,6 +120,8 @@ export default function Productos() {
       categoria: producto.categoria || "",
       precio_unitario: producto.precio_unitario,
       stock_minimo: producto.stock_minimo ?? "5",
+      producto_base_id: producto.producto_base_id ? String(producto.producto_base_id) : "",
+      unidades_por_paquete: producto.unidades_por_paquete ? String(producto.unidades_por_paquete) : "1",
       insumos:
         producto.insumos && producto.insumos.length > 0
           ? producto.insumos.map((i) => ({
@@ -224,6 +228,8 @@ export default function Productos() {
           categoria: form.categoria || null,
           precio_unitario: Number(form.precio_unitario),
           stock_minimo: Number(form.stock_minimo) || 5,
+          producto_base_id: form.producto_base_id ? Number(form.producto_base_id) : null,
+          unidades_por_paquete: form.producto_base_id ? Number(form.unidades_por_paquete) || 1 : null,
           insumos: insumosValidos,
           ...payloadSeleccion,
         });
@@ -235,6 +241,8 @@ export default function Productos() {
           precio_unitario: Number(form.precio_unitario),
           stock_actual: Number(form.stock_actual) || 0,
           stock_minimo: Number(form.stock_minimo) || 5,
+          producto_base_id: form.producto_base_id ? Number(form.producto_base_id) : null,
+          unidades_por_paquete: form.producto_base_id ? Number(form.unidades_por_paquete) || 1 : null,
           insumos: insumosValidos,
           ...payloadSeleccion,
         });
@@ -355,7 +363,15 @@ export default function Productos() {
               </div>
 
               <div className="prodad-stock-fila">
-                {p.requiere_seleccion ? (
+                {p.producto_base_id ? (
+                  <span className="prodad-categoria" title="Comparte stock con otro producto">
+                    <Tag size={11} />
+                    {p.unidades_por_paquete > 1
+                      ? `x${p.unidades_por_paquete} de ${p.producto_base_nombre}`
+                      : `Mismo stock que: ${p.producto_base_nombre}`}{" "}
+                    ({p.stock_actual})
+                  </span>
+                ) : p.requiere_seleccion ? (
                   <span className="prodad-categoria" title="La trabajadora elige los sabores al vender">
                     <Shuffle size={11} />
                     x{p.cantidad_por_seleccion * p.cantidad_seleccion} · Elige {p.cantidad_seleccion} de "{p.categoria_seleccion}" ({p.cantidad_por_seleccion} c/u)
@@ -486,7 +502,53 @@ export default function Productos() {
             onChange={(valor) => setForm((f) => ({ ...f, precio_unitario: valor }))}
           />
 
-          {!form.requiere_seleccion && (
+          <label>Vincular con otro producto (misma unidad física, opcional)</label>
+          <select
+            value={form.producto_base_id}
+            onChange={(e) => setForm((f) => ({ ...f, producto_base_id: e.target.value }))}
+          >
+            <option value="">No, tiene su propio stock</option>
+            {productos
+              .filter((p) => p.id !== editandoId && !p.producto_base_id) // no vincular a algo que ya está vinculado
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+          </select>
+
+          {form.producto_base_id && (
+            <>
+              <div className="prodad-info-box">
+                <Tag size={14} />
+                <p>
+                  Este producto descuenta del stock de{" "}
+                  <strong>{productos.find((p) => p.id === Number(form.producto_base_id))?.nombre}</strong>.
+                  Deja 1 si es la misma unidad con otro precio (ej. congelada). Pon un
+                  número mayor si es un paquete de varias unidades (ej. 12 para "Paquete x12").
+                </p>
+              </div>
+
+              <label>Unidades que descuenta cada venta</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={form.unidades_por_paquete}
+                onChange={(e) => setForm((f) => ({ ...f, unidades_por_paquete: e.target.value }))}
+              />
+
+              {Number(form.unidades_por_paquete) > 1 && (
+                <div className="prodad-seleccion-total">
+                  Vender 1 unidad de este producto descuenta{" "}
+                  <strong>{form.unidades_por_paquete} unidades</strong> de{" "}
+                  {productos.find((p) => p.id === Number(form.producto_base_id))?.nombre}
+                </div>
+              )}
+            </>
+          )}
+
+          {!form.requiere_seleccion && !form.producto_base_id && (
             <>
               <label>Stock mínimo (alerta de bajo stock)</label>
               <input
@@ -499,7 +561,7 @@ export default function Productos() {
             </>
           )}
 
-          {!editandoId && form.insumos.length === 0 && !form.requiere_seleccion && (
+          {!editandoId && form.insumos.length === 0 && !form.requiere_seleccion && !form.producto_base_id && (
             <>
               <label>Stock inicial</label>
               <input
@@ -512,7 +574,7 @@ export default function Productos() {
             </>
           )}
 
-          {editandoId && !form.requiere_seleccion && (
+          {editandoId && !form.requiere_seleccion && !form.producto_base_id && (
             <p className="prodad-nota-stock">
               Para cambiar el stock, usa la sección de Inventario.
             </p>
@@ -535,10 +597,6 @@ export default function Productos() {
             <div className="prodad-seleccion-config">
               <div className="prodad-info-box">
                 <Shuffle size={14} />
-                <p>
-                  Ej: "Paquete de empanadas mixta" — la trabajadora elige los sabores en
-                  el momento de la venta, en vez de tener stock propio.
-                </p>
               </div>
 
               <label>Categoría de la que se eligen los sabores</label>
@@ -621,7 +679,7 @@ export default function Productos() {
             </div>
           )}
 
-          {!form.requiere_seleccion && (
+          {!form.requiere_seleccion && !form.producto_base_id && (
             <>
               <label>Insumos que se descuentan al vender (opcional)</label>
               <p className="prodad-nota-stock" style={{ marginTop: 0 }}>

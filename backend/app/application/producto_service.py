@@ -104,6 +104,9 @@ class ProductoService:
             precio_unitario=data["precio_unitario"],
             stock_actual=data.get("stock_actual", 0),
             stock_minimo=data.get("stock_minimo", 5),
+            producto_base_id=data.get("producto_base_id") or None,
+            unidades_por_paquete=data.get("unidades_por_paquete") or None,
+            es_paquete=bool(data.get("producto_base_id")),
         )
 
         if config_seleccion:
@@ -113,7 +116,7 @@ class ProductoService:
             producto.cantidad_por_seleccion = config_seleccion["cantidad_por_seleccion"]
 
         db.session.add(producto)
-        db.session.flush()  # para tener producto.id antes de crear sus insumos
+        db.session.flush()
 
         if "insumos" in data:
             ProductoService._reemplazar_insumos(producto, data["insumos"])
@@ -141,6 +144,11 @@ class ProductoService:
             producto.stock_actual = data["stock_actual"]
         if "stock_minimo" in data:
             producto.stock_minimo = data["stock_minimo"]
+        if "producto_base_id" in data:
+            producto.producto_base_id = data["producto_base_id"] or None
+            producto.es_paquete = bool(data["producto_base_id"])
+        if "unidades_por_paquete" in data:
+            producto.unidades_por_paquete = data["unidades_por_paquete"] or None
         if "insumos" in data:
             ProductoService._reemplazar_insumos(producto, data["insumos"])
         if config_seleccion:
