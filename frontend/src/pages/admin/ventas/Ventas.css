@@ -1291,3 +1291,111 @@
   font-size: 0.78rem;
   color: var(--color-text-secondary);
 }
+
+.vad-credito-edicion {
+  margin-bottom: 0.6rem;
+}
+
+.vad-cliente-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.vad-cliente-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  flex-shrink: 0;
+}
+
+.vad-cliente-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+}
+
+.vad-cliente-info span {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.vad-cliente-cambiar {
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-primary);
+}
+
+.vad-cliente-buscando {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0.4rem 0;
+}
+
+.vad-cliente-form {
+  margin-top: 0.6rem;
+  padding: 0.8rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.vad-cliente-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.vad-cliente-form-cerrar {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.vad-tipo-cliente {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.vad-tipo-cliente-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.vad-tipo-cliente-btn.activo {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}

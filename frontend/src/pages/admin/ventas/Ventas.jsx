@@ -1,14 +1,37 @@
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, ShoppingBag, Plus, Minus, X, Check, Calendar, Clock3 } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  ShoppingBag,
+  Plus,
+  Minus,
+  X,
+  Check,
+  Calendar,
+  Clock3,
+  User,
+  Building2,
+  UserPlus,
+} from "lucide-react";
 import { listarVentas, actualizarVenta, eliminarVenta } from "../../../api/ventas";
 import { listarOrdenes, actualizarOrden, anularOrden, marcarOrdenPagada } from "../../../api/ordenes";
 import { listarProductos } from "../../../api/productos";
+import { listarClientes, crearCliente } from "../../../api/clientes";
 import { useNavigate } from "react-router-dom";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import "./Ventas.css";
 
 const METODOS_PAGO = ["efectivo", "transferencia"];
 const METODOS_PAGO_EDICION = ["efectivo", "transferencia", "credito"];
+
+const CLIENTE_VACIO = {
+  tipo: "natural",
+  nombre: "",
+  documento: "",
+  contacto: "",
+  celular: "",
+  direccion: "",
+};
 
 function etiquetaMetodo(metodo) {
   return metodo === "credito" ? "Cuenta por cobrar" : metodo;
@@ -62,6 +85,17 @@ export default function Ventas() {
   const [editandoOrdenId, setEditandoOrdenId] = useState(null);
   const [formOrden, setFormOrden] = useState(formOrdenVacio());
 
+  /* ---------- Cliente (cuenta por cobrar) al editar una orden ---------- */
+  const [clienteIdOrden, setClienteIdOrden] = useState("");
+  const [clienteSeleccionadoOrden, setClienteSeleccionadoOrden] = useState(null);
+  const [busquedaClienteOrden, setBusquedaClienteOrden] = useState("");
+  const [clientesResultadosOrden, setClientesResultadosOrden] = useState([]);
+  const [buscandoClientesOrden, setBuscandoClientesOrden] = useState(false);
+  const [mostrarFormClienteOrden, setMostrarFormClienteOrden] = useState(false);
+  const [formClienteOrden, setFormClienteOrden] = useState(CLIENTE_VACIO);
+  const [creandoClienteOrden, setCreandoClienteOrden] = useState(false);
+  const [errorClienteOrden, setErrorClienteOrden] = useState(null);
+
   const [confirmandoAnular, setConfirmandoAnular] = useState(null); // { tipo: 'orden'|'venta', id }
   const [marcandoPagadaId, setMarcandoPagadaId] = useState(null);
 
@@ -74,6 +108,36 @@ export default function Ventas() {
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  /* Buscar clientes con debounce, solo si se está editando una orden a crédito */
+  useEffect(() => {
+    if (formOrden.metodo_pago !== "credito" || clienteSeleccionadoOrden) return undefined;
+
+    const termino = busquedaClienteOrden.trim();
+    if (termino.length < 2) {
+      setClientesResultadosOrden([]);
+      return undefined;
+    }
+
+    let activo = true;
+    setBuscandoClientesOrden(true);
+
+    const temporizador = setTimeout(async () => {
+      try {
+        const data = await listarClientes({ buscar: termino });
+        if (activo) setClientesResultadosOrden(data);
+      } catch (err) {
+        if (activo) setClientesResultadosOrden([]);
+      } finally {
+        if (activo) setBuscandoClientesOrden(false);
+      }
+    }, 350);
+
+    return () => {
+      activo = false;
+      clearTimeout(temporizador);
+    };
+  }, [busquedaClienteOrden, formOrden.metodo_pago, clienteSeleccionadoOrden]);
 
   async function cargarDatos() {
     setError(null);
@@ -136,6 +200,83 @@ export default function Ventas() {
 
   // --- edición de un pedido (orden con varias líneas) ---
 
+  function limpiarClienteOrden() {
+    setClienteIdOrden("");
+    setClienteSeleccionadoOrden(null);
+    setBusquedaClienteOrden("");
+    setClientesResultadosOrden([]);
+    setMostrarFormClienteOrden(false);
+    setFormClienteOrden(CLIENTE_VACIO);
+    setErrorClienteOrden(null);
+  }
+
+  function elegirClienteOrden(cliente) {
+    setClienteIdOrden(String(cliente.id));
+    setClienteSeleccionadoOrden(cliente);
+    setBusquedaClienteOrden("");
+    setClientesResultadosOrden([]);
+    setMostrarFormClienteOrden(false);
+  }
+
+  function cambiarClienteSeleccionadoOrden() {
+    setClienteIdOrden("");
+    setClienteSeleccionadoOrden(null);
+  }
+
+  function abrirFormClienteOrden() {
+    setMostrarFormClienteOrden(true);
+    setFormClienteOrden({ ...CLIENTE_VACIO, nombre: busquedaClienteOrden });
+    setErrorClienteOrden(null);
+  }
+
+  function cerrarFormClienteOrden() {
+    setMostrarFormClienteOrden(false);
+    setFormClienteOrden(CLIENTE_VACIO);
+    setErrorClienteOrden(null);
+  }
+
+  function cambiarTipoClienteOrden(tipo) {
+    setFormClienteOrden((f) => ({
+      ...f,
+      tipo,
+      contacto: tipo === "natural" ? "" : f.contacto,
+    }));
+  }
+
+  async function guardarNuevoClienteOrden() {
+    const nombre = formClienteOrden.nombre.trim();
+    const documento = formClienteOrden.documento.trim();
+
+    if (!nombre || !documento) {
+      setErrorClienteOrden(
+        formClienteOrden.tipo === "juridica"
+          ? "Ingresa la razón social y el NIT"
+          : "Ingresa el nombre y la cédula"
+      );
+      return;
+    }
+
+    setCreandoClienteOrden(true);
+    setErrorClienteOrden(null);
+
+    try {
+      const cliente = await crearCliente({
+        tipo: formClienteOrden.tipo,
+        nombre,
+        documento,
+        contacto: formClienteOrden.tipo === "juridica" ? formClienteOrden.contacto.trim() || null : null,
+        celular: formClienteOrden.celular.trim() || null,
+        direccion: formClienteOrden.direccion.trim() || null,
+      });
+
+      elegirClienteOrden(cliente);
+    } catch (err) {
+      setErrorClienteOrden(err.response?.data?.error || "No se pudo crear el cliente");
+    } finally {
+      setCreandoClienteOrden(false);
+    }
+  }
+
   function iniciarEdicionOrden(orden) {
     setEditandoOrdenId(orden.id);
     setEditandoVentaId(null);
@@ -144,6 +285,19 @@ export default function Ventas() {
     setError(null);
     setBusquedaProducto("");
     setSugerenciasProductoAbiertas(false);
+
+    if (orden.cliente_id && !orden.cliente_es_predeterminado) {
+      setClienteIdOrden(String(orden.cliente_id));
+      setClienteSeleccionadoOrden({
+        id: orden.cliente_id,
+        nombre: orden.cliente_nombre,
+        tipo: orden.cliente_tipo,
+        documento: orden.cliente_documento,
+      });
+    } else {
+      limpiarClienteOrden();
+    }
+
     setFormOrden({
       metodo_pago: orden.metodo_pago,
       trabajadora_id: orden.trabajadora_id,
@@ -161,6 +315,7 @@ export default function Ventas() {
     setFormOrden(formOrdenVacio());
     setBusquedaProducto("");
     setSugerenciasProductoAbiertas(false);
+    limpiarClienteOrden();
   }
 
   function ajustarCantidadItem(productoId, delta) {
@@ -224,6 +379,10 @@ export default function Ventas() {
       setError("El pedido debe tener al menos un producto");
       return;
     }
+    if (formOrden.metodo_pago === "credito" && !clienteIdOrden) {
+      setError("Selecciona o crea el cliente para la cuenta por cobrar");
+      return;
+    }
 
     setGuardando(true);
     setError(null);
@@ -232,6 +391,7 @@ export default function Ventas() {
       await actualizarOrden(ordenId, {
         metodo_pago: formOrden.metodo_pago,
         trabajadora_id: Number(formOrden.trabajadora_id),
+        cliente_id: clienteIdOrden ? Number(clienteIdOrden) : undefined,
         items: formOrden.items.map((i) => ({
           producto_id: i.producto_id,
           cantidad: i.cantidad,
@@ -446,6 +606,174 @@ export default function Ventas() {
                         </button>
                       ))}
                     </div>
+
+                    {formOrden.metodo_pago === "credito" && (
+                      <>
+                        <label>Cliente</label>
+
+                        <div className="vad-credito-edicion">
+                          {clienteSeleccionadoOrden ? (
+                            <div className="vad-cliente-card">
+                              <span className="vad-cliente-icono">
+                                {clienteSeleccionadoOrden.tipo === "juridica" ? (
+                                  <Building2 size={16} />
+                                ) : (
+                                  <User size={16} />
+                                )}
+                              </span>
+                              <div className="vad-cliente-info">
+                                <strong>{clienteSeleccionadoOrden.nombre}</strong>
+                                {clienteSeleccionadoOrden.documento && (
+                                  <span>
+                                    {clienteSeleccionadoOrden.tipo === "juridica" ? "NIT" : "Cédula"}:{" "}
+                                    {clienteSeleccionadoOrden.documento}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                className="vad-cliente-cambiar"
+                                onClick={cambiarClienteSeleccionadoOrden}
+                              >
+                                Cambiar
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="vad-orden-edit-combo">
+                                <input
+                                  type="text"
+                                  placeholder="Buscar cliente por nombre o documento..."
+                                  value={busquedaClienteOrden}
+                                  onChange={(e) => {
+                                    setBusquedaClienteOrden(e.target.value);
+                                    setMostrarFormClienteOrden(false);
+                                  }}
+                                />
+                              </div>
+
+                              {!mostrarFormClienteOrden && (
+                                <>
+                                  {buscandoClientesOrden && (
+                                    <p className="vad-cliente-buscando">Buscando...</p>
+                                  )}
+
+                                  {!buscandoClientesOrden && busquedaClienteOrden.trim().length >= 2 && (
+                                    <div className="vad-orden-edit-sugerencias">
+                                      {clientesResultadosOrden.length === 0 ? (
+                                        <p className="vad-orden-edit-sin-resultados">
+                                          Ningún cliente coincide con "{busquedaClienteOrden}"
+                                        </p>
+                                      ) : (
+                                        clientesResultadosOrden.map((cliente) => (
+                                          <button
+                                            type="button"
+                                            key={cliente.id}
+                                            className="vad-orden-edit-sugerencia"
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => elegirClienteOrden(cliente)}
+                                          >
+                                            <span>{cliente.nombre}</span>
+                                            <span className="vad-orden-edit-sugerencia-precio">
+                                              {cliente.documento}
+                                            </span>
+                                          </button>
+                                        ))
+                                      )}
+                                    </div>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    className="vad-btn-secundario"
+                                    onClick={abrirFormClienteOrden}
+                                    style={{ marginTop: "0.5rem" }}
+                                  >
+                                    <UserPlus size={14} />
+                                    Crear nuevo cliente
+                                  </button>
+                                </>
+                              )}
+
+                              {mostrarFormClienteOrden && (
+                                <div className="vad-cliente-form">
+                                  <div className="vad-cliente-form-header">
+                                    <span>Nuevo cliente</span>
+                                    <button
+                                      type="button"
+                                      className="vad-cliente-form-cerrar"
+                                      onClick={cerrarFormClienteOrden}
+                                      aria-label="Cancelar"
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                  </div>
+
+                                  <div className="vad-tipo-cliente">
+                                    <button
+                                      type="button"
+                                      className={`vad-tipo-cliente-btn ${
+                                        formClienteOrden.tipo === "natural" ? "activo" : ""
+                                      }`}
+                                      onClick={() => cambiarTipoClienteOrden("natural")}
+                                    >
+                                      <User size={14} />
+                                      Persona natural
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={`vad-tipo-cliente-btn ${
+                                        formClienteOrden.tipo === "juridica" ? "activo" : ""
+                                      }`}
+                                      onClick={() => cambiarTipoClienteOrden("juridica")}
+                                    >
+                                      <Building2 size={14} />
+                                      Persona jurídica
+                                    </button>
+                                  </div>
+
+                                  {errorClienteOrden && (
+                                    <div className="vad-mensaje-error">{errorClienteOrden}</div>
+                                  )}
+
+                                  <label>
+                                    {formClienteOrden.tipo === "juridica" ? "Razón social" : "Nombre completo"}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={formClienteOrden.nombre}
+                                    onChange={(e) =>
+                                      setFormClienteOrden((f) => ({ ...f, nombre: e.target.value }))
+                                    }
+                                  />
+
+                                  <label>
+                                    {formClienteOrden.tipo === "juridica" ? "NIT" : "Cédula"}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={formClienteOrden.documento}
+                                    onChange={(e) =>
+                                      setFormClienteOrden((f) => ({ ...f, documento: e.target.value }))
+                                    }
+                                  />
+
+                                  <button
+                                    type="button"
+                                    className="vad-btn-primario"
+                                    onClick={guardarNuevoClienteOrden}
+                                    disabled={creandoClienteOrden}
+                                    style={{ marginTop: "0.6rem" }}
+                                  >
+                                    {creandoClienteOrden ? "Creando..." : "Crear cliente y continuar"}
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
 
                     <label>Vendido por</label>
                     <select
