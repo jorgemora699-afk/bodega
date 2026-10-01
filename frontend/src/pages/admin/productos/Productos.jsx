@@ -502,7 +502,7 @@ export default function Productos() {
             onChange={(valor) => setForm((f) => ({ ...f, precio_unitario: valor }))}
           />
 
-          <label>Vincular con otro producto (misma unidad física, opcional)</label>
+          <label>Vincular con otro producto</label>
           <select
             value={form.producto_base_id}
             onChange={(e) => setForm((f) => ({ ...f, producto_base_id: e.target.value }))}
@@ -524,8 +524,6 @@ export default function Productos() {
                 <p>
                   Este producto descuenta del stock de{" "}
                   <strong>{productos.find((p) => p.id === Number(form.producto_base_id))?.nombre}</strong>.
-                  Deja 1 si es la misma unidad con otro precio (ej. congelada). Pon un
-                  número mayor si es un paquete de varias unidades (ej. 12 para "Paquete x12").
                 </p>
               </div>
 
