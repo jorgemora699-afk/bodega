@@ -28,12 +28,12 @@ import "./Dashboard.css";
 import { listarBajoStockInsumo } from "../../../api/insumos";
 import { useNavigate } from "react-router-dom";
 import { listarOrdenesPendientes } from "../../../api/ordenes";
-import { Calendar } from "lucide-react";
 
 const PERIODOS = [
   { valor: "dia", label: "Hoy" },
   { valor: "semana", label: "Esta semana" },
   { valor: "mes", label: "Este mes" },
+  { valor: "personalizado", label: "Personalizado" },
 ];
 
 const COLORES_METODO = {
@@ -88,7 +88,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [verTodosProductos, setVerTodosProductos] = useState(false);
   const [verTodosInsumos, setVerTodosInsumos] = useState(false);
-  const [modoMesPersonalizado, setModoMesPersonalizado] = useState(false);
+  const modoMesPersonalizado = periodo === "personalizado";
   const [mesElegido, setMesElegido] = useState(() => new Date().getMonth() + 1);
   const [anioElegido, setAnioElegido] = useState(() => new Date().getFullYear());
 
@@ -98,7 +98,7 @@ export default function Dashboard() {
     cargarDatos(periodo);
     setVerTodosProductos(false);
     setVerTodosInsumos(false);
-  }, [periodo, modoMesPersonalizado, mesElegido, anioElegido]);
+  }, [periodo, mesElegido, anioElegido]);
 
   async function cargarDatos(periodoActual) {
     setCargando(true);
@@ -165,25 +165,22 @@ export default function Dashboard() {
         <div className="dash-periodo">
           <span>Periodo</span>
 
-          {!modoMesPersonalizado ? (
-            <select
-              className="dash-periodo-select"
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value)}
-            >
-              {PERIODOS.map((p) => (
-                <option key={p.valor} value={p.valor}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          ) : (
+          <select
+            className="dash-periodo-select"
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+          >
+            {PERIODOS.map((p) => (
+              <option key={p.valor} value={p.valor}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+
+          {modoMesPersonalizado && (
             <div className="dash-mes-selector">
               <select value={mesElegido} onChange={(e) => setMesElegido(Number(e.target.value))}>
-                {[
-                  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-                ].map((nombre, i) => (
+                {NOMBRES_MES.map((nombre, i) => (
                   <option key={i + 1} value={i + 1}>
                     {nombre}
                   </option>
@@ -199,15 +196,6 @@ export default function Dashboard() {
               </select>
             </div>
           )}
-
-          <button
-            type="button"
-            className={`dash-btn-mes-toggle ${modoMesPersonalizado ? "activo" : ""}`}
-            onClick={() => setModoMesPersonalizado((v) => !v)}
-            title={modoMesPersonalizado ? "Volver a periodos relativos" : "Elegir un mes específico"}
-          >
-            <Calendar size={14} />
-          </button>
         </div>
       </header>
 

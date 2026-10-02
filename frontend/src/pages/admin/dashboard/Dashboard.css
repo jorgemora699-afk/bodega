@@ -748,3 +748,38 @@
   border-color: var(--color-primary);
   color: white;
 }
+
+.dash-periodo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.dash-mes-selector {
+  display: flex;
+  gap: 0.4rem;
+  animation: dash-mes-aparecer 0.18s ease;
+}
+
+.dash-mes-selector select {
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-surface);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+@keyframes dash-mes-aparecer {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
