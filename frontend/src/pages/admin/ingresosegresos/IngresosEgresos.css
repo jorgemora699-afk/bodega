@@ -290,3 +290,76 @@
 .ie-capitalize {
   text-transform: capitalize;
 }
+
+/* =========================
+   TOGGLE "TAMBIÉN REGISTRAR ENTRADA"
+   ========================= */
+
+.ie-inventario-toggle-row {
+  margin-top: 0.3rem;
+}
+
+.ie-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--color-border);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.ie-checkbox input {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+}
+
+.ie-checkbox span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* =========================
+   PANEL DE INVENTARIO
+   ========================= */
+
+.ie-inventario-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.ie-inventario-hint {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* =========================
+   AVISO (ni éxito ni error)
+   ========================= */
+
+.ie-mensaje-aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-weight: 600;
+}

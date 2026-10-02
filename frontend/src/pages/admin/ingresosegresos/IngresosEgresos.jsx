@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, PackagePlus, AlertTriangle } from "lucide-react";
 import {
   listarIngresosEgresos,
   crearIngresoEgreso,
@@ -7,14 +7,31 @@ import {
   eliminarIngresoEgreso,
 } from "../../../api/ingresosEgresos";
 import { listarProveedores } from "../../../api/proveedores";
+import { listarProductos } from "../../../api/productos";
+import { registrarEntrada as registrarEntradaProducto } from "../../../api/inventario";
+import { listarInsumos, registrarEntradaInsumo } from "../../../api/insumos";
 import Sheet from "../../../components/Sheet";
 import "./IngresosEgresos.css";
 import CampoMoneda from "../../../components/CampoMoneda";
 
 function formVacio() {
-  return { tipo: "egreso", monto: "", descripcion: "", metodo_pago: "", proveedor_id: "" };
+  return {
+    tipo: "egreso",
+    monto: "",
+    descripcion: "",
+    proveedor_id: "",
+    metodo_pago: "",
+  };
 }
-const METODOS_PAGO = ["Efectivo", "Transferencia"];
+
+function formInventarioVacio() {
+  return {
+    activo: false,
+    tipoItem: "producto", // "producto" o "insumo"
+    itemId: "",
+    cantidad: "",
+  };
+}
 
 function formatearFecha(isoString) {
   return new Date(isoString).toLocaleDateString("es-CO", {
@@ -28,22 +45,34 @@ function formatearMoneda(valor) {
   return `$${Number(valor).toLocaleString("es-CO")}`;
 }
 
+function etiquetaMetodoPago(valor) {
+  if (valor === "efectivo") return "Efectivo";
+  if (valor === "transferencia") return "Transferencia";
+  return null;
+}
+
 export default function IngresosEgresos() {
   const [registros, setRegistros] = useState([]);
   const [proveedores, setProveedores] = useState([]);
+  const [productos, setProductos] = useState([]);
+  const [insumos, setInsumos] = useState([]);
   const [filtroTipo, setFiltroTipo] = useState("");
 
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(formVacio());
+  const [formInventario, setFormInventario] = useState(formInventarioVacio());
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(null);
 
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
+  const [avisoInventario, setAvisoInventario] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     cargarProveedores();
+    cargarProductos();
+    cargarInsumos();
   }, []);
 
   useEffect(() => {
@@ -55,6 +84,22 @@ export default function IngresosEgresos() {
       setProveedores(await listarProveedores());
     } catch (err) {
       // no bloquea la pantalla si falla, el campo de proveedor solo queda vacío
+    }
+  }
+
+  async function cargarProductos() {
+    try {
+      setProductos(await listarProductos());
+    } catch (err) {
+      // si falla, el selector de productos simplemente queda vacío
+    }
+  }
+
+  async function cargarInsumos() {
+    try {
+      setInsumos(await listarInsumos());
+    } catch (err) {
+      // si falla, el selector de insumos simplemente queda vacío
     }
   }
 
@@ -71,7 +116,9 @@ export default function IngresosEgresos() {
   function iniciarCreacion() {
     setEditandoId(null);
     setForm(formVacio());
+    setFormInventario(formInventarioVacio());
     setMensaje(null);
+    setAvisoInventario(null);
     setError(null);
     setSheetAbierto(true);
   }
@@ -79,14 +126,18 @@ export default function IngresosEgresos() {
   function iniciarEdicion(registro) {
     setEditandoId(registro.id);
     setMensaje(null);
+    setAvisoInventario(null);
     setError(null);
     setForm({
       tipo: registro.tipo,
       monto: registro.monto,
       descripcion: registro.descripcion,
-      metodo_pago: registro.metodo_pago || "",
       proveedor_id: registro.proveedor_id || "",
+      metodo_pago: registro.metodo_pago || "",
     });
+    // Al editar nunca se ofrece registrar inventario — evita duplicar
+    // una entrada que ya se hizo cuando se creó este egreso.
+    setFormInventario(formInventarioVacio());
     setSheetAbierto(true);
   }
 
@@ -95,7 +146,26 @@ export default function IngresosEgresos() {
     if (!abierto) {
       setEditandoId(null);
       setForm(formVacio());
+      setFormInventario(formInventarioVacio());
     }
+  }
+
+  function cambiarTipoRegistro(tipo) {
+    setForm((f) => ({ ...f, tipo }));
+    if (tipo !== "egreso") {
+      setFormInventario(formInventarioVacio());
+    }
+  }
+
+  function toggleInventario() {
+    setFormInventario((f) => ({
+      ...formInventarioVacio(),
+      activo: !f.activo,
+    }));
+  }
+
+  function cambiarTipoItem(tipoItem) {
+    setFormInventario((f) => ({ ...f, tipoItem, itemId: "" }));
   }
 
   async function guardar() {
@@ -104,15 +174,31 @@ export default function IngresosEgresos() {
       return;
     }
 
+    if (formInventario.activo) {
+      if (!formInventario.itemId) {
+        setError(
+          formInventario.tipoItem === "producto"
+            ? "Selecciona el producto que compraste"
+            : "Selecciona el insumo que compraste"
+        );
+        return;
+      }
+      if (!formInventario.cantidad || Number(formInventario.cantidad) <= 0) {
+        setError("Ingresa una cantidad válida para el inventario");
+        return;
+      }
+    }
+
     setGuardando(true);
     setError(null);
+    setAvisoInventario(null);
 
     const payload = {
       tipo: form.tipo,
       monto: Number(form.monto),
       descripcion: form.descripcion.trim(),
-      metodo_pago: form.metodo_pago || null,
       proveedor_id: form.proveedor_id ? Number(form.proveedor_id) : null,
+      metodo_pago: form.metodo_pago || null,
     };
 
     try {
@@ -123,6 +209,47 @@ export default function IngresosEgresos() {
         await crearIngresoEgreso(payload);
         setMensaje(form.tipo === "ingreso" ? "Ingreso registrado" : "Egreso registrado");
       }
+
+      // El egreso ya quedó guardado. Si pidieron también actualizar el
+      // inventario, se intenta aparte: si esto falla, el egreso igual
+      // queda registrado y solo se avisa que falta hacerlo a mano.
+      if (!editandoId && formInventario.activo) {
+        try {
+          const cantidad = Number(formInventario.cantidad);
+
+          if (formInventario.tipoItem === "producto") {
+            await registrarEntradaProducto({
+              producto_id: Number(formInventario.itemId),
+              cantidad,
+              motivo: "compra",
+            });
+          } else {
+            await registrarEntradaInsumo({
+              insumo_id: Number(formInventario.itemId),
+              cantidad,
+              motivo: "compra",
+            });
+          }
+
+          const nombreItem =
+            formInventario.tipoItem === "producto"
+              ? productos.find((p) => p.id === Number(formInventario.itemId))?.nombre
+              : insumos.find((i) => i.id === Number(formInventario.itemId))?.nombre;
+
+          setMensaje(`Egreso registrado y se agregaron ${cantidad} ${nombreItem || ""} al inventario`);
+
+          if (formInventario.tipoItem === "producto") {
+            cargarProductos();
+          } else {
+            cargarInsumos();
+          }
+        } catch (errInventario) {
+          setAvisoInventario(
+            "El egreso se registró, pero no se pudo actualizar el inventario. Hazlo manualmente desde Inventario o Insumos."
+          );
+        }
+      }
+
       cerrarSheet(false);
       cargarRegistros();
     } catch (err) {
@@ -154,6 +281,11 @@ export default function IngresosEgresos() {
     .filter((r) => r.tipo === "egreso")
     .reduce((sum, r) => sum + Number(r.monto), 0);
 
+  const opcionesItem =
+    formInventario.tipoItem === "producto"
+      ? productos.filter((p) => p.activo)
+      : insumos.filter((i) => i.activo);
+
   return (
     <div className="ie-container">
       <div className="ie-header">
@@ -165,6 +297,12 @@ export default function IngresosEgresos() {
       </div>
 
       {mensaje && <div className="ie-mensaje-exito">{mensaje}</div>}
+      {avisoInventario && !sheetAbierto && (
+        <div className="ie-mensaje-aviso">
+          <AlertTriangle size={14} />
+          {avisoInventario}
+        </div>
+      )}
       {error && !sheetAbierto && <div className="ie-mensaje-error">{error}</div>}
 
       <div className="ie-filtros">
@@ -195,74 +333,78 @@ export default function IngresosEgresos() {
       </div>
 
       <div className="ie-lista">
-        {registros.map((r) => (
-          <div key={r.id} className="ie-tarjeta">
-            <div className="ie-fila-principal">
-              <div>
-                <span className={`ie-badge-tipo ${r.tipo}`}>
-                  {r.tipo === "ingreso" ? "Ingreso" : "Egreso"}
+        {registros.map((r) => {
+          const metodoLabel = etiquetaMetodoPago(r.metodo_pago);
+
+          return (
+            <div key={r.id} className="ie-tarjeta">
+              <div className="ie-fila-principal">
+                <div>
+                  <span className={`ie-badge-tipo ${r.tipo}`}>
+                    {r.tipo === "ingreso" ? "Ingreso" : "Egreso"}
+                  </span>
+                  <span className="ie-descripcion">{r.descripcion}</span>
+                </div>
+                <span className={`ie-monto ${r.tipo === "ingreso" ? "positivo" : "negativo"}`}>
+                  {r.tipo === "ingreso" ? "+" : "-"}
+                  {formatearMoneda(r.monto)}
                 </span>
-                <span className="ie-descripcion">{r.descripcion}</span>
               </div>
-              <span className={`ie-monto ${r.tipo === "ingreso" ? "positivo" : "negativo"}`}>
-                {r.tipo === "ingreso" ? "+" : "-"}
-                {formatearMoneda(r.monto)}
-              </span>
-            </div>
 
-            <div className="ie-detalle">
-              <span>{formatearFecha(r.fecha)}</span>
-              {r.metodo_pago && (
-                <>
-                  <span>·</span>
-                  <span className="ie-capitalize">{r.metodo_pago}</span>
-                </>
-              )}
-              {r.proveedor_nombre && (
-                <>
-                  <span>·</span>
-                  <span>{r.proveedor_nombre}</span>
-                </>
-              )}
-            </div>
+              <div className="ie-detalle">
+                <span>{formatearFecha(r.fecha)}</span>
+                {metodoLabel && (
+                  <>
+                    <span>·</span>
+                    <span>{metodoLabel}</span>
+                  </>
+                )}
+                {r.proveedor_nombre && (
+                  <>
+                    <span>·</span>
+                    <span>{r.proveedor_nombre}</span>
+                  </>
+                )}
+              </div>
 
-            {confirmandoEliminar === r.id ? (
-              <div className="ie-confirmar">
-                <span>¿Eliminar este registro?</span>
-                <div className="ie-botones">
-                  <button
-                    className="ie-btn-secundario"
-                    onClick={() => setConfirmandoEliminar(null)}
-                    disabled={guardando}
-                  >
-                    No
+              {confirmandoEliminar === r.id ? (
+                <div className="ie-confirmar">
+                  <span>¿Eliminar este registro?</span>
+                  <div className="ie-botones">
+                    <button
+                      className="ie-btn-secundario"
+                      onClick={() => setConfirmandoEliminar(null)}
+                      disabled={guardando}
+                    >
+                      No
+                    </button>
+                    <button
+                      className="ie-btn-peligro"
+                      onClick={() => confirmarEliminar(r.id)}
+                      disabled={guardando}
+                    >
+                      Sí, eliminar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="ie-acciones">
+                  <button className="ie-btn-secundario" onClick={() => iniciarEdicion(r)}>
+                    <Pencil size={13} />
+                    Editar
                   </button>
                   <button
-                    className="ie-btn-peligro"
-                    onClick={() => confirmarEliminar(r.id)}
-                    disabled={guardando}
+                    className="ie-btn-peligro-outline"
+                    onClick={() => setConfirmandoEliminar(r.id)}
                   >
-                    Sí, eliminar
+                    <Trash2 size={13} />
+                    Eliminar
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="ie-acciones">
-                <button className="ie-btn-secundario" onClick={() => iniciarEdicion(r)}>
-                  <Pencil size={13} />
-                  Editar
-                </button>
-                <button
-                  className="ie-btn-peligro-outline"
-                  onClick={() => setConfirmandoEliminar(r.id)}
-                >
-                  <Trash2 size={13} />
-                  Eliminar
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
 
         {registros.length === 0 && (
           <p className="ie-sin-datos">No hay registros para este filtro</p>
@@ -281,13 +423,13 @@ export default function IngresosEgresos() {
           <div className="ie-tipos">
             <button
               className={`ie-tipo-btn ${form.tipo === "ingreso" ? "activo-ingreso" : ""}`}
-              onClick={() => setForm((f) => ({ ...f, tipo: "ingreso" }))}
+              onClick={() => cambiarTipoRegistro("ingreso")}
             >
               Ingreso
             </button>
             <button
               className={`ie-tipo-btn ${form.tipo === "egreso" ? "activo-egreso" : ""}`}
-              onClick={() => setForm((f) => ({ ...f, tipo: "egreso" }))}
+              onClick={() => cambiarTipoRegistro("egreso")}
             >
               Egreso
             </button>
@@ -308,23 +450,14 @@ export default function IngresosEgresos() {
           />
 
           <label>Método de pago (opcional)</label>
-          <div className="ie-tipos">
-            {METODOS_PAGO.map((metodo) => (
-              <button
-                key={metodo}
-                type="button"
-                className={`ie-tipo-btn ${form.metodo_pago === metodo ? "activo-ingreso" : ""}`}
-                onClick={() =>
-                  setForm((f) => ({
-                    ...f,
-                    metodo_pago: f.metodo_pago === metodo ? "" : metodo,
-                  }))
-                }
-              >
-                {metodo}
-              </button>
-            ))}
-          </div>
+          <select
+            value={form.metodo_pago}
+            onChange={(e) => setForm((f) => ({ ...f, metodo_pago: e.target.value }))}
+          >
+            <option value="">Sin especificar</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia</option>
+          </select>
 
           {form.tipo === "egreso" && (
             <>
@@ -341,6 +474,89 @@ export default function IngresosEgresos() {
                 ))}
               </select>
             </>
+          )}
+
+          {/* ======================================
+              REGISTRAR TAMBIÉN LA ENTRADA AL INVENTARIO
+              Solo al crear un egreso nuevo
+          ====================================== */}
+
+          {!editandoId && form.tipo === "egreso" && (
+            <div className="ie-inventario-toggle-row">
+              <label className="ie-checkbox">
+                <input
+                  type="checkbox"
+                  checked={formInventario.activo}
+                  onChange={toggleInventario}
+                />
+                <span>
+                  <PackagePlus size={14} />
+                  También registrar la entrada al inventario
+                </span>
+              </label>
+            </div>
+          )}
+
+          {formInventario.activo && (
+            <div className="ie-inventario-panel">
+              <label>¿Qué compraste?</label>
+              <div className="ie-tipos">
+                <button
+                  type="button"
+                  className={`ie-tipo-btn ${
+                    formInventario.tipoItem === "producto" ? "activo-ingreso" : ""
+                  }`}
+                  onClick={() => cambiarTipoItem("producto")}
+                >
+                  Producto
+                </button>
+                <button
+                  type="button"
+                  className={`ie-tipo-btn ${
+                    formInventario.tipoItem === "insumo" ? "activo-ingreso" : ""
+                  }`}
+                  onClick={() => cambiarTipoItem("insumo")}
+                >
+                  Insumo
+                </button>
+              </div>
+
+              <label>
+                {formInventario.tipoItem === "producto" ? "Producto" : "Insumo"}
+              </label>
+              <select
+                value={formInventario.itemId}
+                onChange={(e) =>
+                  setFormInventario((f) => ({ ...f, itemId: e.target.value }))
+                }
+              >
+                <option value="">Selecciona...</option>
+                {opcionesItem.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nombre}
+                    {formInventario.tipoItem === "insumo"
+                      ? ` (${item.unidad_medida})`
+                      : ""}
+                  </option>
+                ))}
+              </select>
+
+              <label>Cantidad comprada</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={formInventario.cantidad}
+                onChange={(e) =>
+                  setFormInventario((f) => ({ ...f, cantidad: e.target.value }))
+                }
+                placeholder="Ej: 24"
+              />
+
+              <p className="ie-inventario-hint">
+                Esto sumará la cantidad al stock actual, con motivo "compra".
+              </p>
+            </div>
           )}
 
           <button className="ie-btn-primario ie-btn-guardar-sheet" onClick={guardar} disabled={guardando}>
