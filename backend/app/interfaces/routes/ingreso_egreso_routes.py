@@ -44,7 +44,9 @@ def crear():
     if data.get("monto") is None or not data.get("descripcion"):
         return jsonify({"error": "monto y descripcion son obligatorios"}), 400
 
-    registro = IngresoEgresoService.crear(data)
+    registro, error = IngresoEgresoService.crear(data)
+    if error:
+        return jsonify({"error": error}), 400
     return jsonify(registro.to_dict()), 201
 
 

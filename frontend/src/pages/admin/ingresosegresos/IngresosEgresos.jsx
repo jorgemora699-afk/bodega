@@ -191,7 +191,6 @@ export default function IngresosEgresos() {
 
     setGuardando(true);
     setError(null);
-    setAvisoInventario(null);
 
     const payload = {
       tipo: form.tipo,
@@ -201,52 +200,38 @@ export default function IngresosEgresos() {
       metodo_pago: form.metodo_pago || null,
     };
 
+    if (!editandoId && formInventario.activo) {
+      payload.registrar_entrada = {
+        tipo: formInventario.tipoItem,
+        item_id: Number(formInventario.itemId),
+        cantidad: Number(formInventario.cantidad),
+      };
+    }
+
     try {
       if (editandoId) {
         await actualizarIngresoEgreso(editandoId, payload);
         setMensaje("Registro actualizado");
       } else {
         await crearIngresoEgreso(payload);
-        setMensaje(form.tipo === "ingreso" ? "Ingreso registrado" : "Egreso registrado");
-      }
 
-      // El egreso ya quedó guardado. Si pidieron también actualizar el
-      // inventario, se intenta aparte: si esto falla, el egreso igual
-      // queda registrado y solo se avisa que falta hacerlo a mano.
-      if (!editandoId && formInventario.activo) {
-        try {
-          const cantidad = Number(formInventario.cantidad);
-
-          if (formInventario.tipoItem === "producto") {
-            await registrarEntradaProducto({
-              producto_id: Number(formInventario.itemId),
-              cantidad,
-              motivo: "compra",
-            });
-          } else {
-            await registrarEntradaInsumo({
-              insumo_id: Number(formInventario.itemId),
-              cantidad,
-              motivo: "compra",
-            });
-          }
-
+        if (payload.registrar_entrada) {
           const nombreItem =
             formInventario.tipoItem === "producto"
               ? productos.find((p) => p.id === Number(formInventario.itemId))?.nombre
               : insumos.find((i) => i.id === Number(formInventario.itemId))?.nombre;
 
-          setMensaje(`Egreso registrado y se agregaron ${cantidad} ${nombreItem || ""} al inventario`);
+          setMensaje(
+            `Egreso registrado y se agregaron ${formInventario.cantidad} ${nombreItem || ""} al inventario`
+          );
 
           if (formInventario.tipoItem === "producto") {
             cargarProductos();
           } else {
             cargarInsumos();
           }
-        } catch (errInventario) {
-          setAvisoInventario(
-            "El egreso se registró, pero no se pudo actualizar el inventario. Hazlo manualmente desde Inventario o Insumos."
-          );
+        } else {
+          setMensaje(form.tipo === "ingreso" ? "Ingreso registrado" : "Egreso registrado");
         }
       }
 
@@ -357,6 +342,12 @@ export default function IngresosEgresos() {
                   <>
                     <span>·</span>
                     <span>{metodoLabel}</span>
+                  </>
+                )}
+                {r.tiene_entrada_inventario && (
+                  <>
+                    <span>·</span>
+                    <span>+{r.entrada_cantidad} {r.entrada_item_nombre} al inventario</span>
                   </>
                 )}
                 {r.proveedor_nombre && (
