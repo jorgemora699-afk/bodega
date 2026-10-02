@@ -716,3 +716,35 @@
 .dash-tarjeta-clicable:hover {
   border-color: var(--color-brand-dark);
 }
+
+.dash-mes-selector {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.dash-mes-selector select {
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.82rem;
+  background: var(--color-surface);
+}
+
+.dash-btn-mes-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.dash-btn-mes-toggle.activo {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}

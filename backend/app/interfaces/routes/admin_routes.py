@@ -181,8 +181,10 @@ def generar_pdf_reporte_general_endpoint():
 @admin_bp.route("/dashboard-resumen", methods=["GET"])
 def dashboard_resumen():
     periodo = request.args.get("periodo", default="dia")
+    anio = request.args.get("anio", type=int)
+    mes = request.args.get("mes", type=int)
     try:
-        resumen = AdminService.dashboard_resumen(periodo)
+        resumen = AdminService.dashboard_resumen(periodo, anio=anio, mes=mes)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resumen), 200
@@ -191,11 +193,14 @@ def dashboard_resumen():
 @admin_bp.route("/metodos-pago", methods=["GET"])
 def metodos_pago():
     periodo = request.args.get("periodo", default="dia")
+    anio = request.args.get("anio", type=int)
+    mes = request.args.get("mes", type=int)
     try:
-        resultado = AdminService.metodos_pago(periodo)
+        resultado = AdminService.metodos_pago(periodo, anio=anio, mes=mes)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resultado), 200
+
 @admin_bp.route("/salarios/marcar-pagado", methods=["POST"])
 def marcar_salario_pagado():
     data = request.get_json()

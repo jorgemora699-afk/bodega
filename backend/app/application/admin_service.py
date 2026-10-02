@@ -104,8 +104,8 @@ class AdminService:
         ]
 
     @staticmethod
-    def balance(periodo="mes"):
-        inicio, fin = _rango_por_periodo(periodo)
+    def balance(periodo="mes", anio=None, mes=None):
+        inicio, fin = _resolver_rango(periodo, anio, mes)
 
         ingresos_ventas = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
             Venta.fecha.between(inicio, fin),
@@ -371,9 +371,21 @@ class AdminService:
         }, None
 
     @staticmethod
-    def dashboard_resumen(periodo="dia"):
-        inicio, fin = rango_por_periodo(periodo)
-        inicio_ant, fin_ant = rango_periodo_anterior(periodo)
+    def metodos_pago_mes_anterior(anio, mes):
+        if mes == 1:
+            return anio - 1, 12
+        return anio, mes - 1
+
+
+    @staticmethod
+    def dashboard_resumen(periodo="dia", anio=None, mes=None):
+        inicio, fin = _resolver_rango(periodo, anio, mes)
+
+        if anio and mes:
+            anio_ant, mes_ant = AdminService._mes_anterior(anio, mes)
+            inicio_ant, fin_ant = rango_por_mes(anio_ant, mes_ant)
+        else:
+            inicio_ant, fin_ant = rango_periodo_anterior(periodo)
 
         def _totales(ini, fn):
             total_ventas = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
@@ -388,13 +400,13 @@ class AdminService:
 
         def _variacion(actual, anterior):
             if not anterior:
-                return None  # sin base de comparación (ej. periodo anterior sin ventas)
+                return None
             return round(((actual - anterior) / anterior) * 100, 1)
 
         ventas_actual, pedidos_actual = _totales(inicio, fin)
         ventas_anterior, pedidos_anterior = _totales(inicio_ant, fin_ant)
 
-        balance = AdminService.balance(periodo)
+        balance = AdminService.balance(periodo, anio=anio, mes=mes)
 
         productos_activos = Producto.query.filter(Producto.activo == True).all()
         stock_bajo_cantidad = sum(
@@ -413,9 +425,10 @@ class AdminService:
             "stock_bajo_cantidad": stock_bajo_cantidad,
         }
 
+
     @staticmethod
-    def metodos_pago(periodo="dia"):
-        inicio, fin = rango_por_periodo(periodo)
+    def metodos_pago(periodo="dia", anio=None, mes=None):
+        inicio, fin = _resolver_rango(periodo, anio, mes)
 
         resultados = db.session.query(
             Venta.metodo_pago,

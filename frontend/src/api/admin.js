@@ -66,13 +66,17 @@ export async function generarReporteGeneralPdf(desde, hasta) {
   return response.data;
 }
 
-export async function dashboardResumen(periodo = "dia") {
-  const response = await apiClient.get("/admin/dashboard-resumen", { params: { periodo } });
+export async function dashboardResumen(periodo = "dia", extra = {}) {
+  const response = await apiClient.get("/admin/dashboard-resumen", {
+    params: { periodo, ...extra },
+  });
   return response.data;
 }
 
-export async function metodosPago(periodo = "dia") {
-  const response = await apiClient.get("/admin/metodos-pago", { params: { periodo } });
+export async function metodosPago(periodo = "dia", extra = {}) {
+  const response = await apiClient.get("/admin/metodos-pago", {
+    params: { periodo, ...extra },
+  });
   return response.data;
 }
 
