@@ -31,6 +31,7 @@ import {
   tendenciaMensual,
 } from "../../../api/admin";
 import "./Reportes.css";
+import { Calendar } from "lucide-react";
 
 const PERIODOS = [
   { valor: "dia", label: "Hoy" },
@@ -189,6 +190,9 @@ export default function Reportes() {
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [modoMesPersonalizado, setModoMesPersonalizado] = useState(false);
+  const [mesElegido, setMesElegido] = useState(() => new Date().getMonth() + 1);
+  const [anioElegido, setAnioElegido] = useState(() => new Date().getFullYear());
 
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
   const [verTodos, setVerTodos] = useState(false);
@@ -201,13 +205,15 @@ export default function Reportes() {
       setCargando(true);
       setError(null);
 
+      const paramsExtra = modoMesPersonalizado ? { anio: anioElegido, mes: mesElegido } : {};
+
       try {
         const [resumenData, rankingData, trabajadoraData, diaData] =
           await Promise.all([
-            resumenVentas(periodo),
-            productosMasVendidos(periodo, 20),
-            ventasPorTrabajadora(periodo),
-            ventasPorDia(periodo),
+            resumenVentas(periodo, paramsExtra),
+            productosMasVendidos(periodo, 20, paramsExtra),
+            ventasPorTrabajadora(periodo, paramsExtra),
+            ventasPorDia(periodo, paramsExtra),
           ]);
 
         if (!activo) return;
@@ -228,7 +234,7 @@ export default function Reportes() {
     return () => {
       activo = false;
     };
-  }, [periodo, intento]);
+  }, [periodo, intento, modoMesPersonalizado, mesElegido, anioElegido]);
 
   /* Tendencia mensual (carga y error propios) */
   useEffect(() => {
@@ -350,14 +356,58 @@ export default function Reportes() {
           <button
             key={p.valor}
             className={`rep-periodo-btn ${
-              periodo === p.valor ? "activo" : ""
+              !modoMesPersonalizado && periodo === p.valor ? "activo" : ""
             }`}
-            onClick={() => cambiarPeriodo(p.valor)}
+            onClick={() => {
+              setModoMesPersonalizado(false);
+              cambiarPeriodo(p.valor);
+            }}
           >
             {p.label}
           </button>
         ))}
+
+        <button
+          type="button"
+          className={`rep-periodo-btn ${modoMesPersonalizado ? "activo" : ""}`}
+          onClick={() => {
+            setModoMesPersonalizado(true);
+            setDiaSeleccionado(null);
+          }}
+        >
+          <Calendar size={13} />
+          Elegir mes
+        </button>
       </div>
+
+      {modoMesPersonalizado && (
+        <div className="rep-mes-selector">
+          <select
+            value={mesElegido}
+            onChange={(e) => setMesElegido(Number(e.target.value))}
+          >
+            {[
+              "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+              "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+            ].map((nombre, i) => (
+              <option key={i + 1} value={i + 1}>
+                {nombre}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={anioElegido}
+            onChange={(e) => setAnioElegido(Number(e.target.value))}
+          >
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {error && (
         <div className="rep-mensaje-error">

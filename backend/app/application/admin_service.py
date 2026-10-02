@@ -13,6 +13,7 @@ from app.domain.periodos import rango_por_periodo as _rango_por_periodo
 from zoneinfo import ZoneInfo
 from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora, Orden
 from app.domain.periodos import rango_por_periodo, rango_periodo_anterior
+from app.domain.periodos import rango_por_mes
 
 
 def _venta_excluye_credito_pendiente():
@@ -28,6 +29,14 @@ def _venta_excluye_credito_pendiente():
         )
     )
 
+def _resolver_rango(periodo, anio=None, mes=None):
+    """Si se especifica anio y mes, usa ese mes calendario completo
+    (reporte de un mes específico elegido por el admin). Si no, usa
+    el periodo relativo de siempre (dia/semana/mes)."""
+    if anio and mes:
+        return rango_por_mes(anio, mes)
+    return rango_por_periodo(periodo)
+
 
 def _orden_excluye_credito_pendiente():
     """Misma exclusión, para consultas que parten directamente de Orden."""
@@ -37,8 +46,8 @@ def _orden_excluye_credito_pendiente():
 class AdminService:
 
     @staticmethod
-    def resumen_ventas(periodo="dia"):
-        inicio, fin = _rango_por_periodo(periodo)
+    def resumen_ventas(periodo="dia", anio=None, mes=None):
+        inicio, fin = _resolver_rango(periodo, anio, mes)
 
         total = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
             Venta.fecha.between(inicio, fin),
@@ -69,8 +78,8 @@ class AdminService:
         }
 
     @staticmethod
-    def productos_mas_vendidos(periodo="dia", limite=10):
-        inicio, fin = _rango_por_periodo(periodo)
+    def productos_mas_vendidos(periodo="dia", limite=10, anio=None, mes=None):
+        inicio, fin = _resolver_rango(periodo, anio, mes)
 
         resultados = db.session.query(
             Producto.id,
@@ -128,8 +137,8 @@ class AdminService:
         }
 
     @staticmethod
-    def ventas_por_trabajadora(periodo="dia"):
-        inicio, fin = rango_por_periodo(periodo)
+    def ventas_por_trabajadora(periodo="dia", anio=None, mes=None):
+        inicio, fin = _resolver_rango(periodo, anio, mes)
 
         # Igual que en resumen_ventas: pedidos con Orden (distinct orden_id)
         # + ventas sueltas del sistema antiguo (orden_id nulo, cada una su propio pedido).
@@ -159,8 +168,8 @@ class AdminService:
         ]
 
     @staticmethod
-    def ventas_por_dia(periodo="semana"):
-        inicio, fin = rango_por_periodo(periodo)
+    def ventas_por_dia(periodo="semana", anio=None, mes=None):
+        inicio, fin = _resolver_rango(periodo, anio, mes)
 
         fecha_colombia = func.date(func.timezone("America/Bogota", func.timezone("UTC", Venta.fecha)))
 

@@ -502,3 +502,18 @@
     background-position: -200% 0;
   }
 }
+
+.rep-mes-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.rep-mes-selector select {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.85rem;
+  background: var(--color-surface);
+}

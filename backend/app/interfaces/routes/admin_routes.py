@@ -15,8 +15,10 @@ def _proteger_admin():
 @admin_bp.route("/resumen-ventas", methods=["GET"])
 def resumen_ventas():
     periodo = request.args.get("periodo", default="dia")
+    anio = request.args.get("anio", type=int)
+    mes = request.args.get("mes", type=int)
     try:
-        resumen = AdminService.resumen_ventas(periodo)
+        resumen = AdminService.resumen_ventas(periodo, anio=anio, mes=mes)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resumen), 200
@@ -26,8 +28,10 @@ def resumen_ventas():
 def productos_mas_vendidos():
     periodo = request.args.get("periodo", default="dia")
     limite = request.args.get("limite", default=10, type=int)
+    anio = request.args.get("anio", type=int)
+    mes = request.args.get("mes", type=int)
     try:
-        productos = AdminService.productos_mas_vendidos(periodo, limite)
+        productos = AdminService.productos_mas_vendidos(periodo, limite, anio=anio, mes=mes)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(productos), 200
@@ -45,8 +49,10 @@ def balance():
 @admin_bp.route("/ventas-por-trabajadora", methods=["GET"])
 def ventas_por_trabajadora():
     periodo = request.args.get("periodo", default="dia")
+    anio = request.args.get("anio", type=int)
+    mes = request.args.get("mes", type=int)
     try:
-        resultado = AdminService.ventas_por_trabajadora(periodo)
+        resultado = AdminService.ventas_por_trabajadora(periodo, anio=anio, mes=mes)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resultado), 200
@@ -55,8 +61,10 @@ def ventas_por_trabajadora():
 @admin_bp.route("/ventas-por-dia", methods=["GET"])
 def ventas_por_dia():
     periodo = request.args.get("periodo", default="semana")
+    anio = request.args.get("anio", type=int)
+    mes = request.args.get("mes", type=int)
     try:
-        resultado = AdminService.ventas_por_dia(periodo)
+        resultado = AdminService.ventas_por_dia(periodo, anio=anio, mes=mes)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resultado), 200

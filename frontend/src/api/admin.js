@@ -1,24 +1,30 @@
 import apiClient from "./client";
 
-export async function resumenVentas(periodo = "dia") {
-  const response = await apiClient.get("/admin/resumen-ventas", { params: { periodo } });
-  return response.data;
-}
-
-export async function productosMasVendidos(periodo = "dia", limite = 10) {
-  const response = await apiClient.get("/admin/productos-mas-vendidos", {
-    params: { periodo, limite },
+export async function resumenVentas(periodo = "dia", extra = {}) {
+  const response = await apiClient.get("/admin/resumen-ventas", {
+    params: { periodo, ...extra },
   });
   return response.data;
 }
 
-export async function ventasPorTrabajadora(periodo) {
-  const response = await apiClient.get("/admin/ventas-por-trabajadora", { params: { periodo } });
+export async function productosMasVendidos(periodo = "dia", limite = 10, extra = {}) {
+  const response = await apiClient.get("/admin/productos-mas-vendidos", {
+    params: { periodo, limite, ...extra },
+  });
   return response.data;
 }
 
-export async function ventasPorDia(periodo) {
-  const response = await apiClient.get("/admin/ventas-por-dia", { params: { periodo } });
+export async function ventasPorTrabajadora(periodo, extra = {}) {
+  const response = await apiClient.get("/admin/ventas-por-trabajadora", {
+    params: { periodo, ...extra },
+  });
+  return response.data;
+}
+
+export async function ventasPorDia(periodo, extra = {}) {
+  const response = await apiClient.get("/admin/ventas-por-dia", {
+    params: { periodo, ...extra },
+  });
   return response.data;
 }
 

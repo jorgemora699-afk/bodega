@@ -45,3 +45,14 @@ def rango_periodo_anterior(periodo):
     inicio_anterior = fin_anterior - timedelta(days=dias - 1)
 
     return _utc_desde_fecha_local(inicio_anterior, fin_anterior)
+
+from calendar import monthrange
+
+def rango_por_mes(anio, mes):
+    """Rango de fechas (en UTC) para un mes calendario completo, dado su
+    año y número de mes (1-12). Usado para que el admin pueda ver el
+    reporte de cualquier mes específico, no solo el actual."""
+    inicio = date(anio, mes, 1)
+    ultimo_dia = monthrange(anio, mes)[1]
+    fin = date(anio, mes, ultimo_dia)
+    return _utc_desde_fecha_local(inicio, fin)
