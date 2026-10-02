@@ -371,7 +371,7 @@ class AdminService:
         }, None
 
     @staticmethod
-    def metodos_pago_mes_anterior(anio, mes):
+    def _mes_anterior(anio, mes):
         if mes == 1:
             return anio - 1, 12
         return anio, mes - 1
