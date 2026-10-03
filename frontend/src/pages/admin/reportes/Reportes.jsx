@@ -32,6 +32,9 @@ import {
 } from "../../../api/admin";
 import "./Reportes.css";
 import { Calendar } from "lucide-react";
+import { listarTrabajadoras } from "../../../api/trabajadoras";
+import { metodosPago } from "../../../api/admin";
+import { Wallet, TrendingDown } from "lucide-react";
 
 const PERIODOS = [
   { valor: "dia", label: "Hoy" },
@@ -160,13 +163,24 @@ function Sparkline({ datos, color, id }) {
   );
 }
 
-function Metrica({ label, valor, serie, id, color }) {
+function Metrica({ label, valor, serie, id, color, variacion }) {
   return (
     <div className="rep-metrica">
       <span className="rep-metrica-label">{label}</span>
       <span className="rep-metrica-valor">{valor}</span>
+      {variacion !== undefined && <Variacion valor={variacion} />}
       <Sparkline datos={serie} color={color} id={id} />
     </div>
+  );
+}
+
+function Variacion({ valor }) {
+  if (valor === null || valor === undefined) return null;
+  const positiva = valor >= 0;
+  return (
+    <span className={`rep-variacion ${positiva ? "sube" : "baja"}`}>
+      {positiva ? "↑" : "↓"} {Math.abs(valor).toFixed(1)}% vs. anterior
+    </span>
   );
 }
 
@@ -187,6 +201,9 @@ export default function Reportes() {
   const [cargandoTendencia, setCargandoTendencia] = useState(true);
   const [errorTendencia, setErrorTendencia] = useState(false);
   const [intentoTendencia, setIntentoTendencia] = useState(0);
+  const [trabajadoras, setTrabajadoras] = useState([]);
+  const [trabajadoraFiltro, setTrabajadoraFiltro] = useState("");
+  const [porMetodo, setPorMetodo] = useState([]);
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -197,6 +214,10 @@ export default function Reportes() {
   const [diaSeleccionado, setDiaSeleccionado] = useState(null);
   const [verTodos, setVerTodos] = useState(false);
 
+  useEffect(() => {
+    listarTrabajadoras().then(setTrabajadoras).catch(() => setTrabajadoras([]));
+  }, []);
+
   /* Datos principales (con protección contra respuestas viejas) */
   useEffect(() => {
     let activo = true;
@@ -205,15 +226,19 @@ export default function Reportes() {
       setCargando(true);
       setError(null);
 
-      const paramsExtra = modoMesPersonalizado ? { anio: anioElegido, mes: mesElegido } : {};
+      const paramsExtra = {
+        ...(modoMesPersonalizado ? { anio: anioElegido, mes: mesElegido } : {}),
+        ...(trabajadoraFiltro ? { trabajadora_id: Number(trabajadoraFiltro) } : {}),
+      };
 
       try {
-        const [resumenData, rankingData, trabajadoraData, diaData] =
+        const [resumenData, rankingData, trabajadoraData, diaData, metodoData] =
           await Promise.all([
             resumenVentas(periodo, paramsExtra),
             productosMasVendidos(periodo, 20, paramsExtra),
-            ventasPorTrabajadora(periodo, paramsExtra),
+            ventasPorTrabajadora(periodo, modoMesPersonalizado ? { anio: anioElegido, mes: mesElegido } : {}),
             ventasPorDia(periodo, paramsExtra),
+            metodosPago(periodo, paramsExtra),
           ]);
 
         if (!activo) return;
@@ -222,6 +247,7 @@ export default function Reportes() {
         setRanking(rankingData);
         setPorTrabajadora(trabajadoraData);
         setPorDia(diaData);
+        setPorMetodo(metodoData);
       } catch (err) {
         if (activo) setError("No se pudieron cargar los reportes");
       } finally {
@@ -234,7 +260,7 @@ export default function Reportes() {
     return () => {
       activo = false;
     };
-  }, [periodo, intento, modoMesPersonalizado, mesElegido, anioElegido]);
+  }, [periodo, intento, modoMesPersonalizado, mesElegido, anioElegido, trabajadoraFiltro]);
 
   /* Tendencia mensual (carga y error propios) */
   useEffect(() => {
@@ -380,6 +406,21 @@ export default function Reportes() {
         </button>
       </div>
 
+      <div className="rep-filtro-trabajadora">
+        <label>Trabajadora</label>
+        <select
+          value={trabajadoraFiltro}
+          onChange={(e) => setTrabajadoraFiltro(e.target.value)}
+        >
+          <option value="">Todas</option>
+          {trabajadoras.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {modoMesPersonalizado && (
         <div className="rep-mes-selector">
           <select
@@ -459,6 +500,7 @@ export default function Reportes() {
                 serie={serieTotal}
                 id="spark-total"
                 color="var(--color-brand)"
+                variacion={resumen.total_ventas_variacion_pct}
               />
 
               <Metrica
@@ -467,6 +509,7 @@ export default function Reportes() {
                 serie={serieVentas}
                 id="spark-ventas"
                 color="var(--color-primary)"
+                variacion={resumen.cantidad_pedidos_variacion_pct}
               />
 
               <Metrica
@@ -668,7 +711,7 @@ export default function Reportes() {
           </section>
 
           {/* VENTAS POR TRABAJADORA */}
-
+         {!trabajadoraFiltro && (
           <section className="rep-seccion">
             <h2>
               <Users size={15} />
@@ -739,8 +782,72 @@ export default function Reportes() {
               </div>
             )}
           </section>
+         )}
+         <section className="rep-seccion">
+          <h2>
+            <Wallet size={15} />
+            Métodos de pago
+          </h2>
+
+          {porMetodo.length === 0 ? (
+            <p className="rep-sin-datos">No hay ventas en este período</p>
+          ) : (
+            <>
+              {(() => {
+                const principal = [...porMetodo].sort((a, b) => b.total - a.total)[0];
+                return (
+                  <p className="rep-metodo-destacado">
+                    Método principal: <strong>{principal.metodo_pago}</strong> ({principal.porcentaje}%)
+                  </p>
+                );
+              })()}
+
+              <div className="rep-dona-layout">
+                <div className="rep-dona">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <Pie
+                        data={porMetodo}
+                        dataKey="total"
+                        nameKey="metodo_pago"
+                        innerRadius={56}
+                        outerRadius={82}
+                        paddingAngle={porMetodo.length > 1 ? 2 : 0}
+                        stroke="none"
+                      >
+                        {porMetodo.map((m, i) => (
+                          <Cell key={m.metodo_pago} fill={PALETA[i % PALETA.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value, name, props) => [formatearMoneda(value), props.payload.metodo_pago]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <ul className="rep-leyenda">
+                  {porMetodo.map((m, i) => (
+                    <li key={m.metodo_pago} className="rep-leyenda-item">
+                      <span className="rep-leyenda-punto" style={{ background: PALETA[i % PALETA.length] }} />
+                      <span className="rep-leyenda-nombre">
+                        {m.metodo_pago}
+                        <small>{m.cantidad_pedidos} pedido(s) · ticket prom. {formatearMoneda(m.ticket_promedio)}</small>
+                      </span>
+                      <span className="rep-leyenda-cifras">
+                        <strong>{formatearMoneda(m.total)}</strong>
+                        <small>{m.porcentaje}%</small>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+         </section>
         </div>
       )}
+
 
       {/* =========================
           TENDENCIA MENSUAL

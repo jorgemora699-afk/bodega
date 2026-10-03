@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from sqlalchemy import func, exists, and_, or_, case
 from app import db
-from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora
+from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora, Orden
 from app.domain.salario import (
     calcular_horas_trabajadas,
     calcular_salario as calcular_salario_domain,
@@ -11,7 +11,6 @@ from calendar import monthrange
 from app.domain.periodos import rango_por_periodo
 from app.domain.periodos import rango_por_periodo as _rango_por_periodo
 from zoneinfo import ZoneInfo
-from app.infrastructure.models import Venta, Producto, Horario, IngresoEgreso, Trabajadora, Orden
 from app.domain.periodos import rango_por_periodo, rango_periodo_anterior
 from app.domain.periodos import rango_por_mes
 
@@ -46,42 +45,62 @@ def _orden_excluye_credito_pendiente():
 class AdminService:
 
     @staticmethod
-    def resumen_ventas(periodo="dia", anio=None, mes=None):
+    def resumen_ventas(periodo="dia", anio=None, mes=None, trabajadora_id=None):
         inicio, fin = _resolver_rango(periodo, anio, mes)
 
-        total = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
-            Venta.fecha.between(inicio, fin),
-            _venta_excluye_credito_pendiente(),
-        ).scalar()
+        def _totales(ini, fin_):
+            venta_q = db.session.query(func.coalesce(func.sum(Venta.total), 0)).filter(
+                Venta.fecha.between(ini, fin_),
+                _venta_excluye_credito_pendiente(),
+            )
+            orden_q = db.session.query(func.count(Orden.id)).filter(
+                Orden.fecha.between(ini, fin_),
+                _orden_excluye_credito_pendiente(),
+            )
+            suelta_q = db.session.query(func.count(Venta.id)).filter(
+                Venta.orden_id.is_(None),
+                Venta.fecha.between(ini, fin_),
+            )
 
-        # "Pedidos" = transacciones distintas, no líneas de producto.
-        # Un pedido con 3 productos son 3 filas en Venta pero 1 sola Orden.
-        cantidad_pedidos_agrupados = db.session.query(func.count(Orden.id)).filter(
-            Orden.fecha.between(inicio, fin),
-            _orden_excluye_credito_pendiente(),
-        ).scalar()
+            if trabajadora_id:
+                venta_q = venta_q.filter(Venta.trabajadora_id == trabajadora_id)
+                orden_q = orden_q.filter(Orden.trabajadora_id == trabajadora_id)
+                suelta_q = suelta_q.filter(Venta.trabajadora_id == trabajadora_id)
 
-        # Ventas sueltas del sistema antiguo (sin Orden): cada una es su propio pedido.
-        cantidad_ventas_sueltas = db.session.query(func.count(Venta.id)).filter(
-            Venta.orden_id.is_(None),
-            Venta.fecha.between(inicio, fin),
-        ).scalar()
+            total = float(venta_q.scalar())
+            cantidad_pedidos = orden_q.scalar() + suelta_q.scalar()
+            return total, cantidad_pedidos
 
-        cantidad_pedidos = cantidad_pedidos_agrupados + cantidad_ventas_sueltas
+        total, cantidad_pedidos = _totales(inicio, fin)
+
+        if anio and mes:
+            anio_ant, mes_ant = AdminService._mes_anterior(anio, mes)
+            inicio_ant, fin_ant = rango_por_mes(anio_ant, mes_ant)
+        else:
+            inicio_ant, fin_ant = rango_periodo_anterior(periodo)
+
+        total_ant, pedidos_ant = _totales(inicio_ant, fin_ant)
+
+        def _variacion(actual, anterior):
+            if not anterior:
+                return None
+            return round(((actual - anterior) / anterior) * 100, 1)
 
         return {
             "periodo": periodo,
             "desde": inicio.isoformat(),
             "hasta": fin.isoformat(),
-            "total_ventas": float(total),
+            "total_ventas": total,
             "cantidad_pedidos": cantidad_pedidos,
+            "total_ventas_variacion_pct": _variacion(total, total_ant),
+            "cantidad_pedidos_variacion_pct": _variacion(cantidad_pedidos, pedidos_ant),
         }
 
     @staticmethod
-    def productos_mas_vendidos(periodo="dia", limite=10, anio=None, mes=None):
+    def productos_mas_vendidos(periodo="dia", limite=10, anio=None, mes=None, trabajadora_id=None):
         inicio, fin = _resolver_rango(periodo, anio, mes)
 
-        resultados = db.session.query(
+        query = db.session.query(
             Producto.id,
             Producto.nombre,
             func.sum(Venta.cantidad).label("cantidad_vendida"),
@@ -89,7 +108,12 @@ class AdminService:
         ).join(Venta, Venta.producto_id == Producto.id).filter(
             Venta.fecha.between(inicio, fin),
             _venta_excluye_credito_pendiente(),
-        ).group_by(Producto.id, Producto.nombre).order_by(
+        )
+
+        if trabajadora_id:
+            query = query.filter(Venta.trabajadora_id == trabajadora_id)
+
+        resultados = query.group_by(Producto.id, Producto.nombre).order_by(
             func.sum(Venta.cantidad).desc()
         ).limit(limite).all()
 
@@ -168,18 +192,23 @@ class AdminService:
         ]
 
     @staticmethod
-    def ventas_por_dia(periodo="semana", anio=None, mes=None):
+    def ventas_por_dia(periodo="semana", anio=None, mes=None, trabajadora_id=None):
         inicio, fin = _resolver_rango(periodo, anio, mes)
 
         fecha_colombia = func.date(func.timezone("America/Bogota", func.timezone("UTC", Venta.fecha)))
 
-        resultados = db.session.query(
+        query = db.session.query(
             fecha_colombia.label("fecha"),
             func.sum(Venta.total).label("total"),
         ).filter(
             Venta.fecha.between(inicio, fin),
             _venta_excluye_credito_pendiente(),
-        ).group_by(fecha_colombia).order_by(fecha_colombia).all()
+        )
+
+        if trabajadora_id:
+            query = query.filter(Venta.trabajadora_id == trabajadora_id)
+
+        resultados = query.group_by(fecha_colombia).order_by(fecha_colombia).all()
 
         return [
             {"fecha": r.fecha.isoformat(), "total": float(r.total)}
@@ -376,7 +405,6 @@ class AdminService:
             return anio - 1, 12
         return anio, mes - 1
 
-
     @staticmethod
     def dashboard_resumen(periodo="dia", anio=None, mes=None):
         inicio, fin = _resolver_rango(periodo, anio, mes)
@@ -425,26 +453,38 @@ class AdminService:
             "stock_bajo_cantidad": stock_bajo_cantidad,
         }
 
-
     @staticmethod
-    def metodos_pago(periodo="dia", anio=None, mes=None):
+    def metodos_pago(periodo="dia", anio=None, mes=None, trabajadora_id=None):
         inicio, fin = _resolver_rango(periodo, anio, mes)
 
-        resultados = db.session.query(
+        ventas_sueltas_expr = func.count(case((Venta.orden_id.is_(None), Venta.id)))
+
+        query = db.session.query(
             Venta.metodo_pago,
             func.sum(Venta.total).label("total"),
+            func.count(func.distinct(Venta.orden_id)).label("pedidos_con_orden"),
+            ventas_sueltas_expr.label("ventas_sueltas"),
         ).filter(
             Venta.fecha.between(inicio, fin),
             _venta_excluye_credito_pendiente(),
-        ).group_by(Venta.metodo_pago).all()
+        )
+
+        if trabajadora_id:
+            query = query.filter(Venta.trabajadora_id == trabajadora_id)
+
+        resultados = query.group_by(Venta.metodo_pago).all()
 
         total_general = sum(float(r.total) for r in resultados)
 
-        return [
-            {
+        salida = []
+        for r in resultados:
+            cantidad_pedidos = r.pedidos_con_orden + r.ventas_sueltas
+            salida.append({
                 "metodo_pago": r.metodo_pago,
                 "total": float(r.total),
                 "porcentaje": round((float(r.total) / total_general) * 100, 1) if total_general > 0 else 0,
-            }
-            for r in resultados
-        ]
+                "cantidad_pedidos": cantidad_pedidos,
+                "ticket_promedio": round(float(r.total) / cantidad_pedidos, 2) if cantidad_pedidos > 0 else 0,
+            })
+
+        return salida

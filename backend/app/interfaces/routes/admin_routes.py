@@ -17,8 +17,9 @@ def resumen_ventas():
     periodo = request.args.get("periodo", default="dia")
     anio = request.args.get("anio", type=int)
     mes = request.args.get("mes", type=int)
+    trabajadora_id = request.args.get("trabajadora_id", type=int)
     try:
-        resumen = AdminService.resumen_ventas(periodo, anio=anio, mes=mes)
+        resumen = AdminService.resumen_ventas(periodo, anio=anio, mes=mes, trabajadora_id=trabajadora_id)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resumen), 200
@@ -30,8 +31,9 @@ def productos_mas_vendidos():
     limite = request.args.get("limite", default=10, type=int)
     anio = request.args.get("anio", type=int)
     mes = request.args.get("mes", type=int)
+    trabajadora_id = request.args.get("trabajadora_id", type=int)
     try:
-        productos = AdminService.productos_mas_vendidos(periodo, limite, anio=anio, mes=mes)
+        productos = AdminService.productos_mas_vendidos(periodo, limite, anio=anio, mes=mes, trabajadora_id=trabajadora_id)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(productos), 200
@@ -63,8 +65,9 @@ def ventas_por_dia():
     periodo = request.args.get("periodo", default="semana")
     anio = request.args.get("anio", type=int)
     mes = request.args.get("mes", type=int)
+    trabajadora_id = request.args.get("trabajadora_id", type=int)
     try:
-        resultado = AdminService.ventas_por_dia(periodo, anio=anio, mes=mes)
+        resultado = AdminService.ventas_por_dia(periodo, anio=anio, mes=mes, trabajadora_id=trabajadora_id)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resultado), 200
@@ -195,8 +198,9 @@ def metodos_pago():
     periodo = request.args.get("periodo", default="dia")
     anio = request.args.get("anio", type=int)
     mes = request.args.get("mes", type=int)
+    trabajadora_id = request.args.get("trabajadora_id", type=int)
     try:
-        resultado = AdminService.metodos_pago(periodo, anio=anio, mes=mes)
+        resultado = AdminService.metodos_pago(periodo, anio=anio, mes=mes, trabajadora_id=trabajadora_id)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     return jsonify(resultado), 200

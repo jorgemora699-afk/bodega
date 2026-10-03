@@ -517,3 +517,48 @@
   font-size: 0.85rem;
   background: var(--color-surface);
 }
+
+.rep-filtro-trabajadora {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.rep-filtro-trabajadora label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.rep-filtro-trabajadora select {
+  flex: 1;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  font-size: 0.85rem;
+  background: var(--color-surface);
+}
+
+.rep-variacion {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.rep-variacion.sube {
+  color: #1B6A5C;
+}
+
+.rep-variacion.baja {
+  color: var(--color-danger);
+}
+
+.rep-metodo-destacado {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.8rem;
+}
+
+.rep-metodo-destacado strong {
+  color: var(--color-primary);
+}
