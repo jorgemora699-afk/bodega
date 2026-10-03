@@ -363,3 +363,161 @@
   color: var(--color-brand-dark);
   font-weight: 600;
 }
+
+/* =========================
+   ENTRADAS DE INVENTARIO
+   ========================= */
+
+.ie-inventario-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.ie-inventario-seccion > label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ie-inventario-hint {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* Entradas ya guardadas (modo edición) */
+
+.ie-entradas-existentes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ie-entrada-existente {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.8rem;
+}
+
+.ie-entrada-existente.para-eliminar {
+  opacity: 0.55;
+  text-decoration: line-through;
+  border-style: dashed;
+}
+
+.ie-entrada-existente button {
+  flex-shrink: 0;
+  padding: 0.25rem 0.6rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* Una fila de entrada nueva */
+
+.ie-fila-entrada {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--color-border);
+}
+
+.ie-fila-entrada-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ie-tipos-chico {
+  gap: 0.3rem;
+}
+
+.ie-tipos-chico .ie-tipo-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.72rem;
+}
+
+.ie-fila-entrada-quitar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.ie-fila-entrada-cantidad {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ie-fila-entrada-cantidad input {
+  flex: 1;
+}
+
+.ie-fila-entrada-unidad {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.ie-agregar-entrada-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Resumen de entradas en la tarjeta de la lista */
+
+.ie-entradas-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.ie-entrada-chip {
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  background: var(--color-success-tint);
+  color: var(--color-success);
+  font-size: 0.7rem;
+  font-weight: 700;
+}

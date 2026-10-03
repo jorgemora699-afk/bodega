@@ -2,6 +2,7 @@ from datetime import datetime
 from app import db
 from app.infrastructure.models import (
     IngresoEgreso,
+    IngresoEgresoDetalleInventario,
     Producto,
     Insumo,
     MovimientoInventario,
@@ -27,11 +28,64 @@ class IngresoEgresoService:
         return IngresoEgreso.query.get(registro_id)
 
     @staticmethod
+    def _crear_entrada(registro, tipo_item, item_id, cantidad):
+        """Crea UNA entrada de inventario (producto o insumo) vinculada al
+        registro, dentro de la misma transacción. Devuelve un mensaje de
+        error si algo falla, o None si todo salió bien."""
+        try:
+            cantidad = float(cantidad)
+        except (TypeError, ValueError):
+            return "La cantidad de una de las entradas no es válida"
+
+        if cantidad <= 0:
+            return "La cantidad de una de las entradas debe ser mayor a cero"
+
+        if tipo_item == "producto":
+            producto = Producto.query.get(item_id)
+            if not producto:
+                return "Producto no encontrado en una de las entradas"
+
+            producto.stock_actual = float(producto.stock_actual) + cantidad
+
+            movimiento = MovimientoInventario(
+                producto_id=producto.id, tipo="entrada", motivo="compra", cantidad=cantidad,
+            )
+            db.session.add(movimiento)
+            db.session.flush()
+
+            detalle = IngresoEgresoDetalleInventario(
+                ingreso_egreso_id=registro.id, movimiento_inventario_id=movimiento.id,
+            )
+
+        elif tipo_item == "insumo":
+            insumo = Insumo.query.get(item_id)
+            if not insumo:
+                return "Insumo no encontrado en una de las entradas"
+
+            insumo.stock_actual = float(insumo.stock_actual) + cantidad
+
+            movimiento = MovimientoInsumo(
+                insumo_id=insumo.id, tipo="entrada", motivo="compra", cantidad=cantidad,
+            )
+            db.session.add(movimiento)
+            db.session.flush()
+
+            detalle = IngresoEgresoDetalleInventario(
+                ingreso_egreso_id=registro.id, movimiento_insumo_id=movimiento.id,
+            )
+
+        else:
+            return "El tipo de una de las entradas debe ser 'producto' o 'insumo'"
+
+        db.session.add(detalle)
+        return None
+
+    @staticmethod
     def crear(data):
-        """Crea el ingreso/egreso y, opcionalmente, su entrada de inventario
-        vinculada — todo en una sola transacción. Si la entrada de
-        inventario falla (ej. producto no encontrado), no se guarda nada,
-        ni siquiera el egreso."""
+        """Crea el ingreso/egreso y, opcionalmente, varias entradas de
+        inventario vinculadas (una factura puede traer varios productos
+        o insumos). Todo en una sola transacción: si cualquier entrada
+        falla, no se guarda nada, ni siquiera el egreso."""
         registro = IngresoEgreso(
             tipo=data["tipo"],
             monto=data["monto"],
@@ -40,68 +94,28 @@ class IngresoEgresoService:
             proveedor_id=data.get("proveedor_id"),
         )
         db.session.add(registro)
-        db.session.flush()  # para tener registro.id disponible
+        db.session.flush()
 
-        entrada = data.get("registrar_entrada")
-
-        if entrada:
-            tipo_item = entrada.get("tipo")
-            item_id = entrada.get("item_id")
-            cantidad = entrada.get("cantidad")
-
-            if tipo_item not in ("producto", "insumo") or not item_id or not cantidad:
+        for entrada in data.get("registrar_entradas") or []:
+            error = IngresoEgresoService._crear_entrada(
+                registro, entrada.get("tipo"), entrada.get("item_id"), entrada.get("cantidad"),
+            )
+            if error:
                 db.session.rollback()
-                return None, "Datos incompletos para registrar la entrada de inventario"
-
-            cantidad = float(cantidad)
-            if cantidad <= 0:
-                db.session.rollback()
-                return None, "La cantidad de la entrada debe ser mayor a cero"
-
-            if tipo_item == "producto":
-                producto = Producto.query.get(item_id)
-                if not producto:
-                    db.session.rollback()
-                    return None, "Producto no encontrado para la entrada de inventario"
-
-                producto.stock_actual = float(producto.stock_actual) + cantidad
-
-                movimiento = MovimientoInventario(
-                    producto_id=producto.id,
-                    tipo="entrada",
-                    motivo="compra",
-                    cantidad=cantidad,
-                )
-                db.session.add(movimiento)
-                db.session.flush()
-                registro.movimiento_inventario_id = movimiento.id
-
-            else:  # insumo
-                insumo = Insumo.query.get(item_id)
-                if not insumo:
-                    db.session.rollback()
-                    return None, "Insumo no encontrado para la entrada de inventario"
-
-                insumo.stock_actual = float(insumo.stock_actual) + cantidad
-
-                movimiento = MovimientoInsumo(
-                    insumo_id=insumo.id,
-                    tipo="entrada",
-                    motivo="compra",
-                    cantidad=cantidad,
-                )
-                db.session.add(movimiento)
-                db.session.flush()
-                registro.movimiento_insumo_id = movimiento.id
+                return None, error
 
         db.session.commit()
         return registro, None
 
     @staticmethod
     def actualizar(registro_id, data):
+        """Actualiza los campos simples del registro y, opcionalmente:
+        - elimina entradas de inventario existentes (revierte su stock)
+        - agrega entradas de inventario nuevas
+        Todo en una sola transacción."""
         registro = IngresoEgreso.query.get(registro_id)
         if not registro:
-            return None
+            return None, "Registro no encontrado"
 
         if "tipo" in data:
             registro.tipo = data["tipo"]
@@ -113,12 +127,36 @@ class IngresoEgresoService:
             registro.metodo_pago = data["metodo_pago"]
         if "proveedor_id" in data:
             registro.proveedor_id = data["proveedor_id"]
-        # La entrada de inventario vinculada (si existe) nunca se toca al
-        # editar — solo se crea al crear el registro, y se revierte al
-        # eliminarlo.
+
+        for detalle_id in data.get("eliminar_detalle_ids") or []:
+            detalle = IngresoEgresoDetalleInventario.query.get(detalle_id)
+            if not detalle or detalle.ingreso_egreso_id != registro.id:
+                continue  # ignora ids que no existan o no sean de este registro
+
+            if detalle.movimiento_inventario_id and detalle.movimiento_inventario:
+                mov = detalle.movimiento_inventario
+                if mov.producto:
+                    mov.producto.stock_actual = float(mov.producto.stock_actual) - float(mov.cantidad)
+                db.session.delete(mov)
+
+            if detalle.movimiento_insumo_id and detalle.movimiento_insumo:
+                mov = detalle.movimiento_insumo
+                if mov.insumo:
+                    mov.insumo.stock_actual = float(mov.insumo.stock_actual) - float(mov.cantidad)
+                db.session.delete(mov)
+
+            db.session.delete(detalle)
+
+        for entrada in data.get("nuevas_entradas") or []:
+            error = IngresoEgresoService._crear_entrada(
+                registro, entrada.get("tipo"), entrada.get("item_id"), entrada.get("cantidad"),
+            )
+            if error:
+                db.session.rollback()
+                return None, error
 
         db.session.commit()
-        return registro
+        return registro, None
 
     @staticmethod
     def eliminar(registro_id):
@@ -126,20 +164,20 @@ class IngresoEgresoService:
         if not registro:
             return False
 
-        # Si este egreso generó una entrada de inventario, se revierte
-        # el stock y se borra ese movimiento antes de borrar el registro,
-        # para que el inventario quede consistente con el dinero.
-        if registro.movimiento_inventario_id and registro.movimiento_inventario:
-            mov = registro.movimiento_inventario
-            if mov.producto:
-                mov.producto.stock_actual = float(mov.producto.stock_actual) - float(mov.cantidad)
-            db.session.delete(mov)
+        for detalle in list(registro.detalles_inventario):
+            if detalle.movimiento_inventario_id and detalle.movimiento_inventario:
+                mov = detalle.movimiento_inventario
+                if mov.producto:
+                    mov.producto.stock_actual = float(mov.producto.stock_actual) - float(mov.cantidad)
+                db.session.delete(mov)
 
-        if registro.movimiento_insumo_id and registro.movimiento_insumo:
-            mov = registro.movimiento_insumo
-            if mov.insumo:
-                mov.insumo.stock_actual = float(mov.insumo.stock_actual) - float(mov.cantidad)
-            db.session.delete(mov)
+            if detalle.movimiento_insumo_id and detalle.movimiento_insumo:
+                mov = detalle.movimiento_insumo
+                if mov.insumo:
+                    mov.insumo.stock_actual = float(mov.insumo.stock_actual) - float(mov.cantidad)
+                db.session.delete(mov)
+
+            db.session.delete(detalle)
 
         db.session.delete(registro)
         db.session.commit()

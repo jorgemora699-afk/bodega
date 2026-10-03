@@ -476,27 +476,19 @@ class IngresoEgreso(db.Model):
     proveedor_id = db.Column(db.Integer, db.ForeignKey("proveedores.id"), nullable=True)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # NUEVO — si este egreso generó una entrada de inventario, queda
-    # vinculado al movimiento exacto (de producto O de insumo, nunca
-    # ambos). Permite revertir el stock correctamente si se elimina.
-    movimiento_inventario_id = db.Column(db.Integer, db.ForeignKey("movimientos_inventario.id"), nullable=True)
-    movimiento_insumo_id = db.Column(db.Integer, db.ForeignKey("movimientos_insumo.id"), nullable=True)
-
     proveedor = db.relationship("Proveedor")
-    movimiento_inventario = db.relationship("MovimientoInventario")
-    movimiento_insumo = db.relationship("MovimientoInsumo")
+
+    # Un egreso puede generar varias entradas de inventario (una factura
+    # con gaseosas + carne molida, por ejemplo). Cada una queda como una
+    # fila en IngresoEgresoDetalleInventario.
+    detalles_inventario = db.relationship(
+        "IngresoEgresoDetalleInventario",
+        back_populates="ingreso_egreso",
+        cascade="all, delete-orphan",
+        order_by="IngresoEgresoDetalleInventario.id",
+    )
 
     def to_dict(self):
-        entrada_item_nombre = None
-        entrada_cantidad = None
-
-        if self.movimiento_inventario:
-            entrada_item_nombre = self.movimiento_inventario.producto.nombre if self.movimiento_inventario.producto else None
-            entrada_cantidad = float(self.movimiento_inventario.cantidad)
-        elif self.movimiento_insumo:
-            entrada_item_nombre = self.movimiento_insumo.insumo.nombre if self.movimiento_insumo.insumo else None
-            entrada_cantidad = float(self.movimiento_insumo.cantidad)
-
         return {
             "id": self.id,
             "tipo": self.tipo,
@@ -506,13 +498,58 @@ class IngresoEgreso(db.Model):
             "proveedor_id": self.proveedor_id,
             "proveedor_nombre": self.proveedor.nombre if self.proveedor else None,
             "fecha": self.fecha.isoformat() + "Z",
-            "tiene_entrada_inventario": self.movimiento_inventario_id is not None or self.movimiento_insumo_id is not None,
-            "entrada_item_nombre": entrada_item_nombre,
-            "entrada_cantidad": entrada_cantidad,
+            "entradas_inventario": [d.to_dict() for d in self.detalles_inventario],
         }
 
     def __repr__(self):
         return f"<IngresoEgreso {self.tipo} - {self.monto}>"
+
+
+class IngresoEgresoDetalleInventario(db.Model):
+    """Vincula un ingreso/egreso con UN movimiento de inventario (de
+    producto o de insumo, nunca ambos). Un mismo egreso puede tener
+    varias filas — una por cada producto/insumo comprado en esa factura."""
+    __tablename__ = "ingreso_egreso_detalles_inventario"
+
+    id = db.Column(db.Integer, primary_key=True)
+    ingreso_egreso_id = db.Column(db.Integer, db.ForeignKey("ingresos_egresos.id"), nullable=False)
+    movimiento_inventario_id = db.Column(db.Integer, db.ForeignKey("movimientos_inventario.id"), nullable=True)
+    movimiento_insumo_id = db.Column(db.Integer, db.ForeignKey("movimientos_insumo.id"), nullable=True)
+
+    ingreso_egreso = db.relationship("IngresoEgreso", back_populates="detalles_inventario")
+    movimiento_inventario = db.relationship("MovimientoInventario")
+    movimiento_insumo = db.relationship("MovimientoInsumo")
+
+    def to_dict(self):
+        if self.movimiento_inventario:
+            mov = self.movimiento_inventario
+            return {
+                "id": self.id,
+                "tipo": "producto",
+                "item_id": mov.producto_id,
+                "item_nombre": mov.producto.nombre if mov.producto else None,
+                "cantidad": float(mov.cantidad),
+                "unidad_medida": None,
+            }
+
+        if self.movimiento_insumo:
+            mov = self.movimiento_insumo
+            return {
+                "id": self.id,
+                "tipo": "insumo",
+                "item_id": mov.insumo_id,
+                "item_nombre": mov.insumo.nombre if mov.insumo else None,
+                "cantidad": float(mov.cantidad),
+                "unidad_medida": mov.insumo.unidad_medida if mov.insumo else None,
+            }
+
+        return {
+            "id": self.id, "tipo": None, "item_id": None,
+            "item_nombre": None, "cantidad": None, "unidad_medida": None,
+        }
+
+    def __repr__(self):
+        return f"<IngresoEgresoDetalleInventario {self.id}>"
 
 
 class Insumo(db.Model):

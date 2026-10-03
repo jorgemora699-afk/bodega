@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, PackagePlus, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, PackagePlus, X } from "lucide-react";
 import {
   listarIngresosEgresos,
   crearIngresoEgreso,
@@ -8,8 +8,7 @@ import {
 } from "../../../api/ingresosEgresos";
 import { listarProveedores } from "../../../api/proveedores";
 import { listarProductos } from "../../../api/productos";
-import { registrarEntrada as registrarEntradaProducto } from "../../../api/inventario";
-import { listarInsumos, registrarEntradaInsumo } from "../../../api/insumos";
+import { listarInsumos } from "../../../api/insumos";
 import Sheet from "../../../components/Sheet";
 import "./IngresosEgresos.css";
 import CampoMoneda from "../../../components/CampoMoneda";
@@ -24,13 +23,8 @@ function formVacio() {
   };
 }
 
-function formInventarioVacio() {
-  return {
-    activo: false,
-    tipoItem: "producto", // "producto" o "insumo"
-    itemId: "",
-    cantidad: "",
-  };
+function filaVacia() {
+  return { tipoItem: "producto", itemId: "", cantidad: "" };
 }
 
 function formatearFecha(isoString) {
@@ -51,6 +45,11 @@ function etiquetaMetodoPago(valor) {
   return null;
 }
 
+function etiquetaEntrada(e) {
+  const unidad = e.unidad_medida ? ` ${e.unidad_medida}` : "";
+  return `+${e.cantidad}${unidad} ${e.item_nombre || ""}`;
+}
+
 export default function IngresosEgresos() {
   const [registros, setRegistros] = useState([]);
   const [proveedores, setProveedores] = useState([]);
@@ -61,12 +60,18 @@ export default function IngresosEgresos() {
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(formVacio());
-  const [formInventario, setFormInventario] = useState(formInventarioVacio());
+
+  // Entradas de inventario: las que ya existían (solo al editar, cada una
+  // se puede marcar para eliminar) y las que se están agregando ahora
+  // (tanto al crear como al editar).
+  const [entradasExistentes, setEntradasExistentes] = useState([]);
+  const [idsAEliminar, setIdsAEliminar] = useState([]);
+  const [filasNuevas, setFilasNuevas] = useState([]);
+
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(null);
 
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
-  const [avisoInventario, setAvisoInventario] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -83,7 +88,7 @@ export default function IngresosEgresos() {
     try {
       setProveedores(await listarProveedores());
     } catch (err) {
-      // no bloquea la pantalla si falla, el campo de proveedor solo queda vacío
+      // no bloquea la pantalla si falla
     }
   }
 
@@ -91,7 +96,7 @@ export default function IngresosEgresos() {
     try {
       setProductos(await listarProductos());
     } catch (err) {
-      // si falla, el selector de productos simplemente queda vacío
+      // no bloquea la pantalla si falla
     }
   }
 
@@ -99,7 +104,7 @@ export default function IngresosEgresos() {
     try {
       setInsumos(await listarInsumos());
     } catch (err) {
-      // si falla, el selector de insumos simplemente queda vacío
+      // no bloquea la pantalla si falla
     }
   }
 
@@ -116,9 +121,10 @@ export default function IngresosEgresos() {
   function iniciarCreacion() {
     setEditandoId(null);
     setForm(formVacio());
-    setFormInventario(formInventarioVacio());
+    setEntradasExistentes([]);
+    setIdsAEliminar([]);
+    setFilasNuevas([]);
     setMensaje(null);
-    setAvisoInventario(null);
     setError(null);
     setSheetAbierto(true);
   }
@@ -126,7 +132,6 @@ export default function IngresosEgresos() {
   function iniciarEdicion(registro) {
     setEditandoId(registro.id);
     setMensaje(null);
-    setAvisoInventario(null);
     setError(null);
     setForm({
       tipo: registro.tipo,
@@ -135,9 +140,9 @@ export default function IngresosEgresos() {
       proveedor_id: registro.proveedor_id || "",
       metodo_pago: registro.metodo_pago || "",
     });
-    // Al editar nunca se ofrece registrar inventario — evita duplicar
-    // una entrada que ya se hizo cuando se creó este egreso.
-    setFormInventario(formInventarioVacio());
+    setEntradasExistentes(registro.entradas_inventario || []);
+    setIdsAEliminar([]);
+    setFilasNuevas([]);
     setSheetAbierto(true);
   }
 
@@ -146,26 +151,41 @@ export default function IngresosEgresos() {
     if (!abierto) {
       setEditandoId(null);
       setForm(formVacio());
-      setFormInventario(formInventarioVacio());
+      setEntradasExistentes([]);
+      setIdsAEliminar([]);
+      setFilasNuevas([]);
     }
   }
 
-  function cambiarTipoRegistro(tipo) {
-    setForm((f) => ({ ...f, tipo }));
-    if (tipo !== "egreso") {
-      setFormInventario(formInventarioVacio());
-    }
+  function marcarEntradaExistenteParaEliminar(detalleId) {
+    setIdsAEliminar((prev) =>
+      prev.includes(detalleId) ? prev.filter((id) => id !== detalleId) : [...prev, detalleId]
+    );
   }
 
-  function toggleInventario() {
-    setFormInventario((f) => ({
-      ...formInventarioVacio(),
-      activo: !f.activo,
-    }));
+  function agregarFila() {
+    setFilasNuevas((f) => [...f, filaVacia()]);
   }
 
-  function cambiarTipoItem(tipoItem) {
-    setFormInventario((f) => ({ ...f, tipoItem, itemId: "" }));
+  function quitarFila(index) {
+    setFilasNuevas((f) => f.filter((_, i) => i !== index));
+  }
+
+  function cambiarFila(index, campo, valor) {
+    setFilasNuevas((f) =>
+      f.map((fila, i) => {
+        if (i !== index) return fila;
+        if (campo === "tipoItem") {
+          return { ...fila, tipoItem: valor, itemId: "" };
+        }
+        return { ...fila, [campo]: valor };
+      })
+    );
+  }
+
+  function unidadDeFila(fila) {
+    if (fila.tipoItem !== "insumo" || !fila.itemId) return null;
+    return insumos.find((i) => i.id === Number(fila.itemId))?.unidad_medida || null;
   }
 
   async function guardar() {
@@ -174,23 +194,29 @@ export default function IngresosEgresos() {
       return;
     }
 
-    if (formInventario.activo) {
-      if (!formInventario.itemId) {
+    for (const fila of filasNuevas) {
+      if (!fila.itemId) {
         setError(
-          formInventario.tipoItem === "producto"
-            ? "Selecciona el producto que compraste"
-            : "Selecciona el insumo que compraste"
+          fila.tipoItem === "producto"
+            ? "Selecciona un producto en cada entrada que agregaste"
+            : "Selecciona un insumo en cada entrada que agregaste"
         );
         return;
       }
-      if (!formInventario.cantidad || Number(formInventario.cantidad) <= 0) {
-        setError("Ingresa una cantidad válida para el inventario");
+      if (!fila.cantidad || Number(fila.cantidad) <= 0) {
+        setError("Ingresa una cantidad válida en cada entrada que agregaste");
         return;
       }
     }
 
     setGuardando(true);
     setError(null);
+
+    const entradasFormateadas = filasNuevas.map((f) => ({
+      tipo: f.tipoItem,
+      item_id: Number(f.itemId),
+      cantidad: Number(f.cantidad),
+    }));
 
     const payload = {
       tipo: form.tipo,
@@ -200,39 +226,27 @@ export default function IngresosEgresos() {
       metodo_pago: form.metodo_pago || null,
     };
 
-    if (!editandoId && formInventario.activo) {
-      payload.registrar_entrada = {
-        tipo: formInventario.tipoItem,
-        item_id: Number(formInventario.itemId),
-        cantidad: Number(formInventario.cantidad),
-      };
-    }
-
     try {
       if (editandoId) {
+        payload.eliminar_detalle_ids = idsAEliminar;
+        payload.nuevas_entradas = entradasFormateadas;
         await actualizarIngresoEgreso(editandoId, payload);
         setMensaje("Registro actualizado");
       } else {
+        payload.registrar_entradas = entradasFormateadas;
         await crearIngresoEgreso(payload);
+        setMensaje(
+          entradasFormateadas.length > 0
+            ? "Egreso registrado y se actualizó el inventario"
+            : form.tipo === "ingreso"
+            ? "Ingreso registrado"
+            : "Egreso registrado"
+        );
+      }
 
-        if (payload.registrar_entrada) {
-          const nombreItem =
-            formInventario.tipoItem === "producto"
-              ? productos.find((p) => p.id === Number(formInventario.itemId))?.nombre
-              : insumos.find((i) => i.id === Number(formInventario.itemId))?.nombre;
-
-          setMensaje(
-            `Egreso registrado y se agregaron ${formInventario.cantidad} ${nombreItem || ""} al inventario`
-          );
-
-          if (formInventario.tipoItem === "producto") {
-            cargarProductos();
-          } else {
-            cargarInsumos();
-          }
-        } else {
-          setMensaje(form.tipo === "ingreso" ? "Ingreso registrado" : "Egreso registrado");
-        }
+      if (entradasFormateadas.length > 0 || idsAEliminar.length > 0) {
+        cargarProductos();
+        cargarInsumos();
       }
 
       cerrarSheet(false);
@@ -252,6 +266,8 @@ export default function IngresosEgresos() {
       setMensaje("Registro eliminado");
       setConfirmandoEliminar(null);
       cargarRegistros();
+      cargarProductos();
+      cargarInsumos();
     } catch (err) {
       setError("No se pudo eliminar el registro");
     } finally {
@@ -266,11 +282,6 @@ export default function IngresosEgresos() {
     .filter((r) => r.tipo === "egreso")
     .reduce((sum, r) => sum + Number(r.monto), 0);
 
-  const opcionesItem =
-    formInventario.tipoItem === "producto"
-      ? productos.filter((p) => p.activo)
-      : insumos.filter((i) => i.activo);
-
   return (
     <div className="ie-container">
       <div className="ie-header">
@@ -282,12 +293,6 @@ export default function IngresosEgresos() {
       </div>
 
       {mensaje && <div className="ie-mensaje-exito">{mensaje}</div>}
-      {avisoInventario && !sheetAbierto && (
-        <div className="ie-mensaje-aviso">
-          <AlertTriangle size={14} />
-          {avisoInventario}
-        </div>
-      )}
       {error && !sheetAbierto && <div className="ie-mensaje-error">{error}</div>}
 
       <div className="ie-filtros">
@@ -320,6 +325,7 @@ export default function IngresosEgresos() {
       <div className="ie-lista">
         {registros.map((r) => {
           const metodoLabel = etiquetaMetodoPago(r.metodo_pago);
+          const entradas = r.entradas_inventario || [];
 
           return (
             <div key={r.id} className="ie-tarjeta">
@@ -344,12 +350,6 @@ export default function IngresosEgresos() {
                     <span>{metodoLabel}</span>
                   </>
                 )}
-                {r.tiene_entrada_inventario && (
-                  <>
-                    <span>·</span>
-                    <span>+{r.entrada_cantidad} {r.entrada_item_nombre} al inventario</span>
-                  </>
-                )}
                 {r.proveedor_nombre && (
                   <>
                     <span>·</span>
@@ -357,6 +357,16 @@ export default function IngresosEgresos() {
                   </>
                 )}
               </div>
+
+              {entradas.length > 0 && (
+                <div className="ie-entradas-resumen">
+                  {entradas.map((e, i) => (
+                    <span key={e.id ?? i} className="ie-entrada-chip">
+                      {etiquetaEntrada(e)}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {confirmandoEliminar === r.id ? (
                 <div className="ie-confirmar">
@@ -414,13 +424,13 @@ export default function IngresosEgresos() {
           <div className="ie-tipos">
             <button
               className={`ie-tipo-btn ${form.tipo === "ingreso" ? "activo-ingreso" : ""}`}
-              onClick={() => cambiarTipoRegistro("ingreso")}
+              onClick={() => setForm((f) => ({ ...f, tipo: "ingreso" }))}
             >
               Ingreso
             </button>
             <button
               className={`ie-tipo-btn ${form.tipo === "egreso" ? "activo-egreso" : ""}`}
-              onClick={() => cambiarTipoRegistro("egreso")}
+              onClick={() => setForm((f) => ({ ...f, tipo: "egreso" }))}
             >
               Egreso
             </button>
@@ -437,7 +447,7 @@ export default function IngresosEgresos() {
             type="text"
             value={form.descripcion}
             onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
-            placeholder="Ej: Compra de 1kg de pollo"
+            placeholder="Ej: Factura de insumos y gaseosas"
           />
 
           <label>Método de pago (opcional)</label>
@@ -468,84 +478,115 @@ export default function IngresosEgresos() {
           )}
 
           {/* ======================================
-              REGISTRAR TAMBIÉN LA ENTRADA AL INVENTARIO
-              Solo al crear un egreso nuevo
+              ENTRADAS DE INVENTARIO
           ====================================== */}
 
-          {!editandoId && form.tipo === "egreso" && (
-            <div className="ie-inventario-toggle-row">
-              <label className="ie-checkbox">
-                <input
-                  type="checkbox"
-                  checked={formInventario.activo}
-                  onChange={toggleInventario}
-                />
-                <span>
-                  <PackagePlus size={14} />
-                  También registrar la entrada al inventario
-                </span>
-              </label>
-            </div>
-          )}
-
-          {formInventario.activo && (
-            <div className="ie-inventario-panel">
-              <label>¿Qué compraste?</label>
-              <div className="ie-tipos">
-                <button
-                  type="button"
-                  className={`ie-tipo-btn ${
-                    formInventario.tipoItem === "producto" ? "activo-ingreso" : ""
-                  }`}
-                  onClick={() => cambiarTipoItem("producto")}
-                >
-                  Producto
-                </button>
-                <button
-                  type="button"
-                  className={`ie-tipo-btn ${
-                    formInventario.tipoItem === "insumo" ? "activo-ingreso" : ""
-                  }`}
-                  onClick={() => cambiarTipoItem("insumo")}
-                >
-                  Insumo
-                </button>
-              </div>
-
+          {form.tipo === "egreso" && (
+            <div className="ie-inventario-seccion">
               <label>
-                {formInventario.tipoItem === "producto" ? "Producto" : "Insumo"}
+                <PackagePlus size={14} />
+                {" "}Entradas al inventario (opcional)
               </label>
-              <select
-                value={formInventario.itemId}
-                onChange={(e) =>
-                  setFormInventario((f) => ({ ...f, itemId: e.target.value }))
-                }
-              >
-                <option value="">Selecciona...</option>
-                {opcionesItem.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.nombre}
-                    {formInventario.tipoItem === "insumo"
-                      ? ` (${item.unidad_medida})`
-                      : ""}
-                  </option>
-                ))}
-              </select>
 
-              <label>Cantidad comprada</label>
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={formInventario.cantidad}
-                onChange={(e) =>
-                  setFormInventario((f) => ({ ...f, cantidad: e.target.value }))
-                }
-                placeholder="Ej: 24"
-              />
+              {entradasExistentes.length > 0 && (
+                <div className="ie-entradas-existentes">
+                  {entradasExistentes.map((e) => {
+                    const marcada = idsAEliminar.includes(e.id);
+                    return (
+                      <div
+                        key={e.id}
+                        className={`ie-entrada-existente ${marcada ? "para-eliminar" : ""}`}
+                      >
+                        <span>{etiquetaEntrada(e)}</span>
+                        <button
+                          type="button"
+                          onClick={() => marcarEntradaExistenteParaEliminar(e.id)}
+                        >
+                          {marcada ? "Deshacer" : "Quitar"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {filasNuevas.map((fila, index) => {
+                const unidad = unidadDeFila(fila);
+                const opciones = fila.tipoItem === "producto" ? productos : insumos;
+
+                return (
+                  <div key={index} className="ie-fila-entrada">
+                    <div className="ie-fila-entrada-header">
+                      <div className="ie-tipos ie-tipos-chico">
+                        <button
+                          type="button"
+                          className={`ie-tipo-btn ${
+                            fila.tipoItem === "producto" ? "activo-ingreso" : ""
+                          }`}
+                          onClick={() => cambiarFila(index, "tipoItem", "producto")}
+                        >
+                          Producto
+                        </button>
+                        <button
+                          type="button"
+                          className={`ie-tipo-btn ${
+                            fila.tipoItem === "insumo" ? "activo-ingreso" : ""
+                          }`}
+                          onClick={() => cambiarFila(index, "tipoItem", "insumo")}
+                        >
+                          Insumo
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="ie-fila-entrada-quitar"
+                        aria-label="Quitar esta entrada"
+                        onClick={() => quitarFila(index)}
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+
+                    <select
+                      value={fila.itemId}
+                      onChange={(e) => cambiarFila(index, "itemId", e.target.value)}
+                    >
+                      <option value="">
+                        {fila.tipoItem === "producto" ? "Selecciona un producto..." : "Selecciona un insumo..."}
+                      </option>
+                      {opciones
+                        .filter((item) => item.activo)
+                        .map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.nombre}
+                            {fila.tipoItem === "insumo" ? ` (${item.unidad_medida})` : ""}
+                          </option>
+                        ))}
+                    </select>
+
+                    <div className="ie-fila-entrada-cantidad">
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={fila.cantidad}
+                        onChange={(e) => cambiarFila(index, "cantidad", e.target.value)}
+                        placeholder="Cantidad"
+                      />
+                      {unidad && <span className="ie-fila-entrada-unidad">{unidad}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <button type="button" className="ie-agregar-entrada-btn" onClick={agregarFila}>
+                <Plus size={14} />
+                Agregar {filasNuevas.length > 0 || entradasExistentes.length > 0 ? "otro" : "un"} producto o insumo
+              </button>
 
               <p className="ie-inventario-hint">
-                Esto sumará la cantidad al stock actual, con motivo "compra".
+                Cada entrada suma esa cantidad al stock actual, con motivo "compra".
               </p>
             </div>
           )}

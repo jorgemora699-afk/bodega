@@ -53,9 +53,10 @@ def crear():
 @ingreso_egreso_bp.route("/<int:registro_id>", methods=["PUT"])
 def actualizar(registro_id):
     data = request.get_json()
-    registro = IngresoEgresoService.actualizar(registro_id, data)
-    if not registro:
-        return jsonify({"error": "Registro no encontrado"}), 404
+    registro, error = IngresoEgresoService.actualizar(registro_id, data)
+    if error:
+        status = 404 if error == "Registro no encontrado" else 400
+        return jsonify({"error": error}), status
     return jsonify(registro.to_dict()), 200
 
 
