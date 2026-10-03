@@ -13,6 +13,23 @@ from app.infrastructure.models import (
 class IngresoEgresoService:
 
     @staticmethod
+    def _parsear_fecha(fecha_str):
+        """Convierte 'AAAA-MM-DD' en un datetime, combinando ese día con
+        la hora actual (para que el orden dentro del listado tenga sentido
+        sin tener que pedirle al jefe que también elija la hora).
+        Devuelve (datetime, error)."""
+        if not fecha_str:
+            return None, None
+
+        try:
+            dia_elegido = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+        except ValueError:
+            return None, "fecha debe tener el formato AAAA-MM-DD"
+
+        ahora = datetime.utcnow()
+        return datetime.combine(dia_elegido, ahora.time()), None
+
+    @staticmethod
     def listar(tipo=None, desde=None, hasta=None):
         query = IngresoEgreso.query
         if tipo:
@@ -29,9 +46,6 @@ class IngresoEgresoService:
 
     @staticmethod
     def _crear_entrada(registro, tipo_item, item_id, cantidad):
-        """Crea UNA entrada de inventario (producto o insumo) vinculada al
-        registro, dentro de la misma transacción. Devuelve un mensaje de
-        error si algo falla, o None si todo salió bien."""
         try:
             cantidad = float(cantidad)
         except (TypeError, ValueError):
@@ -82,17 +96,21 @@ class IngresoEgresoService:
 
     @staticmethod
     def crear(data):
-        """Crea el ingreso/egreso y, opcionalmente, varias entradas de
-        inventario vinculadas (una factura puede traer varios productos
-        o insumos). Todo en una sola transacción: si cualquier entrada
-        falla, no se guarda nada, ni siquiera el egreso."""
-        registro = IngresoEgreso(
+        fecha, error = IngresoEgresoService._parsear_fecha(data.get("fecha"))
+        if error:
+            return None, error
+
+        kwargs = dict(
             tipo=data["tipo"],
             monto=data["monto"],
             descripcion=data["descripcion"],
             metodo_pago=data.get("metodo_pago"),
             proveedor_id=data.get("proveedor_id"),
         )
+        if fecha is not None:
+            kwargs["fecha"] = fecha  # si no se pasa, se usa el default (ahora)
+
+        registro = IngresoEgreso(**kwargs)
         db.session.add(registro)
         db.session.flush()
 
@@ -109,10 +127,6 @@ class IngresoEgresoService:
 
     @staticmethod
     def actualizar(registro_id, data):
-        """Actualiza los campos simples del registro y, opcionalmente:
-        - elimina entradas de inventario existentes (revierte su stock)
-        - agrega entradas de inventario nuevas
-        Todo en una sola transacción."""
         registro = IngresoEgreso.query.get(registro_id)
         if not registro:
             return None, "Registro no encontrado"
@@ -128,10 +142,17 @@ class IngresoEgresoService:
         if "proveedor_id" in data:
             registro.proveedor_id = data["proveedor_id"]
 
+        if "fecha" in data:
+            fecha, error = IngresoEgresoService._parsear_fecha(data["fecha"])
+            if error:
+                return None, error
+            if fecha is not None:
+                registro.fecha = fecha
+
         for detalle_id in data.get("eliminar_detalle_ids") or []:
             detalle = IngresoEgresoDetalleInventario.query.get(detalle_id)
             if not detalle or detalle.ingreso_egreso_id != registro.id:
-                continue  # ignora ids que no existan o no sean de este registro
+                continue
 
             if detalle.movimiento_inventario_id and detalle.movimiento_inventario:
                 mov = detalle.movimiento_inventario

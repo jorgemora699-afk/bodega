@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, PackagePlus, X } from "lucide-react";
+import { Plus, Pencil, Trash2, PackagePlus, X, Calendar } from "lucide-react";
 import {
   listarIngresosEgresos,
   crearIngresoEgreso,
@@ -13,6 +13,23 @@ import Sheet from "../../../components/Sheet";
 import "./IngresosEgresos.css";
 import CampoMoneda from "../../../components/CampoMoneda";
 
+/* Fecha local de hoy en formato yyyy-mm-dd, para el input type="date" */
+function hoyISO() {
+  const hoy = new Date();
+  const offset = hoy.getTimezoneOffset();
+  const local = new Date(hoy.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 10);
+}
+
+/* Convierte un ISO con hora (como viene del backend) en yyyy-mm-dd local,
+   para precargar el input de fecha al editar */
+function fechaLocalDesdeISO(isoString) {
+  const fecha = new Date(isoString);
+  const offset = fecha.getTimezoneOffset();
+  const local = new Date(fecha.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 10);
+}
+
 function formVacio() {
   return {
     tipo: "egreso",
@@ -20,6 +37,7 @@ function formVacio() {
     descripcion: "",
     proveedor_id: "",
     metodo_pago: "",
+    fecha: hoyISO(),
   };
 }
 
@@ -60,10 +78,8 @@ export default function IngresosEgresos() {
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(formVacio());
+  const [fechaOriginal, setFechaOriginal] = useState(null);
 
-  // Entradas de inventario: las que ya existían (solo al editar, cada una
-  // se puede marcar para eliminar) y las que se están agregando ahora
-  // (tanto al crear como al editar).
   const [entradasExistentes, setEntradasExistentes] = useState([]);
   const [idsAEliminar, setIdsAEliminar] = useState([]);
   const [filasNuevas, setFilasNuevas] = useState([]);
@@ -121,6 +137,7 @@ export default function IngresosEgresos() {
   function iniciarCreacion() {
     setEditandoId(null);
     setForm(formVacio());
+    setFechaOriginal(null);
     setEntradasExistentes([]);
     setIdsAEliminar([]);
     setFilasNuevas([]);
@@ -130,6 +147,8 @@ export default function IngresosEgresos() {
   }
 
   function iniciarEdicion(registro) {
+    const fechaLocal = fechaLocalDesdeISO(registro.fecha);
+
     setEditandoId(registro.id);
     setMensaje(null);
     setError(null);
@@ -139,7 +158,9 @@ export default function IngresosEgresos() {
       descripcion: registro.descripcion,
       proveedor_id: registro.proveedor_id || "",
       metodo_pago: registro.metodo_pago || "",
+      fecha: fechaLocal,
     });
+    setFechaOriginal(fechaLocal);
     setEntradasExistentes(registro.entradas_inventario || []);
     setIdsAEliminar([]);
     setFilasNuevas([]);
@@ -151,6 +172,7 @@ export default function IngresosEgresos() {
     if (!abierto) {
       setEditandoId(null);
       setForm(formVacio());
+      setFechaOriginal(null);
       setEntradasExistentes([]);
       setIdsAEliminar([]);
       setFilasNuevas([]);
@@ -193,6 +215,10 @@ export default function IngresosEgresos() {
       setError("Monto y descripción son obligatorios");
       return;
     }
+    if (!form.fecha) {
+      setError("Selecciona la fecha del registro");
+      return;
+    }
 
     for (const fila of filasNuevas) {
       if (!fila.itemId) {
@@ -228,11 +254,17 @@ export default function IngresosEgresos() {
 
     try {
       if (editandoId) {
+        // Solo se manda la fecha si de verdad la cambiaste — así una
+        // edición que no toca la fecha no le pisa la hora original.
+        if (form.fecha !== fechaOriginal) {
+          payload.fecha = form.fecha;
+        }
         payload.eliminar_detalle_ids = idsAEliminar;
         payload.nuevas_entradas = entradasFormateadas;
         await actualizarIngresoEgreso(editandoId, payload);
         setMensaje("Registro actualizado");
       } else {
+        payload.fecha = form.fecha;
         payload.registrar_entradas = entradasFormateadas;
         await crearIngresoEgreso(payload);
         setMensaje(
@@ -435,6 +467,16 @@ export default function IngresosEgresos() {
               Egreso
             </button>
           </div>
+
+          <label>
+            <Calendar size={13} /> Fecha
+          </label>
+          <input
+            type="date"
+            value={form.fecha}
+            max={hoyISO()}
+            onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
+          />
 
           <label>Monto</label>
           <CampoMoneda
