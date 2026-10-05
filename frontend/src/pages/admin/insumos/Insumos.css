@@ -745,3 +745,15 @@
     flex: 1;
   }
 }
+
+.ins-chip-alerta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ins-chip-alerta.activo {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}

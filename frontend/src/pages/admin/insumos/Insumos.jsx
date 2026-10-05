@@ -86,6 +86,7 @@ export default function Insumos() {
 
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
+  const [soloBajoStock, setSoloBajoStock] = useState(false);
 
   const [sheetCatalogoAbierto, setSheetCatalogoAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -375,7 +376,11 @@ export default function Insumos() {
       !categoriaFiltro ||
       i.categoria === categoriaFiltro;
 
-    return coincideBusqueda && coincideCategoria;
+    const coincideStock =
+      !soloBajoStock ||
+      Number(i.stock_actual) <= Number(i.stock_minimo);
+
+    return coincideBusqueda && coincideCategoria && coincideStock;
   });
 
   // --------------------------------------------------
@@ -698,6 +703,33 @@ export default function Insumos() {
                 {c.label}
               </button>
             ))}
+            <div className="ins-filtros-categoria">
+              <button
+                className={`ins-chip ${categoriaFiltro === "" ? "activo" : ""}`}
+                onClick={() => setCategoriaFiltro("")}
+              >
+                Todos
+              </button>
+
+              {CATEGORIAS.map((c) => (
+                <button
+                  key={c.valor}
+                  className={`ins-chip ${categoriaFiltro === c.valor ? "activo" : ""}`}
+                  onClick={() => setCategoriaFiltro(c.valor)}
+                >
+                  {c.label}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                className={`ins-chip ins-chip-alerta ${soloBajoStock ? "activo" : ""}`}
+                onClick={() => setSoloBajoStock((v) => !v)}
+              >
+                <AlertTriangle size={12} />
+                Por acabarse
+              </button>
+            </div>
           </div>
         </>
       )}
