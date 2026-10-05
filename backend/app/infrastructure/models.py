@@ -270,6 +270,7 @@ class Orden(db.Model):
             "cliente_celular": self.cliente.celular if self.cliente else None,
             "cliente_direccion": self.cliente.direccion if self.cliente else None,
             "cliente_es_predeterminado": self.cliente.es_predeterminado if self.cliente else False,
+            "cliente_sin_costo": self.cliente.sin_costo if self.cliente else False,
             "metodo_pago": self.metodo_pago,
             "total": float(self.total),
             "descripcion": self.descripcion,

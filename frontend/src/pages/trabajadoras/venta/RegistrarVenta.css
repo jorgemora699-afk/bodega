@@ -1563,3 +1563,41 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* =========================
+   CLIENTE SIN COSTO
+   ========================= */
+
+.venta-sincosto-aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-success-tint);
+  color: var(--color-success);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.venta-sincosto-aviso-confirmacion {
+  margin-top: 0.4rem;
+}
+
+.venta-sincosto-aviso-recibo {
+  max-width: 360px;
+  margin: 0 auto 0.75rem;
+  justify-content: center;
+}
+
+.venta-badge-sin-costo {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 20px;
+  background: var(--color-success-tint);
+  color: var(--color-success);
+  font-size: 0.65rem;
+  font-weight: 700;
+}

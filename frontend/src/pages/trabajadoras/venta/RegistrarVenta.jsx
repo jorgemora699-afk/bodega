@@ -17,6 +17,7 @@ import {
   Building2,
   X,
   Clock3,
+  Info,
 } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
@@ -521,13 +522,21 @@ export default function RegistrarVenta() {
     };
   }
 
+  /* Un cliente marcado como "sin costo" (ej. el dueño) hace que CUALQUIER
+     línea del carrito salga en $0, sin importar precio normal o especial —
+     se refleja ya desde el carrito, no solo al confirmar. */
+  const clienteSinCosto = Boolean(clienteSeleccionado?.sin_costo);
+
   function precioEfectivo(producto) {
+    if (clienteSinCosto) return 0;
+
     const idProducto = producto.producto_id ?? producto.id;
     const especial = preciosEspeciales[idProducto];
     return especial != null ? Number(especial) : Number(producto.precio_unitario);
   }
 
   function tienePrecioEspecial(producto) {
+    if (clienteSinCosto) return false; // ya está en $0, no aplica mostrar "precio especial"
     const idProducto = producto.producto_id ?? producto.id;
     return preciosEspeciales[idProducto] != null;
   }
@@ -571,7 +580,7 @@ export default function RegistrarVenta() {
     setMostrarFormCliente(false);
     setFormCliente(CLIENTE_VACIO);
     setErrorCliente(null);
-    setMostrarSelectorCliente(false); // ← agregar
+    setMostrarSelectorCliente(false);
   }
 
   function elegirCliente(cliente) {
@@ -824,7 +833,7 @@ export default function RegistrarVenta() {
 
   /* Calculadora de efectivo */
   const recibidoNum = Number(recibido) || 0;
-  const tieneRecibido = metodoPago === "efectivo" && recibidoNum > 0;
+  const tieneRecibido = metodoPago === "efectivo" && recibidoNum > 0 && !clienteSinCosto;
   const cambio = recibidoNum - totalCarrito;
   const billetesSugeridos = BILLETES.filter((b) => b > totalCarrito).slice(0, 3);
 
@@ -975,12 +984,23 @@ export default function RegistrarVenta() {
                     </span>
 
                     <span className="venta-prod-precio">
-                      {tienePrecioEspecial(producto) && (
-                        <span className="venta-precio-tachado">
-                          ${Number(producto.precio_unitario).toLocaleString("es-CO")}
-                        </span>
+                      {clienteSinCosto ? (
+                        <>
+                          <span className="venta-precio-tachado">
+                            ${Number(producto.precio_unitario).toLocaleString("es-CO")}
+                          </span>
+                          Gratis
+                        </>
+                      ) : (
+                        <>
+                          {tienePrecioEspecial(producto) && (
+                            <span className="venta-precio-tachado">
+                              ${Number(producto.precio_unitario).toLocaleString("es-CO")}
+                            </span>
+                          )}
+                          ${precioEfectivo(producto).toLocaleString("es-CO")}
+                        </>
                       )}
-                      ${precioEfectivo(producto).toLocaleString("es-CO")}
                     </span>
 
                     {producto.requiere_seleccion ? (
@@ -1156,8 +1176,12 @@ export default function RegistrarVenta() {
 
                   <span className="venta-carrito-item-precio">
                     ${precioEfectivo(item).toLocaleString("es-CO")} c/u
-                    {tienePrecioEspecial(item) && (
-                      <span className="venta-badge-precio-especial">Precio especial</span>
+                    {clienteSinCosto ? (
+                      <span className="venta-badge-sin-costo">Sin costo</span>
+                    ) : (
+                      tienePrecioEspecial(item) && (
+                        <span className="venta-badge-precio-especial">Precio especial</span>
+                      )
                     )}
                   </span>
                 </div>
@@ -1207,6 +1231,12 @@ export default function RegistrarVenta() {
                       ? "activo"
                       : ""
                   }`}
+                  disabled={valor === "credito" && clienteSinCosto}
+                  title={
+                    valor === "credito" && clienteSinCosto
+                      ? "Este cliente no genera cuentas por cobrar"
+                      : undefined
+                  }
                   onClick={() =>
                     cambiarMetodoPago(valor)
                   }
@@ -1222,7 +1252,7 @@ export default function RegistrarVenta() {
               CALCULADORA DE EFECTIVO
               ========================= */}
 
-          {metodoPago === "efectivo" && (
+          {metodoPago === "efectivo" && !clienteSinCosto && (
             <div className="venta-efectivo">
               <label htmlFor="venta-recibido">
                 Efectivo recibido (opcional)
@@ -1323,31 +1353,41 @@ export default function RegistrarVenta() {
           {(esCredito || mostrarSelectorCliente || clienteSeleccionado) && (
             <div className="venta-credito">
               {clienteSeleccionado ? (
-                <div className="venta-cliente-card">
-                  <span className="venta-cliente-icono">
-                    {clienteSeleccionado.tipo === "juridica" ? (
-                      <Building2 size={18} />
-                    ) : (
-                      <User size={18} />
-                    )}
-                  </span>
-
-                  <div className="venta-cliente-info">
-                    <strong>{clienteSeleccionado.nombre}</strong>
-                    <span>
-                      {clienteSeleccionado.tipo === "juridica" ? "NIT" : "Cédula"}:{" "}
-                      {clienteSeleccionado.documento}
+                <>
+                  <div className="venta-cliente-card">
+                    <span className="venta-cliente-icono">
+                      {clienteSeleccionado.tipo === "juridica" ? (
+                        <Building2 size={18} />
+                      ) : (
+                        <User size={18} />
+                      )}
                     </span>
+
+                    <div className="venta-cliente-info">
+                      <strong>{clienteSeleccionado.nombre}</strong>
+                      <span>
+                        {clienteSeleccionado.tipo === "juridica" ? "NIT" : "Cédula"}:{" "}
+                        {clienteSeleccionado.documento}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="venta-cliente-cambiar"
+                      onClick={cambiarClienteSeleccionado}
+                    >
+                      Cambiar
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    className="venta-cliente-cambiar"
-                    onClick={cambiarClienteSeleccionado}
-                  >
-                    Cambiar
-                  </button>
-                </div>
+                  {clienteSinCosto && (
+                    <div className="venta-sincosto-aviso">
+                      <Info size={14} />
+                      Esta venta no genera cobro — todo queda en $0, pero el
+                      stock se descuenta normal.
+                    </div>
+                  )}
+                </>
               ) : (
                 <>
                   <div className="venta-buscador">
@@ -1719,6 +1759,13 @@ export default function RegistrarVenta() {
             </span>
           </div>
 
+          {clienteSinCosto && (
+            <div className="venta-sincosto-aviso venta-sincosto-aviso-confirmacion">
+              <Info size={14} />
+              Esta venta no genera cobro — queda registrada en $0.
+            </div>
+          )}
+
           {esCredito && (
             <div className="venta-credito-aviso venta-credito-aviso-confirmacion">
               <Clock3 size={14} />
@@ -1786,6 +1833,13 @@ export default function RegistrarVenta() {
           <p className="venta-recibo-numero">
             Pedido #{reciboOrden.id}
           </p>
+
+          {reciboOrden.cliente_sin_costo && (
+            <div className="venta-sincosto-aviso venta-sincosto-aviso-recibo">
+              <Info size={14} />
+              Consumo interno — no genera cobro
+            </div>
+          )}
 
           {reciboOrden.metodo_pago === "credito" && !reciboOrden.pagada && (
             <div className="venta-credito-aviso venta-credito-aviso-recibo">
@@ -1863,6 +1917,12 @@ export default function RegistrarVenta() {
             <div className="recibo-detalle">
               Método de pago: {etiquetaMetodoPago(reciboOrden.metodo_pago)}
             </div>
+
+            {reciboOrden.cliente_sin_costo && (
+              <div className="recibo-detalle">
+                Consumo interno (sin costo)
+              </div>
+            )}
 
             {reciboEfectivo && (
               <>
