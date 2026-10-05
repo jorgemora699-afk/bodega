@@ -312,7 +312,7 @@ export default function RegistrarVenta() {
 
   /* Buscar clientes con un pequeño debounce, solo si no hay uno ya elegido */
   useEffect(() => {
-    if (metodoPago !== "credito" || clienteSeleccionado) return undefined;
+    if ((metodoPago !== "credito" && !mostrarSelectorCliente) || clienteSeleccionado) return undefined;
 
     const termino = busquedaCliente.trim();
 
@@ -339,7 +339,7 @@ export default function RegistrarVenta() {
       activo = false;
       clearTimeout(temporizador);
     };
-  }, [busquedaCliente, metodoPago, clienteSeleccionado]);
+  }, [busquedaCliente, metodoPago, mostrarSelectorCliente, clienteSeleccionado]);
 
   /* Precios especiales del cliente elegido — se recargan cada vez que cambia */
   useEffect(() => {
