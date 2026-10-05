@@ -676,14 +676,11 @@ export default function Insumos() {
 
           <div className="ins-filtros-categoria">
             <button
+              type="button"
               className={`ins-chip ${
-                categoriaFiltro === ""
-                  ? "activo"
-                  : ""
+                categoriaFiltro === "" ? "activo" : ""
               }`}
-              onClick={() =>
-                setCategoriaFiltro("")
-              }
+              onClick={() => setCategoriaFiltro("")}
             >
               Todos
             </button>
@@ -691,45 +688,26 @@ export default function Insumos() {
             {CATEGORIAS.map((c) => (
               <button
                 key={c.valor}
+                type="button"
                 className={`ins-chip ${
-                  categoriaFiltro === c.valor
-                    ? "activo"
-                    : ""
+                  categoriaFiltro === c.valor ? "activo" : ""
                 }`}
-                onClick={() =>
-                  setCategoriaFiltro(c.valor)
-                }
+                onClick={() => setCategoriaFiltro(c.valor)}
               >
                 {c.label}
               </button>
             ))}
-            <div className="ins-filtros-categoria">
-              <button
-                className={`ins-chip ${categoriaFiltro === "" ? "activo" : ""}`}
-                onClick={() => setCategoriaFiltro("")}
-              >
-                Todos
-              </button>
 
-              {CATEGORIAS.map((c) => (
-                <button
-                  key={c.valor}
-                  className={`ins-chip ${categoriaFiltro === c.valor ? "activo" : ""}`}
-                  onClick={() => setCategoriaFiltro(c.valor)}
-                >
-                  {c.label}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                className={`ins-chip ins-chip-alerta ${soloBajoStock ? "activo" : ""}`}
-                onClick={() => setSoloBajoStock((v) => !v)}
-              >
-                <AlertTriangle size={12} />
-                Por acabarse
-              </button>
-            </div>
+            <button
+              type="button"
+              className={`ins-chip ins-chip-alerta ${
+                soloBajoStock ? "activo" : ""
+              }`}
+              onClick={() => setSoloBajoStock((v) => !v)}
+            >
+              <AlertTriangle size={12} />
+              Por acabarse
+            </button>
           </div>
         </>
       )}
