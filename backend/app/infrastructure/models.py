@@ -180,13 +180,14 @@ class Cliente(db.Model):
     __tablename__ = "clientes"
 
     id = db.Column(db.Integer, primary_key=True)
-    tipo = db.Column(db.String(10), nullable=False)  # "natural" o "juridica"
-    nombre = db.Column(db.String(150), nullable=False)  # nombre de la persona o razón social
-    documento = db.Column(db.String(30), nullable=False, unique=True)  # cédula o NIT
-    contacto = db.Column(db.String(100), nullable=True)  # solo aplica a jurídica
+    tipo = db.Column(db.String(10), nullable=False)
+    nombre = db.Column(db.String(150), nullable=False)
+    documento = db.Column(db.String(30), nullable=False, unique=True)
+    contacto = db.Column(db.String(100), nullable=True)
     celular = db.Column(db.String(20), nullable=True)
     direccion = db.Column(db.String(200), nullable=True)
     es_predeterminado = db.Column(db.Boolean, nullable=False, default=False)
+    sin_costo = db.Column(db.Boolean, nullable=False, default=False)  # NUEVO
     activo = db.Column(db.Boolean, nullable=False, default=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -203,6 +204,7 @@ class Cliente(db.Model):
             "celular": self.celular,
             "direccion": self.direccion,
             "es_predeterminado": self.es_predeterminado,
+            "sin_costo": self.sin_costo,  # NUEVO
             "activo": self.activo,
         }
 

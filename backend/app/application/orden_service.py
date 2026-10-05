@@ -61,9 +61,14 @@ def _resolver_fecha(data):
     fecha_dia = date.fromisoformat(fecha_str)
     return datetime.combine(fecha_dia, datetime.utcnow().time())
 
-def _precio_para_cliente(producto, cliente_id):
-    """Si el cliente tiene un precio especial para este producto, lo usa;
-    si no, usa el precio normal del producto."""
+def _precio_para_cliente(producto, cliente_id, sin_costo=False):
+    """Determina el precio unitario a aplicar en esta línea:
+    - Si el cliente es "sin costo" (ej. el dueño), el precio siempre es 0,
+      sin importar precio especial ni precio normal.
+    - Si no, y el cliente tiene un precio especial para este producto, lo usa.
+    - Si no, usa el precio normal del producto."""
+    if sin_costo:
+        return 0.0
     if cliente_id:
         pe = PrecioEspecial.query.filter_by(cliente_id=cliente_id, producto_id=producto.id).first()
         if pe:
@@ -133,6 +138,15 @@ class OrdenService:
         return cliente_id, None
 
     @staticmethod
+    def _es_sin_costo(cliente_id):
+        """True si el cliente de esta orden está marcado para que sus
+        compras no generen cobro (ej. el dueño del negocio)."""
+        if not cliente_id:
+            return False
+        cliente = Cliente.query.get(cliente_id)
+        return bool(cliente and cliente.sin_costo)
+
+    @staticmethod
     def crear(data):
         trabajadora_id = data.get("trabajadora_id")
         metodo_pago = data.get("metodo_pago")
@@ -148,12 +162,16 @@ class OrdenService:
         if error:
             return None, error
 
+        sin_costo = OrdenService._es_sin_costo(cliente_id)
+
         try:
             fecha_personalizada = _resolver_fecha(data)
         except ValueError:
             return None, "Formato de fecha inválido, usa YYYY-MM-DD"
 
-        pagada = metodo_pago != "credito"
+        # Un cliente "sin costo" nunca genera una deuda, sin importar el
+        # método de pago que haya tocado la trabajadora.
+        pagada = True if sin_costo else metodo_pago != "credito"
 
         productos_vendidos = {}
         cantidad_efectiva_por_producto = defaultdict(float)
@@ -207,7 +225,7 @@ class OrdenService:
         for item in items:
             producto = productos_vendidos[item["producto_id"]]
             cantidad = float(item["cantidad"])
-            precio_aplicado = _precio_para_cliente(producto, cliente_id)
+            precio_aplicado = _precio_para_cliente(producto, cliente_id, sin_costo)
             subtotal = precio_aplicado * cantidad
             total_orden += subtotal
 
@@ -278,7 +296,12 @@ class OrdenService:
         if error:
             return None, error
 
-        if metodo_pago == "credito":
+        sin_costo = OrdenService._es_sin_costo(cliente_id)
+
+        if sin_costo:
+            # Nunca es una deuda, sin importar el método de pago.
+            pagada = True
+        elif metodo_pago == "credito":
             # Si ya era a crédito, se respeta el estado de pago que tenía.
             # Si nace como crédito ahora (antes era otro método), queda pendiente.
             pagada = orden.pagada if orden.metodo_pago == "credito" else False
@@ -366,7 +389,7 @@ class OrdenService:
         for item in items:
             producto = productos_vendidos[item["producto_id"]]
             cantidad = float(item["cantidad"])
-            precio_aplicado = _precio_para_cliente(producto, cliente_id)
+            precio_aplicado = _precio_para_cliente(producto, cliente_id, sin_costo)
             subtotal = precio_aplicado * cantidad
             total_orden += subtotal
 

@@ -53,6 +53,7 @@ class ClienteService:
             contacto=data.get("contacto") if tipo == "juridica" else None,
             celular=data.get("celular"),
             direccion=data.get("direccion"),
+            sin_costo=bool(data.get("sin_costo", False)),
         )
         db.session.add(cliente)
         db.session.commit()
@@ -86,13 +87,12 @@ class ClienteService:
             cliente.celular = data["celular"]
         if "direccion" in data:
             cliente.direccion = data["direccion"]
+        if "sin_costo" in data:
+            cliente.sin_costo = bool(data["sin_costo"])
 
-        # El estado activo y la marca de predeterminado del cliente predeterminado
-        # no se pueden cambiar por esta vía — siempre debe existir uno usable.
-        if "activo" in data and not cliente.es_predeterminado:
+        if "activo" in data:
             cliente.activo = data["activo"]
 
-        # Si pasa a ser natural, el contacto (dato exclusivo de jurídica) no aplica
         if cliente.tipo == "natural":
             cliente.contacto = None
 
@@ -103,10 +103,7 @@ class ClienteService:
     def eliminar(cliente_id):
         cliente = Cliente.query.get(cliente_id)
         if not cliente:
-            return False, "Cliente no encontrado"
-        if cliente.es_predeterminado:
-            return False, "El cliente predeterminado no se puede eliminar"
-
-        cliente.activo = False  # borrado lógico — conserva historial de órdenes
+            return False
+        cliente.activo = False
         db.session.commit()
-        return True, None
+        return True
