@@ -23,15 +23,21 @@ def obtener_mi_cliente():
 
 @cliente_bp.before_request
 def _proteger_clientes():
-    # arte_frio solo puede leer SUS precios especiales — nunca listar clientes
-    # ni ver los de otros, para no exponer datos de otras cuentas por cobrar.
+    if request.method == "OPTIONS":
+        return None
+
+    # El usuario de Arte Frío puede consultar su propio cliente
+    if request.path.endswith("/mi-cliente"):
+        return exigir_rol("arte_frio")
+
+    # Arte Frío puede consultar precios especiales
     if request.method == "GET" and request.path.endswith("/precios-especiales"):
         return exigir_rol("jefe", "trabajadora", "arte_frio")
 
-    # Jefe y trabajadora pueden ver y crear clientes (se crean sobre la marcha
-    # durante una venta). Editar y eliminar queda solo para el jefe.
+    # Operaciones normales de clientes
     if request.method in ("GET", "POST"):
         return exigir_rol("jefe", "trabajadora")
+
     return exigir_rol("jefe")
 
 
