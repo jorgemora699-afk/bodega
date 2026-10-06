@@ -40,8 +40,11 @@ export default function Login() {
 
     try {
       const rol = await login(username, password);
+
       if (rol === "jefe") {
         navigate("/admin");
+      } else if (rol === "arte_frio") {
+        navigate("/pedido");
       } else {
         navigate("/venta");
       }

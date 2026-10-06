@@ -1,0 +1,129 @@
+.mp-container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.mp-header {
+  margin-bottom: 1.25rem;
+}
+
+.mp-header h1 {
+  font-size: 1.3rem;
+  margin: 0 0 0.15rem;
+  font-weight: 700;
+}
+
+.mp-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.mp-cargando,
+.mp-sin-pedidos {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.mp-mensaje-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.mp-mensaje-error button {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  border: 1.5px solid currentColor;
+  border-radius: 20px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mp-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mp-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.mp-fila-principal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mp-badge.pendiente {
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.mp-badge.atendida {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+
+.mp-badge.rechazada {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.mp-fecha {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.mp-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.mp-nota {
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.mp-motivo-rechazo {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-danger);
+}

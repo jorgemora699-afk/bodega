@@ -522,6 +522,15 @@ export default function RegistrarVenta() {
     };
   }
 
+  function insumosFaltantes(producto) {
+    if (!producto.insumos || producto.insumos.length === 0) return [];
+
+    return producto.insumos.filter((pi) => {
+      const disponibles = Math.floor(Number(pi.insumo_stock_actual) / Number(pi.cantidad));
+      return disponibles <= 0;
+    });
+  }
+
   /* Un cliente marcado como "sin costo" (ej. el dueño) hace que CUALQUIER
      línea del carrito salga en $0, sin importar precio normal o especial —
      se refleja ya desde el carrito, no solo al confirmar. */
@@ -973,7 +982,12 @@ export default function RegistrarVenta() {
 
                     {agotado && (
                       <div className="venta-prod-overlay">
-                        Agotado
+                        <span>Agotado</span>
+                        {insumosFaltantes(producto).length > 0 && (
+                          <span className="venta-prod-overlay-detalle">
+                            Falta: {insumosFaltantes(producto).map((i) => i.insumo_nombre).join(", ")}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

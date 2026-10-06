@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import TrabajadoraLayout from "./layouts/trabajadora/TrabajadoraLayout";
 import AdminLayout from "./layouts/admin/AdminLayout";
+import ArteFrioLayout from "./layouts/arte_frio/ArteFrioLayout";
 
 import Login from "./pages/login/Login";
 import RegistrarVenta from "./pages/trabajadoras/venta/RegistrarVenta";
@@ -26,6 +27,9 @@ import VentasTrabajadora from "./pages/trabajadoras/venta/Ventas";
 import CuentasPorCobrar from "./pages/admin/cuentascobrar/CuentasPorCobrar";
 import Notas from "./pages/trabajadoras/notas/Notas";
 import Clientes from "./pages/admin/clientes/Clientes";
+
+import PedidoArteFrio from "./pages/arte_frio/pedido/PedidoArteFrio";
+import MisPedidos from "./pages/arte_frio/mispedidos/MisPedidos";
 
 export default function App() {
   return (
@@ -61,6 +65,11 @@ export default function App() {
             <Route path="/admin/insumos" element={<Insumos />} />
             <Route path="/admin/recetas" element={<RecetasAdmin />} />
             <Route path="/admin/mi-cuenta" element={<MiCuenta />} />
+          </Route>
+
+          <Route element={<ArteFrioLayout />}>
+            <Route path="/pedido" element={<PedidoArteFrio />} />
+            <Route path="/pedido/mis-pedidos" element={<MisPedidos />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />

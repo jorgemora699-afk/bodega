@@ -2,11 +2,32 @@ from flask import Blueprint, request, jsonify
 from app.application.cliente_service import ClienteService
 from app.interfaces.auth_helpers import exigir_rol
 from app.application.precio_especial_service import PrecioEspecialService
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.infrastructure.models import Usuario
 
 cliente_bp = Blueprint("clientes", __name__, url_prefix="/api/clientes")
 
+
+@cliente_bp.route("/mi-cliente", methods=["GET"])
+@jwt_required()
+def obtener_mi_cliente():
+    usuario_id = int(get_jwt_identity())
+    usuario = Usuario.query.get(usuario_id)
+
+    if not usuario or usuario.rol != "arte_frio":
+        return jsonify({"error": "Esta cuenta no tiene un cliente asociado"}), 403
+    if not usuario.cliente_id:
+        return jsonify({"error": "Esta cuenta todavía no tiene un cliente vinculado"}), 404
+
+    return jsonify(usuario.cliente.to_dict()), 200
+
 @cliente_bp.before_request
 def _proteger_clientes():
+    # arte_frio solo puede leer SUS precios especiales — nunca listar clientes
+    # ni ver los de otros, para no exponer datos de otras cuentas por cobrar.
+    if request.method == "GET" and request.path.endswith("/precios-especiales"):
+        return exigir_rol("jefe", "trabajadora", "arte_frio")
+
     # Jefe y trabajadora pueden ver y crear clientes (se crean sobre la marcha
     # durante una venta). Editar y eliminar queda solo para el jefe.
     if request.method in ("GET", "POST"):

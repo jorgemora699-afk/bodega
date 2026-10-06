@@ -10,6 +10,11 @@ export async function obtenerCliente(clienteId) {
   return response.data;
 }
 
+export async function obtenerMiCliente() {
+  const response = await apiClient.get("/clientes/mi-cliente");
+  return response.data;
+}
+
 export async function crearCliente(data) {
   const response = await apiClient.post("/clientes", data);
   return response.data;

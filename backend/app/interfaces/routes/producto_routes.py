@@ -7,7 +7,7 @@ producto_bp = Blueprint("productos", __name__, url_prefix="/api/productos")
 @producto_bp.before_request
 def _proteger_productos():
     if request.method == "GET":
-        return exigir_rol("jefe", "trabajadora")
+        return exigir_rol("jefe", "trabajadora", "arte_frio")
     return exigir_rol("jefe")
 
 

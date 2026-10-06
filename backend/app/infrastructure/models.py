@@ -192,6 +192,7 @@ class Cliente(db.Model):
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     ordenes = db.relationship("Orden", back_populates="cliente")
+    solicitudes = db.relationship("SolicitudPedido", back_populates="cliente")
     precios_especiales = db.relationship("PrecioEspecial", backref="cliente_rel", overlaps="cliente")
 
     def to_dict(self):
@@ -282,6 +283,66 @@ class Orden(db.Model):
 
     def __repr__(self):
         return f"<Orden {self.id} - {self.trabajadora_id}>"
+
+class SolicitudPedido(db.Model):
+    __tablename__ = "solicitudes_pedido"
+
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
+    creado_por = db.Column(db.String(50), nullable=False)  # username de quien la hizo (rol arte_frio)
+    estado = db.Column(db.String(20), nullable=False, default="pendiente")  # pendiente, atendida, rechazada
+    nota = db.Column(db.Text, nullable=True)
+    motivo_rechazo = db.Column(db.Text, nullable=True)
+    orden_id = db.Column(db.Integer, db.ForeignKey("ordenes.id"), nullable=True)  # venta resultante, si se atendió
+    atendida_por = db.Column(db.String(50), nullable=True)  # username de quien la atendió/rechazó
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    resuelta_en = db.Column(db.DateTime, nullable=True)
+
+    cliente = db.relationship("Cliente", back_populates="solicitudes")
+    orden = db.relationship("Orden")
+    items = db.relationship("SolicitudPedidoItem", back_populates="solicitud", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "cliente_id": self.cliente_id,
+            "cliente_nombre": self.cliente.nombre if self.cliente else None,
+            "creado_por": self.creado_por,
+            "estado": self.estado,
+            "nota": self.nota,
+            "motivo_rechazo": self.motivo_rechazo,
+            "orden_id": self.orden_id,
+            "atendida_por": self.atendida_por,
+            "fecha": self.fecha.isoformat() + "Z",
+            "resuelta_en": self.resuelta_en.isoformat() + "Z" if self.resuelta_en else None,
+            "items": [i.to_dict() for i in self.items],
+        }
+
+    def __repr__(self):
+        return f"<SolicitudPedido {self.id} - {self.estado}>"
+
+
+class SolicitudPedidoItem(db.Model):
+    __tablename__ = "solicitud_pedido_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    solicitud_id = db.Column(db.Integer, db.ForeignKey("solicitudes_pedido.id"), nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    cantidad = db.Column(db.Numeric(10, 3), nullable=False)
+
+    solicitud = db.relationship("SolicitudPedido", back_populates="items")
+    producto = db.relationship("Producto")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "producto_id": self.producto_id,
+            "producto_nombre": self.producto.nombre if self.producto else None,
+            "cantidad": float(self.cantidad),
+        }
+
+    def __repr__(self):
+        return f"<SolicitudPedidoItem {self.producto_id} x{self.cantidad}>"
 
 class Venta(db.Model):
     __tablename__ = "ventas"
@@ -602,6 +663,7 @@ class ProductoInsumo(db.Model):
             "insumo_nombre": self.insumo.nombre if self.insumo else None,
             "unidad_medida": self.insumo.unidad_medida if self.insumo else None,
             "cantidad": float(self.cantidad),
+            "insumo_stock_actual": float(self.insumo.stock_actual) if self.insumo else None,
         }
  
     def __repr__(self):
@@ -673,7 +735,10 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    rol = db.Column(db.String(20), nullable=False)  # "trabajadora" o "jefe"
+    rol = db.Column(db.String(20), nullable=False)  # "trabajadora", "jefe" o "arte_frio"
+    cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=True)  # NUEVO — solo aplica a rol arte_frio
+
+    cliente = db.relationship("Cliente")  # NUEVO
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -686,6 +751,7 @@ class Usuario(db.Model):
             "id": self.id,
             "username": self.username,
             "rol": self.rol,
+            "cliente_id": self.cliente_id,  # NUEVO
         }
 
     def __repr__(self):
