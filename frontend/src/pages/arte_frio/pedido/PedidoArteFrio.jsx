@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ShoppingBag,
+  ShoppingCart,
   Minus,
   Plus,
   Trash2,
@@ -8,18 +9,52 @@ import {
   Check,
   RefreshCw,
   Search,
+  ChevronLeft,
 } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { obtenerMiCliente, listarPreciosEspeciales } from "../../../api/clientes";
 import { crearSolicitud } from "../../../api/solicitudesPedido";
 import "./PedidoArteFrio.css";
 
+/* =========================
+   CONTROL DE CANTIDAD
+
+   Va FUERA del componente a propósito: si se define dentro, React lo
+   vuelve a crear en cada render y el campo pierde el foco tras cada tecla.
+   ========================= */
+
+function CantidadControl({ cantidad, max, nombre, onDecrementar, onIncrementar, className = "" }) {
+  return (
+    <div className={`pa-cantidad ${className}`} onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        aria-label={`Quitar una unidad de ${nombre}`}
+        onClick={onDecrementar}
+      >
+        <Minus size={14} />
+      </button>
+      <span>{cantidad}</span>
+      <button
+        type="button"
+        aria-label={`Agregar una unidad de ${nombre}`}
+        disabled={cantidad >= max}
+        onClick={onIncrementar}
+      >
+        <Plus size={14} />
+      </button>
+    </div>
+  );
+}
+
 export default function PedidoArteFrio() {
   const [miCliente, setMiCliente] = useState(null);
   const [catalogo, setCatalogo] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [busqueda, setBusqueda] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [nota, setNota] = useState("");
+
+  const [vista, setVista] = useState("catalogo"); // "catalogo" | "carrito"
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -87,16 +122,25 @@ export default function PedidoArteFrio() {
     });
   }
 
+  function restarDelCarrito(productoId) {
+    setCarrito((actual) =>
+      actual.flatMap((i) => {
+        if (i.producto_id !== productoId) return [i];
+        if (i.cantidad <= 1) return [];
+        return [{ ...i, cantidad: i.cantidad - 1 }];
+      })
+    );
+  }
+
   function ajustarCantidad(productoId, delta) {
     setCarrito((actual) =>
-      actual
-        .map((i) => {
-          if (i.producto_id !== productoId) return i;
-          const nueva = i.cantidad + delta;
-          const max = Number(i.stock_actual);
-          if (nueva < 1 || nueva > max) return i;
-          return { ...i, cantidad: nueva };
-        })
+      actual.map((i) => {
+        if (i.producto_id !== productoId) return i;
+        const nueva = i.cantidad + delta;
+        const max = Number(i.stock_actual);
+        if (nueva < 1 || nueva > max) return i;
+        return { ...i, cantidad: nueva };
+      })
     );
   }
 
@@ -109,6 +153,16 @@ export default function PedidoArteFrio() {
     if (cantidad <= 0) return { clase: "agotado", texto: "Agotado" };
     if (cantidad <= 5) return { clase: "bajo", texto: `Quedan ${cantidad}` };
     return { clase: "disponible", texto: `${cantidad} disponibles` };
+  }
+
+  function irAlCarrito() {
+    setError(null);
+    setVista("carrito");
+  }
+
+  function volverAlCatalogo() {
+    setError(null);
+    setVista("catalogo");
   }
 
   async function enviarPedido() {
@@ -133,6 +187,7 @@ export default function PedidoArteFrio() {
       setPedidoEnviado(solicitud);
       setCarrito([]);
       setNota("");
+      setVista("catalogo");
     } catch (err) {
       setError(
         err.response?.data?.error || "No se pudo enviar el pedido. Intenta de nuevo."
@@ -149,9 +204,15 @@ export default function PedidoArteFrio() {
 
   const totalItems = carrito.reduce((sum, i) => sum + i.cantidad, 0);
 
-  const catalogoFiltrado = catalogo.filter((p) =>
-    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const categorias = [
+    ...new Set(catalogo.map((p) => p.categoria).filter(Boolean)),
+  ].sort();
+
+  const catalogoFiltrado = catalogo.filter((p) => {
+    const coincideBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    const coincideCategoria = !categoriaFiltro || p.categoria === categoriaFiltro;
+    return coincideBusqueda && coincideCategoria;
+  });
 
   /* =========================
      PANTALLA DE ÉXITO
@@ -211,152 +272,178 @@ export default function PedidoArteFrio() {
   }
 
   /* =========================
-     PANTALLA PRINCIPAL
+     VISTA: CATÁLOGO
+     ========================= */
+
+  if (vista === "catalogo") {
+    return (
+      <div className="pa-container">
+        <header className="pa-header">
+          <h1>Hacer pedido</h1>
+          <p>Toca los productos que quieres pedirle a Punto Amarillo</p>
+        </header>
+
+        {error && <div className="pa-mensaje-error"><span>{error}</span></div>}
+
+        {catalogo.length === 0 ? (
+          <p className="pa-sin-catalogo">
+            Todavía no hay productos disponibles para pedir. Avísale al jefe de
+            Punto Amarillo que configure tus precios especiales.
+          </p>
+        ) : (
+          <>
+            <div className="pa-buscador">
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Buscar producto..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+
+            {categorias.length > 0 && (
+              <div className="pa-filtros-categoria">
+                <button
+                  className={`pa-chip ${categoriaFiltro === "" ? "activo" : ""}`}
+                  onClick={() => setCategoriaFiltro("")}
+                >
+                  Todas
+                </button>
+                {categorias.map((c) => (
+                  <button
+                    key={c}
+                    className={`pa-chip ${categoriaFiltro === c ? "activo" : ""}`}
+                    onClick={() => setCategoriaFiltro(c)}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="pa-grid-productos">
+              {catalogoFiltrado.map((producto) => {
+                const stock = obtenerEstadoStock(producto.stock_actual);
+                const agotado = Number(producto.stock_actual) <= 0;
+                const enCarrito = cantidadEnCarrito(producto.id);
+
+                return (
+                  <div
+                    key={producto.id}
+                    className={`pa-prod-card ${enCarrito > 0 ? "en-carrito" : ""} ${
+                      agotado ? "agotado" : ""
+                    }`}
+                    onClick={() => !agotado && agregarAlCarrito(producto)}
+                  >
+                    <div className="pa-prod-imagen">
+                      <ShoppingBag size={26} />
+                      {agotado && <div className="pa-prod-overlay">Agotado</div>}
+                    </div>
+
+                    <div className="pa-prod-info">
+                      <span className="pa-prod-nombre">{producto.nombre}</span>
+
+                      <span className={`pa-prod-stock ${stock.clase}`}>
+                        {stock.texto}
+                      </span>
+
+                      {enCarrito > 0 && (
+                        <CantidadControl
+                          className="pa-cantidad-tarjeta"
+                          nombre={producto.nombre}
+                          cantidad={enCarrito}
+                          max={Number(producto.stock_actual)}
+                          onDecrementar={() => restarDelCarrito(producto.id)}
+                          onIncrementar={() => agregarAlCarrito(producto)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {catalogoFiltrado.length === 0 && (
+                <p className="pa-sin-resultados">
+                  Ningún producto coincide con "{busqueda}"
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        {carrito.length > 0 && (
+          <button className="pa-fab" onClick={irAlCarrito}>
+            <span className="pa-fab-info">
+              <ShoppingCart size={18} />
+              {totalItems} producto{totalItems !== 1 ? "s" : ""}
+            </span>
+            <span className="pa-fab-flecha">Revisar pedido →</span>
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  /* =========================
+     VISTA: REVISAR PEDIDO (checkout)
      ========================= */
 
   return (
     <div className="pa-container">
-      <header className="pa-header">
-        <h1>Hacer pedido</h1>
-        <p>Toca los productos que quieres pedirle a Punto Amarillo</p>
-      </header>
+      <div className="pa-detalle">
+        <button className="pa-volver-catalogo" onClick={volverAlCatalogo}>
+          <ChevronLeft size={16} />
+          Seguir agregando productos
+        </button>
 
-      {error && <div className="pa-mensaje-error"><span>{error}</span></div>}
+        <h2 className="pa-detalle-titulo">Tu pedido ({totalItems})</h2>
 
-      {catalogo.length === 0 ? (
-        <p className="pa-sin-catalogo">
-          Todavía no hay productos disponibles para pedir. Avísale al jefe de
-          Punto Amarillo que configure tus precios especiales.
-        </p>
-      ) : (
-        <>
-          <div className="pa-buscador">
-            <Search size={16} />
-            <input
-              type="text"
-              placeholder="Buscar producto..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
-          </div>
+        {error && <div className="pa-mensaje-error"><span>{error}</span></div>}
 
-          <div className="pa-grid-productos">
-            {catalogoFiltrado.map((producto) => {
-            const stock = obtenerEstadoStock(producto.stock_actual);
-            const agotado = Number(producto.stock_actual) <= 0;
-            const enCarrito = cantidadEnCarrito(producto.id);
+        <div className="pa-resumen-lista">
+          {carrito.map((item) => (
+            <div key={item.producto_id} className="pa-resumen-fila">
+              <span className="pa-resumen-nombre">{item.nombre}</span>
 
-            return (
-              <div
-                key={producto.id}
-                className={`pa-prod-card ${enCarrito > 0 ? "en-carrito" : ""} ${
-                  agotado ? "agotado" : ""
-                }`}
-                onClick={() => !agotado && agregarAlCarrito(producto)}
+              <CantidadControl
+                className="pa-cantidad-chica"
+                nombre={item.nombre}
+                cantidad={item.cantidad}
+                max={Number(item.stock_actual)}
+                onDecrementar={() => ajustarCantidad(item.producto_id, -1)}
+                onIncrementar={() => ajustarCantidad(item.producto_id, 1)}
+              />
+
+              <button
+                className="pa-resumen-quitar"
+                onClick={() => quitarDelCarrito(item.producto_id)}
               >
-                <div className="pa-prod-imagen">
-                  <ShoppingBag size={26} />
-                  {agotado && <div className="pa-prod-overlay">Agotado</div>}
-                </div>
-
-                <div className="pa-prod-info">
-                  <span className="pa-prod-nombre">{producto.nombre}</span>
-
-                  <span className={`pa-prod-stock ${stock.clase}`}>
-                    {stock.texto}
-                  </span>
-
-                  {enCarrito > 0 && (
-                    <div
-                      className="pa-cantidad"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => ajustarCantidad(producto.id, -1)}
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span>{enCarrito}</span>
-                      <button
-                        type="button"
-                        disabled={enCarrito >= Number(producto.stock_actual)}
-                        onClick={() => ajustarCantidad(producto.id, 1)}
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {catalogoFiltrado.length === 0 && (
-            <p className="pa-sin-resultados">
-              Ningún producto coincide con "{busqueda}"
-            </p>
-          )}
-          </div>
-        </>
-      )}
-
-      {carrito.length > 0 && (
-        <div className="pa-resumen">
-          <h2>Tu pedido ({totalItems})</h2>
-
-          <div className="pa-resumen-lista">
-            {carrito.map((item) => (
-              <div key={item.producto_id} className="pa-resumen-fila">
-                <span className="pa-resumen-nombre">{item.nombre}</span>
-
-                <div className="pa-cantidad pa-cantidad-chica">
-                  <button
-                    type="button"
-                    onClick={() => ajustarCantidad(item.producto_id, -1)}
-                  >
-                    <Minus size={13} />
-                  </button>
-                  <span>{item.cantidad}</span>
-                  <button
-                    type="button"
-                    disabled={item.cantidad >= Number(item.stock_actual)}
-                    onClick={() => ajustarCantidad(item.producto_id, 1)}
-                  >
-                    <Plus size={13} />
-                  </button>
-                </div>
-
-                <button
-                  className="pa-resumen-quitar"
-                  onClick={() => quitarDelCarrito(item.producto_id)}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <label htmlFor="pa-nota">Nota (opcional)</label>
-          <textarea
-            id="pa-nota"
-            rows={2}
-            maxLength={300}
-            value={nota}
-            onChange={(e) => setNota(e.target.value)}
-            placeholder="Ej: Para las 6pm, 2 sin cebolla"
-          />
-
-          <button
-            className="pa-btn-primario pa-btn-enviar"
-            onClick={enviarPedido}
-            disabled={enviando}
-          >
-            <Send size={16} />
-            {enviando ? "Enviando..." : "Enviar pedido"}
-          </button>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
         </div>
-      )}
+
+        <label htmlFor="pa-nota">Nota (opcional)</label>
+        <textarea
+          id="pa-nota"
+          rows={2}
+          maxLength={300}
+          value={nota}
+          onChange={(e) => setNota(e.target.value)}
+          placeholder="Ej: Para las 6pm, 2 sin cebolla"
+        />
+
+        <button
+          className="pa-btn-primario pa-btn-enviar"
+          onClick={enviarPedido}
+          disabled={enviando || carrito.length === 0}
+        >
+          <Send size={16} />
+          {enviando ? "Enviando..." : "Enviar pedido"}
+        </button>
+      </div>
     </div>
   );
 }
