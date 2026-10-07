@@ -9,6 +9,7 @@ import RegistrarVenta from "./pages/trabajadoras/venta/RegistrarVenta";
 import Inventariotrabajadora from "./pages/trabajadoras/inventario/Inventario";
 import Horario from "./pages/trabajadoras/horario/Horario";
 import RecetasTrabajadora from "./pages/trabajadoras/recetas/Recetas";
+import SolicitudesPedido from "./pages/trabajadoras/solicitudes/SolicitudesPedido";
 
 import Dashboard from "./pages/admin/dashboard/Dashboard";
 import Ventas from "./pages/admin/ventas/Ventas";
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/insumos" element={<InsumosTrabajadora />} />
             <Route path="/horario" element={<Horario />} />
             <Route path="/recetas" element={<RecetasTrabajadora />} />
+            <Route path="/solicitudes-pedido" element={<SolicitudesPedido />} />
             <Route path="/notas" element={<Notas />} />
           </Route>
 
@@ -56,6 +58,7 @@ export default function App() {
             <Route path="/admin/reportes" element={<Reportes />} />
             <Route path="/admin/clientes" element={<Clientes />} />
             <Route path="/admin/cuentas-cobrar" element={<CuentasPorCobrar />} />
+            <Route path="/admin/solicitudes-pedido" element={<SolicitudesPedido />} />
             <Route path="/admin/salarios" element={<Salarios />} />
             <Route path="/admin/ingresos-egresos" element={<IngresosEgresos />} />
             <Route path="/admin/proveedores" element={<Proveedores />} />

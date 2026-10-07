@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   ShoppingCart,
@@ -9,10 +9,13 @@ import {
   Wheat,
   Receipt,
   StickyNote,
+  ClipboardList,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
 import { listarNotas } from "../../api/notas";
+import { contarSolicitudesPendientes } from "../../api/solicitudesPedido";
+import { reproducirNotificacion } from "../../utils/notificacionSonido";
 import "./TrabajadoraLayout.css";
 
 const TABS = [
@@ -46,13 +49,18 @@ const TABS = [
     Icon: ChefHat,
   },
   {
+    to: "/solicitudes-pedido",
+    label: "Pedidos",
+    Icon: ClipboardList,
+  },
+  {
     to: "/notas",
     label: "Notas",
     Icon: StickyNote,
   },
 ];
 
-const INTERVALO_REFRESCO_MS = 30000; // 30s — mantiene el contador razonablemente al día sin saturar el backend
+const INTERVALO_REFRESCO_MS = 30000; // 30s — mantiene los contadores razonablemente al día sin saturar el backend
 
 export default function TrabajadoraLayout() {
   const { usuario, logout } = useAuth();
@@ -61,14 +69,24 @@ export default function TrabajadoraLayout() {
 
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
   const [notasPendientes, setNotasPendientes] = useState(0);
+  const [pedidosPendientes, setPedidosPendientes] = useState(0);
+
+  /* Para saber si el número de pedidos SUBIÓ desde la última vez (y así
+     decidir si suena el aviso), no solo mostrarlo */
+  const pedidosPendientesPrevRef = useRef(null);
 
   useEffect(() => {
     cargarContadorNotas();
+    cargarContadorPedidos();
 
-    const intervalo = setInterval(cargarContadorNotas, INTERVALO_REFRESCO_MS);
+    const intervalo = setInterval(() => {
+      cargarContadorNotas();
+      cargarContadorPedidos();
+    }, INTERVALO_REFRESCO_MS);
+
     return () => clearInterval(intervalo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]); // se refresca también al cambiar de pestaña, así al volver de "Notas" el número ya está al día
+  }, [location.pathname]); // se refresca también al cambiar de pestaña, así al volver el número ya está al día
 
   async function cargarContadorNotas() {
     try {
@@ -79,12 +97,29 @@ export default function TrabajadoraLayout() {
     }
   }
 
+  async function cargarContadorPedidos() {
+    try {
+      const { pendientes } = await contarSolicitudesPendientes();
+
+      const anterior = pedidosPendientesPrevRef.current;
+      if (anterior !== null && pendientes > anterior) {
+        reproducirNotificacion();
+      }
+      pedidosPendientesPrevRef.current = pendientes;
+
+      setPedidosPendientes(pendientes);
+    } catch (err) {
+      // si falla, simplemente no se muestra el número — no bloquea el resto del layout
+    }
+  }
+
   if (!usuario) {
     return <Navigate to="/login" replace />;
   }
 
   if (usuario.rol !== "trabajadora") {
-    return <Navigate to="/admin" replace />;
+    const destino = usuario.rol === "jefe" ? "/admin" : usuario.rol === "arte_frio" ? "/pedido" : "/login";
+    return <Navigate to={destino} replace />;
   }
 
   function handleLogout() {
@@ -200,6 +235,12 @@ export default function TrabajadoraLayout() {
               {to === "/notas" && notasPendientes > 0 && (
                 <span className="trab-tab-badge">
                   {notasPendientes > 9 ? "9+" : notasPendientes}
+                </span>
+              )}
+
+              {to === "/solicitudes-pedido" && pedidosPendientes > 0 && (
+                <span className="trab-tab-badge">
+                  {pedidosPendientes > 9 ? "9+" : pedidosPendientes}
                 </span>
               )}
             </span>

@@ -7,6 +7,7 @@ import {
   Send,
   Check,
   RefreshCw,
+  Search,
 } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { obtenerMiCliente, listarPreciosEspeciales } from "../../../api/clientes";
@@ -17,6 +18,7 @@ export default function PedidoArteFrio() {
   const [miCliente, setMiCliente] = useState(null);
   const [catalogo, setCatalogo] = useState([]);
   const [carrito, setCarrito] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
   const [nota, setNota] = useState("");
 
   const [cargando, setCargando] = useState(true);
@@ -147,6 +149,10 @@ export default function PedidoArteFrio() {
 
   const totalItems = carrito.reduce((sum, i) => sum + i.cantidad, 0);
 
+  const catalogoFiltrado = catalogo.filter((p) =>
+    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
   /* =========================
      PANTALLA DE ÉXITO
      ========================= */
@@ -223,8 +229,19 @@ export default function PedidoArteFrio() {
           Punto Amarillo que configure tus precios especiales.
         </p>
       ) : (
-        <div className="pa-grid-productos">
-          {catalogo.map((producto) => {
+        <>
+          <div className="pa-buscador">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Buscar producto..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
+
+          <div className="pa-grid-productos">
+            {catalogoFiltrado.map((producto) => {
             const stock = obtenerEstadoStock(producto.stock_actual);
             const agotado = Number(producto.stock_actual) <= 0;
             const enCarrito = cantidadEnCarrito(producto.id);
@@ -274,7 +291,14 @@ export default function PedidoArteFrio() {
               </div>
             );
           })}
-        </div>
+
+          {catalogoFiltrado.length === 0 && (
+            <p className="pa-sin-resultados">
+              Ningún producto coincide con "{busqueda}"
+            </p>
+          )}
+          </div>
+        </>
       )}
 
       {carrito.length > 0 && (

@@ -1,0 +1,241 @@
+.sp-container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.sp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.sp-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  margin: 0 0 0.15rem;
+  font-weight: 700;
+}
+
+.sp-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.sp-btn-refrescar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sp-btn-refrescar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sp-girando {
+  animation: sp-spin 0.8s linear infinite;
+}
+
+@keyframes sp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sp-mensaje-error {
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.sp-cargando {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.sp-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-success);
+  text-align: center;
+}
+
+.sp-vacio p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.sp-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.sp-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.sp-fila-principal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sp-badge-pendiente {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sp-fecha {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.sp-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.sp-nota {
+  margin: 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.sp-acciones {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sp-btn-primario {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-btn-peligro-outline {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-rechazo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-danger);
+  background: var(--color-danger-tint);
+}
+
+.sp-rechazo label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-danger);
+}
+
+.sp-rechazo textarea {
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 0.82rem;
+  resize: vertical;
+}
+
+.sp-rechazo-botones {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.sp-btn-secundario {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-btn-peligro {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-btn-secundario:disabled,
+.sp-btn-peligro:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navigate, NavLink, Outlet, useNavigate, useLocation  } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -18,12 +18,15 @@ import {
   UserCircle,
   CreditCard,
   StickyNote,
-  Users2
+  Users2,
+  ClipboardList,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
 import "./AdminLayout.css";
 import { listarNotas } from "../../api/notas";
+import { contarSolicitudesPendientes } from "../../api/solicitudesPedido";
+import { reproducirNotificacion } from "../../utils/notificacionSonido";
 
 const LINKS = [
   {
@@ -51,6 +54,11 @@ const LINKS = [
     to: "/admin/clientes",
     label: "Clientes",
     Icon: Users2,
+  },
+  {
+    to: "/admin/solicitudes-pedido",
+    label: "Pedidos Arte Frío",
+    Icon: ClipboardList,
   },
   {
     to: "/admin/salarios",
@@ -113,21 +121,37 @@ export default function AdminLayout() {
 
   const location = useLocation();
   const [notasPendientes, setNotasPendientes] = useState(0);
+  const [pedidosPendientes, setPedidosPendientes] = useState(0);
+  const pedidosPendientesPrevRef = useRef(null);
 
   useEffect(() => {
     if (!usuario || usuario.rol !== "jefe") return undefined;
 
-    async function cargarContador() {
+    async function cargarContadores() {
       try {
         const notas = await listarNotas();
         setNotasPendientes(notas.filter((n) => !n.resuelta).length);
       } catch (err) {
         /* si falla, no se muestra el número */
       }
+
+      try {
+        const { pendientes } = await contarSolicitudesPendientes();
+
+        const anterior = pedidosPendientesPrevRef.current;
+        if (anterior !== null && pendientes > anterior) {
+          reproducirNotificacion();
+        }
+        pedidosPendientesPrevRef.current = pendientes;
+
+        setPedidosPendientes(pendientes);
+      } catch (err) {
+        /* si falla, no se muestra el número */
+      }
     }
 
-    cargarContador();
-    const intervalo = setInterval(cargarContador, 30000);
+    cargarContadores();
+    const intervalo = setInterval(cargarContadores, 30000);
     return () => clearInterval(intervalo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, usuario?.rol]);
@@ -137,7 +161,8 @@ export default function AdminLayout() {
   }
 
   if (usuario.rol !== "jefe") {
-    return <Navigate to="/venta" replace />;
+    const destino = usuario.rol === "arte_frio" ? "/pedido" : "/venta";
+    return <Navigate to={destino} replace />;
   }
 
   function handleLogout() {
@@ -207,6 +232,11 @@ export default function AdminLayout() {
                 {to === "/admin/notas" && notasPendientes > 0 && (
                   <span className="admin-nav-badge">
                     {notasPendientes > 9 ? "9+" : notasPendientes}
+                  </span>
+                )}
+                {to === "/admin/solicitudes-pedido" && pedidosPendientes > 0 && (
+                  <span className="admin-nav-badge">
+                    {pedidosPendientes > 9 ? "9+" : pedidosPendientes}
                   </span>
                 )}
               </NavLink>

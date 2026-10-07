@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ShoppingBag,
   ShoppingCart,
@@ -18,11 +19,18 @@ import {
   X,
   Clock3,
   Info,
+  PackageCheck,
 } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import { crearOrden } from "../../../api/ordenes";
-import { listarClientes, crearCliente, listarPreciosEspeciales } from "../../../api/clientes";
+import {
+  listarClientes,
+  crearCliente,
+  listarPreciosEspeciales,
+  obtenerCliente,
+} from "../../../api/clientes";
+import { atenderSolicitud } from "../../../api/solicitudesPedido";
 import "./RegistrarVenta.css";
 
 const METODOS_PAGO = [
@@ -195,6 +203,9 @@ function CantidadControl({
 }
 
 export default function RegistrarVenta() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [productos, setProductos] = useState([]);
   const [trabajadoras, setTrabajadoras] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -235,6 +246,12 @@ export default function RegistrarVenta() {
   /* Selector de sabores para paquetes "mixtos" (ej. Paquete de empanadas mixta) */
   const [selectorPaquete, setSelectorPaquete] = useState(null);
   const [seleccionActual, setSeleccionActual] = useState([]);
+
+  /* Pedido que llegó desde "Pasar al carrito" en Solicitudes de Arte Frío */
+  const [solicitudOrigen, setSolicitudOrigen] = useState(
+    () => location.state?.solicitud || null
+  );
+  const precargaHechaRef = useRef(false);
 
   useEffect(() => {
     cargarDatos();
@@ -310,9 +327,67 @@ export default function RegistrarVenta() {
     });
   }, [productos]);
 
+  /* Precargar el carrito a partir de una solicitud de pedido de Arte Frío
+     (llegó por "Pasar al carrito" en la pantalla de Solicitudes). Se hace
+     una sola vez, cuando ya hay catálogo cargado para poder resolver cada
+     producto. Los paquetes "mixtos" se omiten porque la solicitud no trae
+     la selección de sabores — hay que agregarlos a mano si aplica. */
+  useEffect(() => {
+    if (!solicitudOrigen || precargaHechaRef.current || productos.length === 0) {
+      return;
+    }
+    precargaHechaRef.current = true;
+
+    const nuevasLineas = [];
+    let omitidos = 0;
+
+    solicitudOrigen.items.forEach((item) => {
+      const producto = productos.find((p) => p.id === item.producto_id);
+
+      if (!producto || producto.requiere_seleccion) {
+        omitidos += 1;
+        return;
+      }
+
+      const stockDisponible = Number(producto.stock_actual) || 0;
+      const cantidad = Math.max(1, Math.min(item.cantidad, stockDisponible || item.cantidad));
+
+      nuevasLineas.push({
+        ...producto,
+        producto_id: producto.id,
+        cantidad,
+        clave: claveCarrito(producto.id),
+      });
+    });
+
+    if (nuevasLineas.length > 0) {
+      setCarrito(nuevasLineas);
+      setVista("carrito");
+    }
+
+    if (omitidos > 0) {
+      setError(
+        `${omitidos} producto(s) de este pedido requieren elegir sabores y no se pudieron precargar — agrégalos manualmente.`
+      );
+    }
+
+    obtenerCliente(solicitudOrigen.cliente_id)
+      .then((cliente) => {
+        setClienteId(String(cliente.id));
+        setClienteSeleccionado(cliente);
+      })
+      .catch(() => {
+        // si falla, la trabajadora puede elegir el cliente manualmente
+      });
+
+    // Limpia el state de navegación para que un refresh o "atrás" no repita la precarga
+    navigate(location.pathname, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [solicitudOrigen, productos]);
+
   /* Buscar clientes con un pequeño debounce, solo si no hay uno ya elegido */
   useEffect(() => {
-    if ((metodoPago !== "credito" && !mostrarSelectorCliente) || clienteSeleccionado) return undefined;
+    if (metodoPago !== "credito" || clienteSeleccionado) return undefined;
 
     const termino = busquedaCliente.trim();
 
@@ -339,7 +414,7 @@ export default function RegistrarVenta() {
       activo = false;
       clearTimeout(temporizador);
     };
-  }, [busquedaCliente, metodoPago, mostrarSelectorCliente, clienteSeleccionado]);
+  }, [busquedaCliente, metodoPago, clienteSeleccionado]);
 
   /* Precios especiales del cliente elegido — se recargan cada vez que cambia */
   useEffect(() => {
@@ -520,15 +595,6 @@ export default function RegistrarVenta() {
       clase: "disponible",
       texto: `${cantidad} disponibles`,
     };
-  }
-
-  function insumosFaltantes(producto) {
-    if (!producto.insumos || producto.insumos.length === 0) return [];
-
-    return producto.insumos.filter((pi) => {
-      const disponibles = Math.floor(Number(pi.insumo_stock_actual) / Number(pi.cantidad));
-      return disponibles <= 0;
-    });
   }
 
   /* Un cliente marcado como "sin costo" (ej. el dueño) hace que CUALQUIER
@@ -753,6 +819,19 @@ export default function RegistrarVenta() {
         })),
       });
 
+      // Si esta venta nació de un pedido de Arte Frío, se marca esa
+      // solicitud como atendida. Si esto falla, no se bloquea la venta
+      // — ya quedó registrada — solo se avisa para marcarlo a mano.
+      if (solicitudOrigen) {
+        try {
+          await atenderSolicitud(solicitudOrigen.id, orden.id);
+        } catch (err) {
+          setMensaje(
+            "Venta registrada. No se pudo marcar el pedido de Arte Frío como atendido automáticamente — márcalo a mano desde Pedidos."
+          );
+        }
+      }
+
       setReciboEfectivo(
         tieneRecibido
           ? { recibido: recibidoNum, cambio: recibidoNum - totalCarrito }
@@ -764,8 +843,8 @@ export default function RegistrarVenta() {
       setRecibido("");
       setDescripcion("");
       setFechaVenta(hoyISO());
+      setSolicitudOrigen(null);
       limpiarCliente();
-      setMensaje(null);
       setVista("recibo");
 
       await cargarDatos();
@@ -786,6 +865,7 @@ export default function RegistrarVenta() {
     setRecibido("");
     setDescripcion("");
     setFechaVenta(hoyISO());
+    setSolicitudOrigen(null);
     limpiarCliente();
     setMensaje(null);
     setError(null);
@@ -982,12 +1062,7 @@ export default function RegistrarVenta() {
 
                     {agotado && (
                       <div className="venta-prod-overlay">
-                        <span>Agotado</span>
-                        {insumosFaltantes(producto).length > 0 && (
-                          <span className="venta-prod-overlay-detalle">
-                            Falta: {insumosFaltantes(producto).map((i) => i.insumo_nombre).join(", ")}
-                          </span>
-                        )}
+                        Agotado
                       </div>
                     )}
                   </div>
@@ -1171,6 +1246,16 @@ export default function RegistrarVenta() {
             <ChevronLeft size={16} />
             Seguir agregando productos
           </button>
+
+          {solicitudOrigen && (
+            <div className="venta-origen-solicitud">
+              <PackageCheck size={15} />
+              <span>
+                Pedido de Arte Frío
+                {solicitudOrigen.nota ? ` — "${solicitudOrigen.nota}"` : ""}
+              </span>
+            </div>
+          )}
 
           <div className="venta-carrito-lista">
             {carrito.map((item) => (

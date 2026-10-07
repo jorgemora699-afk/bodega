@@ -341,3 +341,31 @@
   font-size: 0.82rem;
   font-weight: 600;
 }
+
+.pa-buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+}
+
+.pa-buscador input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  background: transparent;
+}
+
+.pa-sin-resultados {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 1.5rem 0;
+}
