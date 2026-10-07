@@ -17,6 +17,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { listarNotas } from "../../api/notas";
 import { contarSolicitudesPendientes } from "../../api/solicitudesPedido";
+// RUTA CORREGIDA: Subir dos niveles ../../
 import { reproducirNotificacion, desbloquearVoz } from "../../api/notificacionSonido"; 
 import "./TrabajadoraLayout.css";
 
@@ -31,7 +32,7 @@ const TABS = [
   { to: "/notas", label: "Notas", Icon: StickyNote },
 ];
 
-const INTERVALO_REFRESCO_MS = 30000;
+const INTERVALO_REFRESCO_MS = 5000;
 
 export default function TrabajadoraLayout() {
   const { usuario, logout } = useAuth();
@@ -41,7 +42,7 @@ export default function TrabajadoraLayout() {
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
   const [notasPendientes, setNotasPendientes] = useState(0);
   const [pedidosPendientes, setPedidosPendientes] = useState(0);
-  const [sonidoActivado, setSonidoActivado] = useState(false); // ESTADO PARA EL BOTÓN
+  const [sonidoActivo, setSonidoActivo] = useState(false);
 
   const pedidosPendientesPrevRef = useRef(null);
 
@@ -63,7 +64,7 @@ export default function TrabajadoraLayout() {
       const notas = await listarNotas();
       setNotasPendientes(notas.filter((n) => !n.resuelta).length);
     } catch (err) {
-      // Ignorar error
+      // Ignorar error para no bloquear el renderizado
     }
   }
 
@@ -79,13 +80,8 @@ export default function TrabajadoraLayout() {
 
       setPedidosPendientes(pendientes);
     } catch (err) {
-      // Ignorar error
+      // Ignorar error para no bloquear el renderizado
     }
-  }
-
-  function handleActivarSonido() {
-    desbloquearVoz();
-    setSonidoActivado(true);
   }
 
   if (!usuario) {
@@ -118,68 +114,99 @@ export default function TrabajadoraLayout() {
           />
         </div>
 
-        <div className="trab-topbar-actions">
+        {/* BOTÓN ACTIVAR SONIDO EN EL HEADER */}
+        <button
+          onClick={() => {
+            desbloquearVoz();
+            setSonidoActivo(true);
+          }}
+          className={`notif-btn-sonido ${sonidoActivo ? "activo" : ""}`}
+          title={sonidoActivo ? "Sonido activado" : "Activar sonido"}
+          aria-label={sonidoActivo ? "Sonido activado" : "Activar sonido"}
+        >
+          {sonidoActivo ? (
+            <Volume2 size={18} />
+          ) : (
+            <VolumeX size={18} />
+          )}
+        </button>
 
-          {/* BOTÓN DISCRETO TIPO ICONO */}
-          <button 
-            onClick={handleActivarSonido} 
-            className={`trab-sound-btn ${sonidoActivado ? "activo" : ""}`}
-            title={sonidoActivado ? "Sonido activado" : "Hacer clic para activar voz de notificaciones"}
-            type="button"
-          >
-            {sonidoActivado ? <Volume2 size={18} /> : <VolumeX size={18} />}
-          </button>
+        <div className="trab-user">
 
-          <div className="trab-user">
-            <div className="trab-user-info">
-              <strong>{usuario.nombre || "Trabajadora"}</strong>
-              <span>Punto Amarillo</span>
-            </div>
+          <div className="trab-user-info">
+            <strong>
+              {usuario.nombre || "Trabajadora"}
+            </strong>
 
-            <div className="trab-user-avatar">
-              {usuario.nombre?.charAt(0)?.toUpperCase() || "T"}
-            </div>
+            <span>
+              Punto Amarillo
+            </span>
           </div>
 
-          {/* CERRAR SESIÓN */}
-          {confirmandoSalida ? (
-            <div className="trab-logout-confirm">
-              <span>¿Salir?</span>
-              <button
-                className="trab-logout-confirm-no"
-                onClick={() => setConfirmandoSalida(false)}
-              >
-                No
-              </button>
-              <button
-                className="trab-logout-confirm-si"
-                onClick={handleLogout}
-              >
-                Sí
-              </button>
-            </div>
-          ) : (
-            <button
-              className="trab-topbar-salir"
-              onClick={() => setConfirmandoSalida(true)}
-              title="Cerrar sesión"
-            >
-              <LogOut size={16} />
-              <span>Salir</span>
-            </button>
-          )}
+          <div className="trab-user-avatar">
+            {usuario.nombre?.charAt(0)?.toUpperCase() || "T"}
+          </div>
 
         </div>
 
+        {/* =========================
+            CERRAR SESIÓN
+        ========================= */}
+
+        {confirmandoSalida ? (
+
+          <div className="trab-logout-confirm">
+
+            <span>¿Cerrar sesión?</span>
+
+            <button
+              className="trab-logout-confirm-no"
+              onClick={() => setConfirmandoSalida(false)}
+            >
+              No
+            </button>
+
+            <button
+              className="trab-logout-confirm-si"
+              onClick={handleLogout}
+            >
+              Sí
+            </button>
+
+          </div>
+
+        ) : (
+
+          <button
+            className="trab-topbar-salir"
+            onClick={() => setConfirmandoSalida(true)}
+          >
+            <LogOut size={16} />
+            <span>Salir</span>
+          </button>
+
+        )}
+
       </header>
 
-      {/* CONTENIDO Y NAVEGACIÓN PERMANECEN IGUAL */}
+
+      {/* =========================
+          CONTENIDO
+      ========================= */}
+
       <main className="trab-content">
         <Outlet />
       </main>
 
+
+      {/* =========================
+          NAVEGACIÓN
+      ========================= */}
+
       <nav className="trab-tabbar">
+
         {TABS.map(({ to, label, Icon }) => (
+
           <NavLink
             key={to}
             to={to}
@@ -187,6 +214,7 @@ export default function TrabajadoraLayout() {
               `trab-tab ${isActive ? "activo" : ""}`
             }
           >
+
             <span className="trab-tab-icon">
               <Icon size={20} strokeWidth={2} />
 
@@ -203,9 +231,14 @@ export default function TrabajadoraLayout() {
               )}
             </span>
 
-            <span className="trab-tab-label">{label}</span>
+            <span className="trab-tab-label">
+              {label}
+            </span>
+
           </NavLink>
+
         ))}
+
       </nav>
 
     </div>

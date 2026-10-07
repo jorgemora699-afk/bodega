@@ -521,36 +521,52 @@ body.venta-selector-abierto .trab-tabbar {
   display: none;
 }
 
-/* Agrupar acciones en la barra superior */
-.trab-topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* =========================================================
+   BOTÓN SONIDO
+   ========================================================= */
 
-/* Botón de sonido minimalista */
-.trab-sound-btn {
-  background: transparent;
-  border: 1px solid #e2e8f0;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
+.notif-btn-sonido {
+  width: 34px;
+  height: 34px;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+
+  margin-right: 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 9px;
+
+  background: transparent;
+  color: #777777;
+
   cursor: pointer;
-  transition: all 0.2s ease;
+
+  transition: all 0.18s ease;
 }
 
-.trab-sound-btn:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
+.notif-btn-sonido:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
 }
 
-/* Cuando ya fue presionado y activado */
-.trab-sound-btn.activo {
-  background-color: #ecfdf5;
-  border-color: #a7f3d0;
-  color: #059669;
+.notif-btn-sonido.activo {
+  color: var(--pa-yellow);
+  border-color: rgba(245, 196, 0, 0.25);
+}
+
+.notif-btn-sonido.activo:hover {
+  background: rgba(245, 196, 0, 0.10);
+}
+
+@media (max-width: 600px) {
+
+  .notif-btn-sonido {
+    width: 32px;
+    height: 32px;
+
+    margin-right: 6px;
+  }
+
 }

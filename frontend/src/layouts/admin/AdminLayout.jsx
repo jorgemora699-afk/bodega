@@ -20,6 +20,8 @@ import {
   StickyNote,
   Users2,
   ClipboardList,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -119,6 +121,7 @@ export default function AdminLayout() {
 
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
+  const [sonidoActivo, setSonidoActivo] = useState(false);
 
   const location = useLocation();
   const [notasPendientes, setNotasPendientes] = useState(0);
@@ -152,7 +155,7 @@ export default function AdminLayout() {
     }
 
     cargarContadores();
-    const intervalo = setInterval(cargarContadores, 30000);
+    const intervalo = setInterval(cargarContadores, 5000);
     return () => clearInterval(intervalo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, usuario?.rol]);
@@ -264,6 +267,23 @@ export default function AdminLayout() {
               </span>
             </div>
           </div>
+
+          <button
+            type="button"
+            className={`admin-sonido-btn ${sonidoActivo ? "activo" : ""}`}
+            onClick={() => {
+              desbloquearVoz();
+              setSonidoActivo(true);
+            }}
+            title={sonidoActivo ? "Sonido activado" : "Activar sonido"}
+            aria-label={sonidoActivo ? "Sonido activado" : "Activar sonido"}
+          >
+            {sonidoActivo ? (
+              <Volume2 size={17} />
+            ) : (
+              <VolumeX size={17} />
+            )}
+          </button>
 
           {confirmandoSalida ? (
 
