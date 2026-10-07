@@ -10,58 +10,28 @@ import {
   Receipt,
   StickyNote,
   ClipboardList,
+  Volume2,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
 import { listarNotas } from "../../api/notas";
 import { contarSolicitudesPendientes } from "../../api/solicitudesPedido";
-import { reproducirNotificacion } from "../../api/notificacionSonido";
-import { desbloquearVoz } from "../api/notificacionSonido"; 
+// RUTA CORREGIDA: Subir dos niveles ../../
+import { reproducirNotificacion, desbloquearVoz } from "../../api/notificacionSonido"; 
 import "./TrabajadoraLayout.css";
 
 const TABS = [
-  {
-    to: "/venta",
-    label: "Venta",
-    Icon: ShoppingCart,
-  },
-  { to: "/ventas-hoy", 
-    label: "Ventas", 
-    Icon: Receipt 
-  },
-  {
-    to: "/inventario",
-    label: "Inventario",
-    Icon: Package,
-  },
-  {
-    to: "/insumos",
-    label: "Insumos",
-    Icon: Wheat,
-  },
-  {
-    to: "/horario",
-    label: "Horario",
-    Icon: Clock,
-  },
-  {
-    to: "/recetas",
-    label: "Recetas",
-    Icon: ChefHat,
-  },
-  {
-    to: "/solicitudes-pedido",
-    label: "Pedidos",
-    Icon: ClipboardList,
-  },
-  {
-    to: "/notas",
-    label: "Notas",
-    Icon: StickyNote,
-  },
+  { to: "/venta", label: "Venta", Icon: ShoppingCart },
+  { to: "/ventas-hoy", label: "Ventas", Icon: Receipt },
+  { to: "/inventario", label: "Inventario", Icon: Package },
+  { to: "/insumos", label: "Insumos", Icon: Wheat },
+  { to: "/horario", label: "Horario", Icon: Clock },
+  { to: "/recetas", label: "Recetas", Icon: ChefHat },
+  { to: "/solicitudes-pedido", label: "Pedidos", Icon: ClipboardList },
+  { to: "/notas", label: "Notas", Icon: StickyNote },
 ];
 
-const INTERVALO_REFRESCO_MS = 30000; // 30s — mantiene los contadores razonablemente al día sin saturar el backend
+const INTERVALO_REFRESCO_MS = 30000;
 
 export default function TrabajadoraLayout() {
   const { usuario, logout } = useAuth();
@@ -72,8 +42,6 @@ export default function TrabajadoraLayout() {
   const [notasPendientes, setNotasPendientes] = useState(0);
   const [pedidosPendientes, setPedidosPendientes] = useState(0);
 
-  /* Para saber si el número de pedidos SUBIÓ desde la última vez (y así
-     decidir si suena el aviso), no solo mostrarlo */
   const pedidosPendientesPrevRef = useRef(null);
 
   useEffect(() => {
@@ -87,14 +55,14 @@ export default function TrabajadoraLayout() {
 
     return () => clearInterval(intervalo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]); // se refresca también al cambiar de pestaña, así al volver el número ya está al día
+  }, [location.pathname]);
 
   async function cargarContadorNotas() {
     try {
       const notas = await listarNotas();
       setNotasPendientes(notas.filter((n) => !n.resuelta).length);
     } catch (err) {
-      // si falla, simplemente no se muestra el número — no bloquea el resto del layout
+      // Ignorar error para no bloquear el renderizado
     }
   }
 
@@ -110,7 +78,7 @@ export default function TrabajadoraLayout() {
 
       setPedidosPendientes(pendientes);
     } catch (err) {
-      // si falla, simplemente no se muestra el número — no bloquea el resto del layout
+      // Ignorar error para no bloquear el renderizado
     }
   }
 
@@ -144,6 +112,16 @@ export default function TrabajadoraLayout() {
           />
         </div>
 
+        {/* BOTÓN ACTIVAR SONIDO EN EL HEADER */}
+        <button 
+          onClick={desbloquearVoz} 
+          className="notif-btn-activar"
+          title="Activar sonido de notificaciones"
+        >
+          <Volume2 size={18} />
+          <span>Activar Sonido</span>
+        </button>
+
         <div className="trab-user">
 
           <div className="trab-user-info">
@@ -170,9 +148,7 @@ export default function TrabajadoraLayout() {
 
           <div className="trab-logout-confirm">
 
-            <span>
-              ¿Cerrar sesión?
-            </span>
+            <span>¿Cerrar sesión?</span>
 
             <button
               className="trab-logout-confirm-no"
@@ -249,10 +225,6 @@ export default function TrabajadoraLayout() {
             <span className="trab-tab-label">
               {label}
             </span>
-
-            <button onClick={desbloquearVoz} className="notif-btn-activar">
-              🔔 Activar sonido de notificaciones
-            </button>
 
           </NavLink>
 
