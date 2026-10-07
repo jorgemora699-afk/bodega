@@ -26,7 +26,7 @@ import { useAuth } from "../../context/AuthContext";
 import "./AdminLayout.css";
 import { listarNotas } from "../../api/notas";
 import { contarSolicitudesPendientes } from "../../api/solicitudesPedido";
-import { reproducirNotificacion } from "../../utils/notificacionSonido";
+import { reproducirNotificacion } from "../../api/notificacionSonido";
 
 const LINKS = [
   {
