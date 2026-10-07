@@ -29,7 +29,36 @@ export function reproducirNotificacion() {
 }
 
 function reproducirTono() {
-  // ...igual que ya la tienes, sin cambios...
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    const notas = [660, 880]; // dos tonos ascendentes — más perceptible que uno solo
+
+    notas.forEach((frecuencia, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.value = frecuencia;
+
+      const inicio = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0.0001, inicio);
+      gain.gain.exponentialRampToValueAtTime(0.35, inicio + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, inicio + 0.3);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(inicio);
+      osc.stop(inicio + 0.32);
+    });
+
+    setTimeout(() => ctx.close(), 700);
+  } catch {
+    // Se ignora — el tono es un extra, nunca debe bloquear la pantalla.
+  }
 }
 
 function anunciarVoz(texto) {

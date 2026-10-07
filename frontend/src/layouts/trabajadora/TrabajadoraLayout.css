@@ -520,3 +520,37 @@ body.venta-selector-abierto .trab-topbar,
 body.venta-selector-abierto .trab-tabbar {
   display: none;
 }
+
+/* Agrupar acciones en la barra superior */
+.trab-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Botón de sonido minimalista */
+.trab-sound-btn {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.trab-sound-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Cuando ya fue presionado y activado */
+.trab-sound-btn.activo {
+  background-color: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
