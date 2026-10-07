@@ -16,6 +16,7 @@ import { useAuth } from "../../context/AuthContext";
 import { listarNotas } from "../../api/notas";
 import { contarSolicitudesPendientes } from "../../api/solicitudesPedido";
 import { reproducirNotificacion } from "../../api/notificacionSonido";
+import { desbloquearVoz } from "../api/notificacionSonido"; 
 import "./TrabajadoraLayout.css";
 
 const TABS = [
@@ -248,6 +249,10 @@ export default function TrabajadoraLayout() {
             <span className="trab-tab-label">
               {label}
             </span>
+
+            <button onClick={desbloquearVoz} className="notif-btn-activar">
+              🔔 Activar sonido de notificaciones
+            </button>
 
           </NavLink>
 

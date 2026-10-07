@@ -27,6 +27,7 @@ import "./AdminLayout.css";
 import { listarNotas } from "../../api/notas";
 import { contarSolicitudesPendientes } from "../../api/solicitudesPedido";
 import { reproducirNotificacion } from "../../api/notificacionSonido";
+import { desbloquearVoz } from "../api/notificacionSonido";
 
 const LINKS = [
   {
@@ -306,6 +307,7 @@ export default function AdminLayout() {
                 Cerrar sesión
               </span>
             </button>
+            
 
           )}
 
@@ -320,6 +322,7 @@ export default function AdminLayout() {
       >
         <Outlet />
       </main>
+      
 
     </div>
   );
