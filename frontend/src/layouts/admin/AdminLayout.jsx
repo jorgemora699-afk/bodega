@@ -28,8 +28,12 @@ import { useAuth } from "../../context/AuthContext";
 import "./AdminLayout.css";
 import { listarNotas } from "../../api/notas";
 import { contarSolicitudesPendientes } from "../../api/solicitudesPedido";
-import { reproducirNotificacion } from "../../api/notificacionSonido";
-import { desbloquearVoz } from "../../api/notificacionSonido";
+import {
+  reproducirNotificacion,
+  desbloquearVoz,
+  sonidoActivoGuardado,
+  guardarPreferenciaSonido,
+} from "../../api/notificacionSonido";
 
 const LINKS = [
   {
@@ -121,7 +125,7 @@ export default function AdminLayout() {
 
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
-  const [sonidoActivo, setSonidoActivo] = useState(false);
+  const [sonidoActivo, setSonidoActivo] = useState(() => sonidoActivoGuardado());
 
   const location = useLocation();
   const [notasPendientes, setNotasPendientes] = useState(0);
@@ -159,6 +163,41 @@ export default function AdminLayout() {
     return () => clearInterval(intervalo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, usuario?.rol]);
+
+  /* Si el jefe ya había activado el sonido antes (queda guardado en
+     localStorage), no hace falta que vuelva a tocar el botón en cada
+     recarga: aprovechamos el primer clic/toque que haga en CUALQUIER
+     parte del panel para desbloquear el audio en silencio, cumpliendo
+     con el requisito del navegador de que haya un gesto real del
+     usuario antes de dejar sonar algo. */
+  useEffect(() => {
+    if (!sonidoActivoGuardado()) return undefined;
+
+    function desbloquearConPrimerToque() {
+      desbloquearVoz(false); // silencioso — no interrumpe lo que esté haciendo
+      window.removeEventListener("pointerdown", desbloquearConPrimerToque);
+      window.removeEventListener("keydown", desbloquearConPrimerToque);
+    }
+
+    window.addEventListener("pointerdown", desbloquearConPrimerToque, { once: true });
+    window.addEventListener("keydown", desbloquearConPrimerToque, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", desbloquearConPrimerToque);
+      window.removeEventListener("keydown", desbloquearConPrimerToque);
+    };
+  }, []);
+
+  function alternarSonido() {
+    const nuevoEstado = !sonidoActivo;
+
+    if (nuevoEstado) {
+      desbloquearVoz(true); // gesto real del usuario — anuncia "Sonido activado"
+    }
+
+    guardarPreferenciaSonido(nuevoEstado);
+    setSonidoActivo(nuevoEstado);
+  }
 
   if (!usuario) {
     return <Navigate to="/login" replace />;
@@ -276,11 +315,8 @@ export default function AdminLayout() {
             <button
               type="button"
               className={`admin-sonido-btn ${sonidoActivo ? "activo" : ""}`}
-              onClick={() => {
-                desbloquearVoz();
-                setSonidoActivo(true);
-              }}
-              title={sonidoActivo ? "Sonido activado" : "Activar sonido"}
+              onClick={alternarSonido}
+              title={sonidoActivo ? "Sonido activado — toca para silenciar" : "Activar sonido de pedidos"}
               aria-label={sonidoActivo ? "Sonido activado" : "Activar sonido"}
             >
               {sonidoActivo ? (

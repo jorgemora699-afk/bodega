@@ -1,21 +1,49 @@
+const CLAVE_PREFERENCIA = "pa_notif_sonido_activo";
+
 let utteranceActual = null; // referencia persistente — evita que Chrome la recolecte a mitad de camino
 let vozDesbloqueada = false;
 
+/* =========================
+   PREFERENCIA GUARDADA
+   ========================= */
+
+export function sonidoActivoGuardado() {
+  try {
+    return localStorage.getItem(CLAVE_PREFERENCIA) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function guardarPreferenciaSonido(activo) {
+  try {
+    localStorage.setItem(CLAVE_PREFERENCIA, activo ? "1" : "0");
+  } catch {
+    // se ignora
+  }
+}
+
 /**
- * Debe llamarse una sola vez, dentro de un evento de clic/toque real del
- * usuario (por ejemplo, al entrar a la pantalla y tocar "Activar sonido").
- * Esto "desbloquea" la síntesis de voz en Chrome para el resto de la sesión —
- * sin esto, speak() llamado después desde un setInterval puede no sonar nunca.
+ * Desbloquea la síntesis de voz del navegador para el resto de esta
+ * sesión de página. Debe llamarse dentro de un evento de clic/toque real
+ * del usuario — sin eso, speak() llamado después desde un setInterval
+ * puede no sonar nunca en algunos navegadores (sobre todo Chrome).
+ *
+ * `anunciar = true` dice en voz alta "Sonido activado" (para cuando el
+ * usuario toca el botón a propósito). `anunciar = false` desbloquea en
+ * silencio (para el desbloqueo automático con el primer toque en
+ * cualquier parte de la pantalla, donde no queremos sorprender a nadie
+ * con una voz inesperada).
  */
-export function desbloquearVoz() {
+export function desbloquearVoz(anunciar = true) {
   try {
     if (!window.speechSynthesis || vozDesbloqueada) return;
 
-    // Decir un mensaje corto para que el usuario sepa que la voz ya funciona
-    const utterance = new SpeechSynthesisUtterance("Sonido activado");
+    const texto = anunciar ? "Sonido activado" : " ";
+    const utterance = new SpeechSynthesisUtterance(texto);
     utterance.lang = "es-CO";
-    utterance.volume = 0.8;
-    
+    utterance.volume = anunciar ? 0.8 : 0;
+
     window.speechSynthesis.speak(utterance);
     vozDesbloqueada = true;
   } catch {
@@ -23,7 +51,13 @@ export function desbloquearVoz() {
   }
 }
 
+/* =========================
+   NOTIFICACIÓN DE PEDIDO NUEVO
+   ========================= */
+
 export function reproducirNotificacion() {
+  if (!sonidoActivoGuardado()) return; // el usuario lo tiene silenciado
+
   reproducirTono();
   setTimeout(() => anunciarVoz("Nuevo pedido de Arte Frío"), 400);
 }

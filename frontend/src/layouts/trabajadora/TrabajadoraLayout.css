@@ -570,3 +570,24 @@ body.venta-selector-abierto .trab-tabbar {
   }
 
 }
+
+.notif-btn-sonido {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  margin-right: 0.75rem;
+}
+
+.notif-btn-sonido.activo {
+  border-color: var(--color-success);
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
