@@ -59,11 +59,6 @@ const LINKS = [
     Icon: Users2,
   },
   {
-    to: "/admin/solicitudes-pedido",
-    label: "Pedidos Arte Frío",
-    Icon: ClipboardList,
-  },
-  {
     to: "/admin/salarios",
     label: "Salarios",
     Icon: Wallet,
@@ -107,6 +102,11 @@ const LINKS = [
     to: "/admin/notas",
     label: "Notas",
     Icon: StickyNote,
+  },
+  {
+    to: "/admin/solicitudes-pedido",
+    label: "Pedidos Arte Frío",
+    Icon: ClipboardList,
   },
   {
     to: "/admin/mi-cuenta",
@@ -253,6 +253,7 @@ export default function AdminLayout() {
         <div className="admin-sidebar-bottom">
 
           <div className="admin-user">
+
             <div className="admin-user-avatar">
               {usuario.username?.charAt(0)?.toUpperCase() || "J"}
             </div>
@@ -266,27 +267,43 @@ export default function AdminLayout() {
                 Administrador
               </span>
             </div>
+
           </div>
 
-          <button
-            type="button"
-            className={`admin-sonido-btn ${sonidoActivo ? "activo" : ""}`}
-            onClick={() => {
-              desbloquearVoz();
-              setSonidoActivo(true);
-            }}
-            title={sonidoActivo ? "Sonido activado" : "Activar sonido"}
-            aria-label={sonidoActivo ? "Sonido activado" : "Activar sonido"}
-          >
-            {sonidoActivo ? (
-              <Volume2 size={17} />
-            ) : (
-              <VolumeX size={17} />
-            )}
-          </button>
+          <div className="admin-user-actions">
 
-          {confirmandoSalida ? (
+            {/* SONIDO */}
+            <button
+              type="button"
+              className={`admin-sonido-btn ${sonidoActivo ? "activo" : ""}`}
+              onClick={() => {
+                desbloquearVoz();
+                setSonidoActivo(true);
+              }}
+              title={sonidoActivo ? "Sonido activado" : "Activar sonido"}
+              aria-label={sonidoActivo ? "Sonido activado" : "Activar sonido"}
+            >
+              {sonidoActivo ? (
+                <Volume2 size={17} />
+              ) : (
+                <VolumeX size={17} />
+              )}
+            </button>
 
+            {/* CERRAR SESIÓN */}
+            <button
+              type="button"
+              className="admin-logout-btn"
+              onClick={() => setConfirmandoSalida(true)}
+            >
+              <LogOut size={18} />
+              <span>Cerrar sesión</span>
+            </button>
+
+          </div>
+
+          {/* CONFIRMACIÓN */}
+          {confirmandoSalida && (
             <div className="admin-logout-confirm">
 
               <span>
@@ -313,22 +330,6 @@ export default function AdminLayout() {
               </div>
 
             </div>
-
-          ) : (
-
-            <button
-              type="button"
-              className="admin-logout"
-              onClick={() => setConfirmandoSalida(true)}
-            >
-              <LogOut size={17} />
-
-              <span>
-                Cerrar sesión
-              </span>
-            </button>
-            
-
           )}
 
         </div>
