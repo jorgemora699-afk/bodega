@@ -11,9 +11,11 @@ export function desbloquearVoz() {
   try {
     if (!window.speechSynthesis || vozDesbloqueada) return;
 
-    // Un utterance vacío y silencioso, disparado dentro del gesto del usuario.
-    const utterance = new SpeechSynthesisUtterance("");
-    utterance.volume = 0;
+    // Decir un mensaje corto para que el usuario sepa que la voz ya funciona
+    const utterance = new SpeechSynthesisUtterance("Sonido activado");
+    utterance.lang = "es-CO";
+    utterance.volume = 0.8;
+    
     window.speechSynthesis.speak(utterance);
     vozDesbloqueada = true;
   } catch {
