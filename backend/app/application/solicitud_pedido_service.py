@@ -65,9 +65,34 @@ class SolicitudPedidoService:
         return SolicitudPedido.query.filter_by(estado="pendiente").count()
 
     @staticmethod
-    def listar_por_cliente(cliente_id):
-        return SolicitudPedido.query.filter_by(cliente_id=cliente_id).order_by(SolicitudPedido.fecha.desc()).all()
+    def listar_por_cliente(cliente_id, incluir_ocultas=False):
+        query = SolicitudPedido.query.filter_by(cliente_id=cliente_id)
+        if not incluir_ocultas:
+            query = query.filter_by(oculto_cliente=False)
+        return query.order_by(SolicitudPedido.fecha.desc()).all()
 
+    @staticmethod
+    def ocultar_para_cliente(solicitud_id, cliente_id):
+        solicitud = SolicitudPedido.query.get(solicitud_id)
+        if not solicitud or solicitud.cliente_id != cliente_id:
+            return None, "Solicitud no encontrada"
+        if solicitud.estado == "pendiente":
+            return None, "Un pedido pendiente no se puede quitar de la lista"
+
+        solicitud.oculto_cliente = True
+        db.session.commit()
+        return solicitud, None
+
+    @staticmethod
+    def mostrar_para_cliente(solicitud_id, cliente_id):
+        solicitud = SolicitudPedido.query.get(solicitud_id)
+        if not solicitud or solicitud.cliente_id != cliente_id:
+            return None, "Solicitud no encontrada"
+
+        solicitud.oculto_cliente = False
+        db.session.commit()
+        return solicitud, None
+    
     @staticmethod
     def obtener_por_id(solicitud_id):
         return SolicitudPedido.query.get(solicitud_id)

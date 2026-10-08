@@ -311,6 +311,7 @@ class SolicitudPedido(db.Model):
     atendida_por = db.Column(db.String(50), nullable=True)  # username de quien la atendió/rechazó
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     resuelta_en = db.Column(db.DateTime, nullable=True)
+    oculto_cliente = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
 
     cliente = db.relationship("Cliente", back_populates="solicitudes")
     orden = db.relationship("Orden")
@@ -329,6 +330,7 @@ class SolicitudPedido(db.Model):
             "atendida_por": self.atendida_por,
             "fecha": self.fecha.isoformat() + "Z",
             "resuelta_en": self.resuelta_en.isoformat() + "Z" if self.resuelta_en else None,
+            "oculto_cliente": self.oculto_cliente,
             "items": [i.to_dict() for i in self.items],
         }
 

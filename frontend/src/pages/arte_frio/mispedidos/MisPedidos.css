@@ -128,57 +128,6 @@
   color: var(--color-danger);
 }
 
-.mp-filtro-fecha {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 0.55rem 0.8rem;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  margin-bottom: 1.1rem;
-}
-
-.mp-filtro-fecha input[type="date"] {
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 0.85rem;
-  font-family: inherit;
-  color: var(--color-text);
-}
-
-.mp-filtro-fecha-hoy {
-  padding: 0.3rem 0.65rem;
-  border-radius: 20px;
-  border: 1.5px solid var(--color-primary);
-  background: transparent;
-  color: var(--color-primary);
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.mp-filtro-ver-todos {
-  margin-left: auto;
-  padding: 0.3rem 0.65rem;
-  border-radius: 20px;
-  border: 1.5px solid var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-text-secondary);
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.mp-filtro-ver-todos.activo {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
 
 .mp-btn-ocultar {
   margin-left: auto;
@@ -206,4 +155,148 @@
   font-size: 0.72rem;
   color: var(--color-text-secondary);
   font-style: italic;
+}
+
+.mp-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.mp-contador-pendientes {
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mp-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+
+.mp-chips-estado {
+  margin-bottom: 1.1rem;
+}
+
+.mp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mp-chip.activo {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.mp-chip-chico {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.7rem;
+}
+
+.mp-chip-fecha input[type="date"] {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.75rem;
+  font-family: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mp-toggle-quitados {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mp-toggle-quitados.activo {
+  color: var(--color-primary);
+}
+
+.mp-tarjeta.quitada {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.mp-acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.1rem;
+}
+
+.mp-btn-quitar,
+.mp-btn-restaurar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 20px;
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mp-btn-quitar {
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.mp-btn-quitar:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.mp-btn-restaurar {
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mp-btn-quitar:disabled,
+.mp-btn-restaurar:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mp-link {
+  margin-top: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
 }

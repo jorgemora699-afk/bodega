@@ -38,3 +38,20 @@ export async function rechazarSolicitud(solicitudId, motivo) {
   });
   return response.data;
 }
+
+export async function listarMisSolicitudes(incluirOcultas = false) {
+  const response = await apiClient.get("/solicitudes-pedido/mis-solicitudes", {
+    params: incluirOcultas ? { incluir_ocultas: 1 } : {},
+  });
+  return response.data;
+}
+
+export async function ocultarSolicitud(solicitudId) {
+  const response = await apiClient.put(`/solicitudes-pedido/${solicitudId}/ocultar`);
+  return response.data;
+}
+
+export async function mostrarSolicitud(solicitudId) {
+  const response = await apiClient.put(`/solicitudes-pedido/${solicitudId}/mostrar`);
+  return response.data;
+}
