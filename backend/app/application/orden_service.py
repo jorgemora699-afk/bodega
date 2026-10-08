@@ -3,7 +3,7 @@ from datetime import date, datetime
 from app import db
 from app.infrastructure.models import (
     Orden, Venta, Producto, Cliente, MovimientoInventario, MovimientoInsumo,
-    Insumo, VentaSeleccion,
+    Insumo, VentaSeleccion,SolicitudPedido
 )
 from app.domain.inventario import hay_stock_suficiente
 from app.infrastructure.models import PrecioEspecial
@@ -472,5 +472,11 @@ class OrdenService:
             db.session.delete(venta)
 
         db.session.delete(orden)
+                # Si esta venta nació de un pedido de Arte Frío, ese pedido se
+        # elimina junto con ella (sus líneas se borran en cascada).
+        solicitudes = SolicitudPedido.query.filter_by(orden_id=orden.id).all()
+        for solicitud in solicitudes:
+            db.session.delete(solicitud)
+        db.session.flush()
         db.session.commit()
         return True, None
