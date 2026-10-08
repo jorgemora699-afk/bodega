@@ -62,23 +62,8 @@ class Producto(db.Model):
  
     def to_dict(self):
         stock_mostrado = float(self.stock_actual)
-
-        # Si el producto se agotó por falta de insumos, indica cuáles son los que
-        # no alcanzan para preparar ni una unidad.
         insumos_faltantes = []
-        if self.insumos_usados and stock_mostrado <= 0:
-            for pi in self.insumos_usados:
-                if not pi.insumo or float(pi.cantidad) <= 0:
-                    continue
-                if float(pi.insumo.stock_actual) < float(pi.cantidad):
-                    insumos_faltantes.append({
-                        "insumo_id": pi.insumo_id,
-                        "insumo_nombre": pi.insumo.nombre,
-                        "unidad_medida": pi.insumo.unidad_medida,
-                        "stock_actual": float(pi.insumo.stock_actual),
-                        "cantidad_requerida": float(pi.cantidad),
-                    })
- 
+
         if self.requiere_seleccion:
             # El stock real lo determinan los productos que se elijan al vender
             # (ej. los 2 sabores de empanada), no este producto en sí. Se muestra
@@ -88,7 +73,7 @@ class Producto(db.Model):
 
         elif self.es_paquete and self.producto_base and self.unidades_por_paquete:
             stock_mostrado = float(int(float(self.producto_base.stock_actual) // self.unidades_por_paquete))
- 
+
         elif self.insumos_usados:
             # El stock "disponible" de un producto con varios insumos es el
             # que permite el insumo más limitante (el que primero se acaba).
@@ -98,10 +83,23 @@ class Producto(db.Model):
             for pi in self.insumos_usados:
                 if not pi.insumo or float(pi.cantidad) <= 0:
                     continue
+
                 posibles.append(int(float(pi.insumo.stock_actual) // float(pi.cantidad)))
+
+                # Un insumo que no alcanza ni para una unidad es el que
+                # deja el producto agotado.
+                if float(pi.insumo.stock_actual) < float(pi.cantidad):
+                    insumos_faltantes.append({
+                        "insumo_id": pi.insumo_id,
+                        "insumo_nombre": pi.insumo.nombre,
+                        "unidad_medida": pi.insumo.unidad_medida,
+                        "stock_actual": float(pi.insumo.stock_actual),
+                        "cantidad_requerida": float(pi.cantidad),
+                    })
+
             if posibles:
                 stock_mostrado = float(min(posibles))
- 
+
         return {
                 "id": self.id,
                 "nombre": self.nombre,
@@ -115,7 +113,6 @@ class Producto(db.Model):
                 "unidades_por_paquete": self.unidades_por_paquete,
                 "insumos": [pi.to_dict() for pi in self.insumos_usados],
                 "insumos_faltantes": insumos_faltantes,
-                # NUEVO — paquete mixto
                 "requiere_seleccion": self.requiere_seleccion,
                 "categoria_seleccion": self.categoria_seleccion,
                 "cantidad_seleccion": self.cantidad_seleccion,
