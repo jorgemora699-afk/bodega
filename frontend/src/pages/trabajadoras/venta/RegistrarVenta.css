@@ -1634,3 +1634,10 @@
   font-size: 0.8rem;
   font-weight: 600;
 }
+
+.venta-prod-faltante {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-danger);
+}

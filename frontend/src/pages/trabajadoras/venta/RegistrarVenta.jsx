@@ -1106,6 +1106,17 @@ export default function RegistrarVenta() {
                       </span>
                     )}
 
+                    {agotado && producto.insumos_faltantes?.length > 0 && (
+                      <span
+                        className="venta-prod-faltante"
+                        title={producto.insumos_faltantes
+                          .map((i) => `${i.insumo_nombre}: quedan ${i.stock_actual} ${i.unidad_medida}`)
+                          .join(" · ")}
+                      >
+                        Falta: {producto.insumos_faltantes.map((i) => i.insumo_nombre).join(", ")}
+                      </span>
+                    )}
+
                     {producto.requiere_seleccion && enCarritoMixto > 0 && (
                       <span className="venta-badge-en-carrito">
                         {enCarritoMixto} en el carrito
