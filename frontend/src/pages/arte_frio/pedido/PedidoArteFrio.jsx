@@ -16,10 +16,95 @@ import { obtenerMiCliente, listarPreciosEspeciales } from "../../../api/clientes
 import { crearSolicitud } from "../../../api/solicitudesPedido";
 import "./PedidoArteFrio.css";
 
+/* =========================
+   HELPERS
+   ========================= */
+
+function claveCarrito(clienteId) {
+  return `pa_carrito_v1_${clienteId}`;
+}
+
+function leerCarritoGuardado(clienteId) {
+  try {
+    const crudo = localStorage.getItem(claveCarrito(clienteId));
+    return crudo ? JSON.parse(crudo) : null;
+  } catch {
+    return null;
+  }
+}
+
+function stockMaximo(producto) {
+  return Math.max(0, Math.floor(Number(producto.stock_actual)));
+}
+
+/* =========================
+   CONTROL DE CANTIDAD (editable)
+   ========================= */
+
+function CantidadInput({ valor, max, onCambiar, tamano = 14 }) {
+  const [texto, setTexto] = useState(String(valor));
+
+  // Si la cantidad cambia desde afuera (botones, stock), sincroniza el texto
+  useEffect(() => {
+    setTexto(String(valor));
+  }, [valor]);
+
+  function confirmar() {
+    const n = parseInt(texto, 10);
+    if (Number.isNaN(n) || n < 1) {
+      setTexto(String(valor));
+      return;
+    }
+    const final = Math.min(n, max);
+    setTexto(String(final));
+    if (final !== valor) onCambiar(final);
+  }
+
+  return (
+    <div className="pa-cantidad" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        aria-label="Quitar uno"
+        disabled={valor <= 1}
+        onClick={() => onCambiar(valor - 1)}
+      >
+        <Minus size={tamano} />
+      </button>
+
+      <input
+        type="text"
+        inputMode="numeric"
+        aria-label="Cantidad"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value.replace(/\D/g, "").slice(0, 4))}
+        onFocus={(e) => e.target.select()}
+        onBlur={confirmar}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.target.blur();
+        }}
+      />
+
+      <button
+        type="button"
+        aria-label="Agregar uno"
+        disabled={valor >= max}
+        onClick={() => onCambiar(valor + 1)}
+      >
+        <Plus size={tamano} />
+      </button>
+    </div>
+  );
+}
+
+/* =========================
+   PANTALLA
+   ========================= */
+
 export default function PedidoArteFrio() {
   const [miCliente, setMiCliente] = useState(null);
   const [catalogo, setCatalogo] = useState([]);
   const [carrito, setCarrito] = useState([]);
+  const [carritoListo, setCarritoListo] = useState(false); // ya se leyó localStorage
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [nota, setNota] = useState("");
@@ -34,6 +119,60 @@ export default function PedidoArteFrio() {
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  /* Guarda el carrito y la nota cada vez que cambian */
+  useEffect(() => {
+    if (!carritoListo || !miCliente) return;
+
+    try {
+      const clave = claveCarrito(miCliente.id);
+      if (carrito.length === 0 && !nota.trim()) {
+        localStorage.removeItem(clave);
+      } else {
+        localStorage.setItem(
+          clave,
+          JSON.stringify({
+            items: carrito.map((i) => ({
+              producto_id: i.producto_id,
+              cantidad: i.cantidad,
+            })),
+            nota,
+          })
+        );
+      }
+    } catch {
+      /* sin localStorage (modo privado, etc.): el pedido sigue funcionando */
+    }
+  }, [carrito, nota, carritoListo, miCliente]);
+
+  /* Reconstruye el carrito guardado con los datos frescos del catálogo:
+     precios y stock actuales, y descarta lo que ya no se puede pedir. */
+  function restaurarCarrito(clienteId, productosVigentes) {
+    const guardado = leerCarritoGuardado(clienteId);
+
+    if (guardado && Array.isArray(guardado.items)) {
+      const items = guardado.items
+        .map((g) => {
+          const producto = productosVigentes.find((p) => p.id === g.producto_id);
+          if (!producto) return null;
+
+          const max = stockMaximo(producto);
+          if (max < 1) return null;
+
+          const cantidad = Math.min(
+            Math.max(1, Math.floor(Number(g.cantidad)) || 1),
+            max
+          );
+          return { ...producto, producto_id: producto.id, cantidad };
+        })
+        .filter(Boolean);
+
+      setCarrito(items);
+      setNota(typeof guardado.nota === "string" ? guardado.nota : "");
+    }
+
+    setCarritoListo(true);
+  }
 
   async function cargarDatos() {
     setCargando(true);
@@ -62,6 +201,7 @@ export default function PedidoArteFrio() {
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
       setCatalogo(subset);
+      restaurarCarrito(cliente.id, subset);
     } catch (err) {
       setError(
         "No se pudo cargar tu catálogo de productos. Intenta de nuevo."
@@ -76,13 +216,13 @@ export default function PedidoArteFrio() {
   }
 
   function agregarAlCarrito(producto) {
-    if (Number(producto.stock_actual) <= 0) return;
+    if (stockMaximo(producto) < 1) return;
 
     setCarrito((actual) => {
       const existente = actual.find((i) => i.producto_id === producto.id);
 
       if (existente) {
-        if (existente.cantidad >= Number(producto.stock_actual)) return actual;
+        if (existente.cantidad >= stockMaximo(producto)) return actual;
         return actual.map((i) =>
           i.producto_id === producto.id ? { ...i, cantidad: i.cantidad + 1 } : i
         );
@@ -92,16 +232,14 @@ export default function PedidoArteFrio() {
     });
   }
 
-  function ajustarCantidad(productoId, delta) {
+  /* Fija la cantidad exacta (la usan los botones +/- y el campo editable) */
+  function fijarCantidad(productoId, nueva) {
     setCarrito((actual) =>
-      actual
-        .map((i) => {
-          if (i.producto_id !== productoId) return i;
-          const nueva = i.cantidad + delta;
-          const max = Number(i.stock_actual);
-          if (nueva < 1 || nueva > max) return i;
-          return { ...i, cantidad: nueva };
-        })
+      actual.map((i) => {
+        if (i.producto_id !== productoId) return i;
+        const cantidad = Math.min(Math.max(1, nueva), stockMaximo(i));
+        return { ...i, cantidad };
+      })
     );
   }
 
@@ -136,7 +274,7 @@ export default function PedidoArteFrio() {
       });
 
       setPedidoEnviado(solicitud);
-      setCarrito([]);
+      setCarrito([]); // el efecto de arriba borra el carrito guardado
       setNota("");
       setVista("catalogo");
     } catch (err) {
@@ -304,7 +442,7 @@ export default function PedidoArteFrio() {
               <div className="pa-grid-productos">
                 {catalogoFiltrado.map((producto) => {
                   const stock = obtenerEstadoStock(producto.stock_actual);
-                  const agotado = Number(producto.stock_actual) <= 0;
+                  const agotado = stockMaximo(producto) < 1;
                   const enCarrito = cantidadEnCarrito(producto.id);
 
                   return (
@@ -331,25 +469,11 @@ export default function PedidoArteFrio() {
                         </span>
 
                         {enCarrito > 0 && (
-                          <div
-                            className="pa-cantidad"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => ajustarCantidad(producto.id, -1)}
-                            >
-                              <Minus size={14} />
-                            </button>
-                            <span>{enCarrito}</span>
-                            <button
-                              type="button"
-                              disabled={enCarrito >= Number(producto.stock_actual)}
-                              onClick={() => ajustarCantidad(producto.id, 1)}
-                            >
-                              <Plus size={14} />
-                            </button>
-                          </div>
+                          <CantidadInput
+                            valor={enCarrito}
+                            max={stockMaximo(producto)}
+                            onCambiar={(n) => fijarCantidad(producto.id, n)}
+                          />
                         )}
                       </div>
                     </div>
@@ -358,7 +482,9 @@ export default function PedidoArteFrio() {
 
                 {catalogoFiltrado.length === 0 && (
                   <p className="pa-sin-resultados">
-                    Ningún producto coincide con "{busqueda}"
+                    {busqueda
+                      ? `Ningún producto coincide con "${busqueda}"`
+                      : "No hay productos en esta categoría"}
                   </p>
                 )}
               </div>
@@ -402,22 +528,12 @@ export default function PedidoArteFrio() {
                   </span>
                 </div>
 
-                <div className="pa-cantidad">
-                  <button
-                    type="button"
-                    onClick={() => ajustarCantidad(item.producto_id, -1)}
-                  >
-                    <Minus size={13} />
-                  </button>
-                  <span>{item.cantidad}</span>
-                  <button
-                    type="button"
-                    disabled={item.cantidad >= Number(item.stock_actual)}
-                    onClick={() => ajustarCantidad(item.producto_id, 1)}
-                  >
-                    <Plus size={13} />
-                  </button>
-                </div>
+                <CantidadInput
+                  valor={item.cantidad}
+                  max={stockMaximo(item)}
+                  tamano={13}
+                  onCambiar={(n) => fijarCantidad(item.producto_id, n)}
+                />
 
                 <span className="pa-resumen-subtotal">
                   ${(Number(item.precio_unitario) * item.cantidad).toLocaleString("es-CO")}
@@ -425,6 +541,7 @@ export default function PedidoArteFrio() {
 
                 <button
                   className="pa-resumen-quitar"
+                  aria-label={`Quitar ${item.nombre}`}
                   onClick={() => quitarDelCarrito(item.producto_id)}
                 >
                   <Trash2 size={14} />
