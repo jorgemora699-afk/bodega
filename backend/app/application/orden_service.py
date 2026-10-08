@@ -467,16 +467,25 @@ class OrdenService:
         if not orden:
             return False, "Orden no encontrada"
 
-        for venta in orden.ventas:
-            VentaService._revertir_venta(venta)
-            db.session.delete(venta)
+        try:
+            # 1. Si la venta nació de un pedido de Arte Frío, se elimina primero
+            #    ese pedido (sus líneas se borran en cascada). Debe ir antes de
+            #    borrar la orden, porque solicitudes_pedido.orden_id es FK a ordenes.id.
+            solicitudes = SolicitudPedido.query.filter_by(orden_id=orden.id).all()
+            for solicitud in solicitudes:
+                db.session.delete(solicitud)
+            db.session.flush()
 
-        db.session.delete(orden)
-                # Si esta venta nació de un pedido de Arte Frío, ese pedido se
-        # elimina junto con ella (sus líneas se borran en cascada).
-        solicitudes = SolicitudPedido.query.filter_by(orden_id=orden.id).all()
-        for solicitud in solicitudes:
-            db.session.delete(solicitud)
-        db.session.flush()
-        db.session.commit()
-        return True, None
+            # 2. Revertir stock y borrar las ventas de la orden
+            for venta in list(orden.ventas):
+                VentaService._revertir_venta(venta)
+                db.session.delete(venta)
+            db.session.flush()
+
+            # 3. Ahora sí, borrar la orden
+            db.session.delete(orden)
+            db.session.commit()
+            return True, None
+        except Exception as e:
+            db.session.rollback()
+            return False, f"No se pudo anular la orden: {e}"
