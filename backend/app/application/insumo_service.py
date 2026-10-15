@@ -1,6 +1,9 @@
 from app import db
 from app.infrastructure.models import Insumo, MovimientoInsumo
 
+MOTIVOS_ENTRADA_VALIDOS = {"compra", "ajuste"}
+MOTIVOS_SALIDA_VALIDOS = {"uso", "merma", "ajuste"}
+
 
 class InsumoService:
 
@@ -115,16 +118,16 @@ class InsumoService:
 
     @staticmethod
     def reportar_nivel(data):
-        """Salida por nivel restante: la trabajadora dice cuánto QUEDA,
-        no cuánto se gastó. Se calcula la diferencia contra el stock
-        guardado y se registra el movimiento correspondiente.
+        """La trabajadora dice cuánto TIENE ahora; se calcula la diferencia
+        contra el stock guardado y se registra el movimiento que corresponda.
 
-        - Si lo reportado es menor al stock guardado: es una salida por
-          la diferencia (se usa el motivo que envíe el frontend).
-        - Si lo reportado es mayor: el stock guardado estaba desactualizado
-          (por ejemplo, faltó registrar una entrada). Se corrige con un
-          ajuste hacia arriba, sin importar el motivo enviado.
-        - Si es igual: no hay cambios que registrar.
+        - Menor al stock guardado: salida por la diferencia.
+        - Mayor al stock guardado: entrada por la diferencia.
+        - Igual: no hay cambios.
+
+        El motivo enviado se respeta solo si es coherente con la dirección
+        real del movimiento (ej. "compra" en una entrada). Si no lo es,
+        se registra como "ajuste".
         """
         insumo = Insumo.query.get(data["insumo_id"])
         if not insumo:
@@ -142,12 +145,15 @@ class InsumoService:
 
         if diferencia > 0:
             tipo = "salida"
-            motivo = data.get("motivo", "uso")
+            motivos_validos = MOTIVOS_SALIDA_VALIDOS
             cantidad_movimiento = diferencia
         else:
             tipo = "entrada"
-            motivo = "ajuste"
+            motivos_validos = MOTIVOS_ENTRADA_VALIDOS
             cantidad_movimiento = abs(diferencia)
+
+        motivo_enviado = data.get("motivo")
+        motivo = motivo_enviado if motivo_enviado in motivos_validos else "ajuste"
 
         insumo.stock_actual = cantidad_restante
 

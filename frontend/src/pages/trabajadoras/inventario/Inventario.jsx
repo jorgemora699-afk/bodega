@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { listarProductos } from "../../../api/productos";
-import { registrarEntrada, reportarNivelProducto, listarBajoStock } from "../../../api/inventario";
+import { reportarNivelProducto, listarBajoStock } from "../../../api/inventario";
 import { listarProveedoresDeProducto } from "../../../api/proveedores";
 import Sheet from "../../../components/Sheet";
 import VerificacionTrabajadora from "../../../components/VerificacionTrabajadora";
@@ -124,11 +124,9 @@ export default function Inventario() {
   }
 
   function ajustarCantidad(delta) {
-    const minimo = form.tipo === "entrada" ? 1 : 0;
-
     setForm((f) => {
       const actual = Number(f.cantidad || 0);
-      const siguiente = Math.max(minimo, actual + delta);
+      const siguiente = Math.max(0, actual + delta);
       return { ...f, cantidad: siguiente };
     });
   }
@@ -139,7 +137,7 @@ export default function Inventario() {
       return;
     }
 
-    if (form.tipo === "salida" && Number(form.cantidad) < 0) {
+    if (Number(form.cantidad) < 0) {
       setError("La cantidad no puede ser negativa");
       return;
     }
@@ -148,34 +146,23 @@ export default function Inventario() {
     setError(null);
 
     try {
-      if (form.tipo === "entrada") {
-        await registrarEntrada({
-          producto_id: Number(form.producto_id),
-          cantidad: Number(form.cantidad),
-          motivo: form.motivo,
-          trabajadora_id: trabajadoraVerificada.id,
-        });
+      const resultado = await reportarNivelProducto({
+        producto_id: Number(form.producto_id),
+        cantidad_restante: Number(form.cantidad),
+        motivo: form.motivo,
+        trabajadora_id: trabajadoraVerificada.id,
+      });
 
-        setMensaje(`Se agregaron ${form.cantidad} unidades de ${productoSeleccionado.nombre}`);
+      if (resultado.sin_cambios) {
+        setMensaje("El nivel reportado coincide con el registrado, no hubo cambios");
+      } else if (resultado.tipo === "entrada") {
+        setMensaje(
+          `Se registró una entrada de ${resultado.cantidad} unidades de ${productoSeleccionado.nombre}`
+        );
       } else {
-        const resultado = await reportarNivelProducto({
-          producto_id: Number(form.producto_id),
-          cantidad_restante: Number(form.cantidad),
-          motivo: form.motivo,
-          trabajadora_id: trabajadoraVerificada.id,
-        });
-
-        if (resultado.sin_cambios) {
-          setMensaje("El nivel reportado coincide con el registrado, no hubo cambios");
-        } else if (resultado.tipo === "entrada") {
-          setMensaje(
-            `Había menos registrado de lo real: se corrigió agregando ${resultado.cantidad} unidades`
-          );
-        } else {
-          setMensaje(
-            `Salida registrada: se consumieron ${resultado.cantidad} unidades de ${productoSeleccionado.nombre}`
-          );
-        }
+        setMensaje(
+          `Salida registrada: se consumieron ${resultado.cantidad} unidades de ${productoSeleccionado.nombre}`
+        );
       }
 
       guardarTrabajadoraVerificada(trabajadoraVerificada);
@@ -213,14 +200,12 @@ export default function Inventario() {
 
   const motivosDisponibles = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
 
-  /* Vista previa de lo que se va a registrar, antes de guardar */
+  /* Vista previa de lo que se va a registrar, antes de guardar — ahora
+     aplica tanto para Entrada como para Salida, ya que ambas pestañas
+     funcionan reportando el nivel actual, no una cantidad a sumar/restar
+     directamente. */
   let previa = null;
-  if (
-    form.tipo === "salida" &&
-    productoSeleccionado &&
-    form.cantidad !== "" &&
-    form.cantidad !== null
-  ) {
+  if (productoSeleccionado && form.cantidad !== "" && form.cantidad !== null) {
     const stockActual = Number(productoSeleccionado.stock_actual);
     const restante = Number(form.cantidad);
     const diferencia = Math.round((stockActual - restante) * 100) / 100;
@@ -233,7 +218,7 @@ export default function Inventario() {
     } else if (diferencia < 0) {
       previa = {
         tipo: "entrada",
-        texto: `Había menos registrado: se agregarán ${Math.abs(diferencia)} unidades`,
+        texto: `Se registrará una entrada de ${Math.abs(diferencia)} unidades`,
       };
     } else {
       previa = {
@@ -445,11 +430,9 @@ export default function Inventario() {
                 </div>
               )}
 
-              <label>
-                {form.tipo === "entrada" ? "¿Cuántas unidades se hicieron?" : "¿Cuánto queda actualmente?"}
-              </label>
+              <label>¿Cuánto tienes ahora?</label>
 
-              {form.tipo === "salida" && productoSeleccionado && (
+              {productoSeleccionado && (
                 <p className="inv-stock-referencia">
                   Stock registrado: {productoSeleccionado.stock_actual}
                 </p>
@@ -494,12 +477,11 @@ export default function Inventario() {
                 ))}
               </select>
 
-              {form.tipo === "salida" && (
-                <p className="inv-hint-motivo">
-                  Si resulta que había más stock del registrado, se corrige
-                  automáticamente como un ajuste, sin importar el motivo elegido.
-                </p>
-              )}
+              <p className="inv-hint-motivo">
+                Si el número que escribas da como resultado lo contrario a la
+                pestaña elegida (por ejemplo, una salida estando en "Entrada"),
+                se corrige automáticamente, respetando el motivo que elijas.
+              </p>
 
               <button
                 className="inv-btn-primario inv-btn-guardar-sheet"

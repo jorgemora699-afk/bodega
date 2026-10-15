@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import {
   listarInsumos,
-  registrarEntradaInsumo,
   reportarNivelInsumo,
   listarBajoStockInsumo,
   listarProveedoresDeInsumo,
@@ -129,15 +128,13 @@ export default function Insumos() {
   }
 
   function ajustarCantidad(delta) {
-    const minimo = form.tipo === "entrada" ? 0.01 : 0;
-
     setForm((f) => {
       const actual = Number(f.cantidad || 0);
       const siguiente = actual + delta;
 
       return {
         ...f,
-        cantidad: Math.max(minimo, siguiente),
+        cantidad: Math.max(0, siguiente),
       };
     });
   }
@@ -148,7 +145,7 @@ export default function Insumos() {
       return;
     }
 
-    if (form.tipo === "salida" && Number(form.cantidad) < 0) {
+    if (Number(form.cantidad) < 0) {
       setError("La cantidad no puede ser negativa");
       return;
     }
@@ -157,36 +154,25 @@ export default function Insumos() {
     setError(null);
 
     try {
-      if (form.tipo === "entrada") {
-        await registrarEntradaInsumo({
-          insumo_id: Number(form.insumo_id),
-          cantidad: Number(form.cantidad),
-          motivo: form.motivo,
-          trabajadora_id: trabajadoraVerificada.id,
-        });
+      const unidad = insumoSeleccionado?.unidad_medida || "";
 
-        setMensaje("Entrada registrada correctamente");
+      const resultado = await reportarNivelInsumo({
+        insumo_id: Number(form.insumo_id),
+        cantidad_restante: Number(form.cantidad),
+        motivo: form.motivo,
+        trabajadora_id: trabajadoraVerificada.id,
+      });
+
+      if (resultado.sin_cambios) {
+        setMensaje("El nivel reportado coincide con el registrado, no hubo cambios");
+      } else if (resultado.tipo === "entrada") {
+        setMensaje(
+          `Se registró una entrada de ${resultado.cantidad} ${unidad}`
+        );
       } else {
-        const unidad = insumoSeleccionado?.unidad_medida || "";
-
-        const resultado = await reportarNivelInsumo({
-          insumo_id: Number(form.insumo_id),
-          cantidad_restante: Number(form.cantidad),
-          motivo: form.motivo,
-          trabajadora_id: trabajadoraVerificada.id,
-        });
-
-        if (resultado.sin_cambios) {
-          setMensaje("El nivel reportado coincide con el registrado, no hubo cambios");
-        } else if (resultado.tipo === "entrada") {
-          setMensaje(
-            `Había menos registrado de lo real: se corrigió agregando ${resultado.cantidad} ${unidad}`
-          );
-        } else {
-          setMensaje(
-            `Salida registrada: se consumieron ${resultado.cantidad} ${unidad}`
-          );
-        }
+        setMensaje(
+          `Salida registrada: se consumieron ${resultado.cantidad} ${unidad}`
+        );
       }
 
       guardarTrabajadoraVerificada(trabajadoraVerificada);
@@ -227,10 +213,12 @@ export default function Insumos() {
   const motivosDisponibles =
     form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
 
-  /* Vista previa de lo que se va a registrar, antes de guardar */
+  /* Vista previa de lo que se va a registrar, antes de guardar — ahora
+     aplica tanto para Entrada como para Salida, ya que ambas pestañas
+     funcionan reportando el nivel actual, no una cantidad a sumar/restar
+     directamente. */
   let previa = null;
   if (
-    form.tipo === "salida" &&
     insumoSeleccionado &&
     form.cantidad !== "" &&
     form.cantidad !== null
@@ -248,7 +236,7 @@ export default function Insumos() {
     } else if (diferencia < 0) {
       previa = {
         tipo: "entrada",
-        texto: `Había menos registrado: se agregarán ${Math.abs(diferencia)} ${unidad}`,
+        texto: `Se registrará una entrada de ${Math.abs(diferencia)} ${unidad}`,
       };
     } else {
       previa = {
@@ -623,13 +611,9 @@ export default function Insumos() {
 
               {/* CANTIDAD */}
 
-              <label>
-                {form.tipo === "entrada"
-                  ? "Cantidad"
-                  : "¿Cuánto queda actualmente?"}
-              </label>
+              <label>¿Cuánto tienes ahora?</label>
 
-              {form.tipo === "salida" && insumoSeleccionado && (
+              {insumoSeleccionado && (
                 <p className="tins-stock-referencia">
                   Stock registrado: {insumoSeleccionado.stock_actual}{" "}
                   {insumoSeleccionado.unidad_medida}
@@ -647,7 +631,7 @@ export default function Insumos() {
 
                 <input
                   type="number"
-                  min={form.tipo === "entrada" ? "0.01" : "0"}
+                  min="0"
                   step="0.01"
                   value={form.cantidad}
                   onChange={(e) => {
@@ -658,7 +642,7 @@ export default function Insumos() {
                       cantidad: valor,
                     }));
                   }}
-                  placeholder={form.tipo === "entrada" ? "Ej: 5" : "Ej: 3"}
+                  placeholder="Ej: 3"
                   className="tins-stepper-input"
                 />
 
@@ -697,12 +681,11 @@ export default function Insumos() {
                 ))}
               </select>
 
-              {form.tipo === "salida" && (
-                <p className="tins-hint-motivo">
-                  Si resulta que había más stock del registrado, se corrige
-                  automáticamente como un ajuste, sin importar el motivo elegido.
-                </p>
-              )}
+              <p className="tins-hint-motivo">
+                Si el número que escribas da como resultado lo contrario a la
+                pestaña elegida (por ejemplo, una entrada estando en "Salida"),
+                se corrige automáticamente, respetando el motivo que elijas.
+              </p>
 
               {/* GUARDAR */}
 
