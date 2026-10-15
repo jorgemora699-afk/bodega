@@ -18,6 +18,11 @@ import {
 import Sheet from "../../../components/Sheet";
 import "./Insumos.css";
 import VerificacionTrabajadora from "../../../components/VerificacionTrabajadora";
+import {
+  leerTrabajadoraVerificada,
+  guardarTrabajadoraVerificada,
+  olvidarTrabajadoraVerificada,
+} from "../../../api/codigoVerificado";
 
 const MOTIVOS_ENTRADA = [
   { valor: "compra", label: "Compra" },
@@ -45,7 +50,7 @@ export default function Insumos() {
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [form, setForm] = useState(formVacio());
   const [enviando, setEnviando] = useState(false);
-  const [trabajadoraVerificada, setTrabajadoraVerificada] = useState(null);
+  const [trabajadoraVerificada, setTrabajadoraVerificada] = useState(() => leerTrabajadoraVerificada());
 
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
@@ -91,7 +96,7 @@ export default function Insumos() {
     setBusquedaMovimiento("");
     setMensaje(null);
     setError(null);
-    setTrabajadoraVerificada(null);
+    setTrabajadoraVerificada(leerTrabajadoraVerificada());
     setSheetAbierto(true);
   }
 
@@ -101,8 +106,17 @@ export default function Insumos() {
     if (!abierto) {
       setForm(formVacio());
       setBusquedaMovimiento("");
-      setTrabajadoraVerificada(null);
     }
+  }
+
+  function manejarVerificacion(trabajadora) {
+    guardarTrabajadoraVerificada(trabajadora);
+    setTrabajadoraVerificada(trabajadora);
+  }
+
+  function cambiarTrabajadora() {
+    olvidarTrabajadoraVerificada();
+    setTrabajadoraVerificada(null);
   }
 
   function cambiarTipo(tipo) {
@@ -175,6 +189,7 @@ export default function Insumos() {
         }
       }
 
+      guardarTrabajadoraVerificada(trabajadoraVerificada);
       cerrarSheet(false);
       cargarDatos();
     } catch (err) {
@@ -511,9 +526,13 @@ export default function Insumos() {
           )}
 
           {!trabajadoraVerificada ? (
-            <VerificacionTrabajadora onVerificado={setTrabajadoraVerificada} />
+            <VerificacionTrabajadora onVerificado={manejarVerificacion} />
           ) : (
             <>
+              <div className="tins-verificada">
+                <span>Registrando como <strong>{trabajadoraVerificada.nombre || "trabajadora"}</strong></span>
+                <button type="button" onClick={cambiarTrabajadora}>Cambiar</button>
+              </div>
               {/* TIPO */}
 
               <label>Tipo de movimiento</label>

@@ -16,6 +16,11 @@ import { listarProveedoresDeProducto } from "../../../api/proveedores";
 import Sheet from "../../../components/Sheet";
 import VerificacionTrabajadora from "../../../components/VerificacionTrabajadora";
 import "./Inventario.css";
+import {
+  leerTrabajadoraVerificada,
+  guardarTrabajadoraVerificada,
+  olvidarTrabajadoraVerificada,
+} from "../../../api/codigoVerificado";
 
 const MOTIVOS_ENTRADA = [
   { valor: "produccion", label: "Producción" },
@@ -43,7 +48,7 @@ export default function Inventario() {
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [form, setForm] = useState(formVacio());
   const [enviando, setEnviando] = useState(false);
-  const [trabajadoraVerificada, setTrabajadoraVerificada] = useState(null);
+  const [trabajadoraVerificada, setTrabajadoraVerificada] = useState(() => leerTrabajadoraVerificada());
   const [busquedaMovimiento, setBusquedaMovimiento] = useState("");
 
   const [mensaje, setMensaje] = useState(null);
@@ -86,7 +91,7 @@ export default function Inventario() {
     setBusquedaMovimiento("");
     setMensaje(null);
     setError(null);
-    setTrabajadoraVerificada(null);
+    setTrabajadoraVerificada(leerTrabajadoraVerificada());
     setSheetAbierto(true);
   }
 
@@ -96,8 +101,17 @@ export default function Inventario() {
     if (!abierto) {
       setForm(formVacio());
       setBusquedaMovimiento("");
-      setTrabajadoraVerificada(null);
     }
+  }
+
+  function manejarVerificacion(trabajadora) {
+    guardarTrabajadoraVerificada(trabajadora);
+    setTrabajadoraVerificada(trabajadora);
+  }
+
+  function cambiarTrabajadora() {
+    olvidarTrabajadoraVerificada();
+    setTrabajadoraVerificada(null);
   }
 
   function cambiarTipo(tipo) {
@@ -163,6 +177,8 @@ export default function Inventario() {
           );
         }
       }
+
+      guardarTrabajadoraVerificada(trabajadoraVerificada);
 
       cerrarSheet(false);
       cargarDatos();
@@ -362,9 +378,13 @@ export default function Inventario() {
           {error && <div className="inv-mensaje-error">{error}</div>}
 
           {!trabajadoraVerificada ? (
-            <VerificacionTrabajadora onVerificado={setTrabajadoraVerificada} />
+            <VerificacionTrabajadora onVerificado={manejarVerificacion} />
           ) : (
             <>
+              <div className="inv-verificada">
+                <span>Registrando como <strong>{trabajadoraVerificada.nombre || "trabajadora"}</strong></span>
+                <button type="button" onClick={cambiarTrabajadora}>Cambiar</button>
+              </div>
               <label>Tipo de movimiento</label>
               <div className="inv-tipos">
                 <button

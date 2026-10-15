@@ -13,7 +13,7 @@ import "./MisPedidos.css";
 const RANGOS = [
   { id: "hoy", texto: "Hoy" },
   { id: "ayer", texto: "Ayer" },
-  { id: "semana", texto: "7 días" },
+  { id: "semana", texto: "Esta semana" },
   { id: "mes", texto: "Este mes" },
   { id: "todos", texto: "Todos" },
 ];
