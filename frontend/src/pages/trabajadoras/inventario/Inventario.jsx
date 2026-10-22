@@ -41,6 +41,12 @@ function formVacio() {
   };
 }
 
+/* Los paquetes (fijos o mixtos) no tienen stock propio: dependen de los
+   movimientos de las unidades, así que no se muestran en Inventario. */
+function esPaquete(producto) {
+  return Boolean(producto.es_paquete || producto.requiere_seleccion);
+}
+
 export default function Inventario() {
   const [productos, setProductos] = useState([]);
   const [bajoStock, setBajoStock] = useState([]);
@@ -79,8 +85,8 @@ export default function Inventario() {
         listarBajoStock(),
       ]);
 
-      setProductos(productosData);
-      setBajoStock(bajoStockData);
+      setProductos(productosData.filter((p) => !esPaquete(p)));
+      setBajoStock(bajoStockData.filter((p) => !esPaquete(p)));
     } catch (err) {
       setError("No se pudieron cargar los datos");
     }

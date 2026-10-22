@@ -58,6 +58,12 @@ function formatearFecha(isoString) {
   });
 }
 
+/* Los paquetes (fijos o mixtos) no tienen stock propio: dependen de los
+   movimientos de las unidades, así que no se muestran en Inventario. */
+function esPaquete(producto) {
+  return Boolean(producto.es_paquete || producto.requiere_seleccion);
+}
+
 export default function Inventario() {
   const [productos, setProductos] = useState([]);
   const [trabajadoras, setTrabajadoras] = useState([]);
@@ -101,9 +107,9 @@ export default function Inventario() {
         listarMovimientos(),
       ]);
 
-      setProductos(productosData || []);
+      setProductos((productosData || []).filter((p) => !esPaquete(p)));
       setTrabajadoras(trabajadorasData || []);
-      setBajoStock(bajoStockData || []);
+      setBajoStock((bajoStockData || []).filter((p) => !esPaquete(p)));
       setMovimientos((movimientosData || []).slice(0, 30));
     } catch (err) {
       setError("No se pudieron cargar los datos de inventario");

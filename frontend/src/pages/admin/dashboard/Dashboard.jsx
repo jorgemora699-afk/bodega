@@ -52,6 +52,12 @@ function formatearFechaCorta(isoString) {
   return `${dia}/${mes}`;
 }
 
+/* Los paquetes (fijos o mixtos) no tienen stock propio: dependen de los
+   movimientos de las unidades, así que no cuentan como "por acabarse". */
+function esPaquete(producto) {
+  return Boolean(producto.es_paquete || producto.requiere_seleccion);
+}
+
 function Variacion({ valor }) {
   if (valor === null || valor === undefined) {
     return <span className="dash-variacion sin-datos">Sin periodo anterior</span>;
@@ -123,7 +129,7 @@ export default function Dashboard() {
       ]);
 
       setResumen(resumenData);
-      setBajoStock(stock);
+      setBajoStock(stock.filter((p) => !esPaquete(p)));
       setBajoStockInsumos(stockInsumos);
       setTopProductos(top);
       setPorDia(dia);
