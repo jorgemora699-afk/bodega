@@ -23,6 +23,11 @@ def obtener_receta(producto_id):
 def guardar_receta(producto_id):
     data = request.get_json()
     ingredientes = data.get("ingredientes", [])
+    pasos = data.get("pasos")
+
+    error = _validar_receta(ingredientes, pasos)
+    if error:
+        return jsonify({"error": error}), 400
 
     if not ingredientes:
         return jsonify({"error": "Debes enviar al menos un ingrediente"}), 400
@@ -31,7 +36,7 @@ def guardar_receta(producto_id):
         if not item.get("nombre_ingrediente") or item.get("cantidad") is None or not item.get("unidad"):
             return jsonify({"error": "Cada ingrediente necesita nombre_ingrediente, cantidad y unidad"}), 400
 
-    receta, error = RecetaService.guardar(producto_id, ingredientes)
+    receta, error = RecetaService.guardar(producto_id, ingredientes, pasos)
     if error:
         return jsonify({"error": error}), 400
     return jsonify(receta.to_dict()), 201
@@ -55,6 +60,11 @@ def crear_receta_standalone():
     data = request.get_json()
     nombre = data.get("nombre")
     ingredientes = data.get("ingredientes", [])
+    pasos = data.get("pasos")
+
+    error = _validar_receta(ingredientes, pasos)
+    if error:
+        return jsonify({"error": error}), 400
 
     if not ingredientes:
         return jsonify({"error": "Debes enviar al menos un ingrediente"}), 400
@@ -62,7 +72,7 @@ def crear_receta_standalone():
         if not item.get("nombre_ingrediente") or item.get("cantidad") is None or not item.get("unidad"):
             return jsonify({"error": "Cada ingrediente necesita nombre_ingrediente, cantidad y unidad"}), 400
 
-    receta, error = RecetaService.crear_standalone(nombre, ingredientes)
+    receta, error = RecetaService.crear_standalone(nombre, ingredientes, pasos)
     if error:
         return jsonify({"error": error}), 400
     return jsonify(receta.to_dict()), 201
@@ -81,6 +91,11 @@ def actualizar_receta_por_id(receta_id):
     data = request.get_json()
     nombre = data.get("nombre")
     ingredientes = data.get("ingredientes", [])
+    pasos = data.get("pasos")
+
+    error = _validar_receta(ingredientes, pasos)
+    if error:
+        return jsonify({"error": error}), 400
 
     if not ingredientes:
         return jsonify({"error": "Debes enviar al menos un ingrediente"}), 400
@@ -88,7 +103,7 @@ def actualizar_receta_por_id(receta_id):
         if not item.get("nombre_ingrediente") or item.get("cantidad") is None or not item.get("unidad"):
             return jsonify({"error": "Cada ingrediente necesita nombre_ingrediente, cantidad y unidad"}), 400
 
-    receta, error = RecetaService.actualizar_por_id(receta_id, nombre, ingredientes)
+    receta, error = RecetaService.actualizar_por_id(receta_id, nombre, ingredientes, pasos)
     if error:
         status = 404 if error == "Receta no encontrada" else 400
         return jsonify({"error": error}), status
@@ -101,3 +116,16 @@ def eliminar_receta_por_id(receta_id):
     if not exito:
         return jsonify({"error": "Receta no encontrada"}), 404
     return jsonify({"mensaje": "Receta eliminada"}), 200
+
+
+def _validar_receta(ingredientes, pasos):
+    if not ingredientes:
+        return "Debes enviar al menos un ingrediente"
+    for item in ingredientes:
+        if not item.get("nombre_ingrediente") or item.get("cantidad") is None or not item.get("unidad"):
+            return "Cada ingrediente necesita nombre_ingrediente, cantidad y unidad"
+    if pasos is not None and (
+        not isinstance(pasos, list) or any(not isinstance(p, str) for p in pasos)
+    ):
+        return "pasos debe ser una lista de textos"
+    return None

@@ -584,3 +584,55 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.rec-label-pasos { display: block; margin-top: 20px; }
+
+.rec-pasos-lista {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rec-paso-fila { display: flex; align-items: flex-start; gap: 10px; }
+
+.rec-paso-numero {
+  flex: 0 0 26px;
+  height: 26px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rec-paso-texto {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font: inherit;
+  resize: vertical;
+}
+
+.rec-paso-acciones { display: flex; flex-direction: column; gap: 4px; }
+
+.rec-paso-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.rec-paso-btn:disabled { opacity: 0.35; cursor: default; }

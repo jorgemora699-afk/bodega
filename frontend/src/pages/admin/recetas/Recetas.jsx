@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChefHat, Plus, Trash2, X, Search, ListChecks, Check, PackageSearch, ArrowLeft } from "lucide-react";
+import { ChefHat, Plus, Trash2, X, Search, ListChecks, Check, PackageSearch, ArrowLeft, ArrowUp, ArrowDown } from "lucide-react";
 import {
   obtenerReceta,
   guardarReceta,
@@ -19,8 +19,14 @@ function ingredienteVacio() {
   return { nombre_ingrediente: "", cantidad: "", unidad: "g" };
 }
 
-function snapshotDe(ingredientes, nombre = "") {
-  return JSON.stringify({ ingredientes, nombre });
+function snapshotDe(ingredientes, nombre = "", pasos = []) {
+  const pasosLimpios = pasos.map((p) => p.trim()).filter(Boolean);
+  return JSON.stringify({ ingredientes, nombre, pasos: pasosLimpios });
+}
+
+function pasosDeReceta(receta) {
+  const lista = (receta?.pasos || []).map((p) => p.descripcion);
+  return lista.length > 0 ? lista : [""];
 }
 
 /*
@@ -53,6 +59,7 @@ export default function Recetas() {
   const [nombreStandalone, setNombreStandalone] = useState("");
 
   const [ingredientes, setIngredientes] = useState([ingredienteVacio()]);
+  const [pasos, setPasos] = useState([""]);
   const [tieneReceta, setTieneReceta] = useState(false);
   const [snapshotGuardado, setSnapshotGuardado] = useState(snapshotDe([ingredienteVacio()]));
 
@@ -107,6 +114,7 @@ export default function Recetas() {
     if (modo !== "producto") return;
     if (!productoId) {
       setIngredientes([ingredienteVacio()]);
+      setPasos([""]);
       setSnapshotGuardado(snapshotDe([ingredienteVacio()]));
       setTieneReceta(false);
       return;
@@ -133,17 +141,21 @@ export default function Recetas() {
           cantidad: i.cantidad,
           unidad: i.unidad,
         }));
+        const listaPasos = pasosDeReceta(receta);
         setIngredientes(lista);
-        setSnapshotGuardado(snapshotDe(lista));
+        setPasos(listaPasos);
+        setSnapshotGuardado(snapshotDe(lista, "", listaPasos));
         setTieneReceta(true);
       } else {
         setIngredientes([ingredienteVacio()]);
+        setPasos([""]);
         setSnapshotGuardado(snapshotDe([ingredienteVacio()]));
         setTieneReceta(false);
       }
     } catch (err) {
       // 404 = todavía no tiene receta, no es un error real
       setIngredientes([ingredienteVacio()]);
+      setPasos([""]);
       setSnapshotGuardado(snapshotDe([ingredienteVacio()]));
       setTieneReceta(false);
     } finally {
@@ -157,6 +169,7 @@ export default function Recetas() {
     setRecetaId(null);
     setNombreStandalone("");
     setIngredientes([ingredienteVacio()]);
+    setPasos([""]);
     setSnapshotGuardado(snapshotDe([ingredienteVacio()], ""));
     setTieneReceta(false);
     setMensaje(null);
@@ -181,10 +194,12 @@ export default function Recetas() {
             }))
           : [ingredienteVacio()];
 
+      const listaPasos = pasosDeReceta(completa);
       setRecetaId(completa.id);
       setNombreStandalone(completa.nombre || "");
       setIngredientes(lista);
-      setSnapshotGuardado(snapshotDe(lista, completa.nombre || ""));
+      setPasos(listaPasos);
+      setSnapshotGuardado(snapshotDe(lista, completa.nombre || "", listaPasos));
       setTieneReceta(true);
     } catch (err) {
       setError("No se pudo cargar la receta");
@@ -205,6 +220,7 @@ export default function Recetas() {
     if (nuevoModo === "producto") {
       setProductoId("");
       setIngredientes([ingredienteVacio()]);
+      setPasos([""]);
       setSnapshotGuardado(snapshotDe([ingredienteVacio()]));
       setTieneReceta(false);
     } else {
@@ -228,6 +244,28 @@ export default function Recetas() {
     setIngredientes((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function actualizarPaso(index, valor) {
+    setPasos((prev) => prev.map((p, i) => (i === index ? valor : p)));
+  }
+
+  function agregarPaso() {
+    setPasos((prev) => [...prev, ""]);
+  }
+
+  function quitarPaso(index) {
+    setPasos((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : [""]));
+  }
+
+  function moverPaso(index, direccion) {
+    setPasos((prev) => {
+      const destino = index + direccion;
+      if (destino < 0 || destino >= prev.length) return prev;
+      const copia = [...prev];
+      [copia[index], copia[destino]] = [copia[destino], copia[index]];
+      return copia;
+    });
+  }
+
   /* ---------- Guardar ---------- */
 
   async function handleGuardar() {
@@ -246,6 +284,8 @@ export default function Recetas() {
       unidad: i.unidad,
     }));
 
+    const pasosLimpios = pasos.map((p) => p.trim()).filter(Boolean);
+
     if (modo === "producto") {
       if (!productoId) {
         setError("Selecciona un producto");
@@ -256,10 +296,10 @@ export default function Recetas() {
       setError(null);
       setMensaje(null);
       try {
-        await guardarReceta(productoId, ingredientesLimpios);
+        await guardarReceta(productoId, ingredientesLimpios, pasosLimpios);
         setMensaje("Receta guardada correctamente");
         setTieneReceta(true);
-        setSnapshotGuardado(snapshotDe(ingredientesLimpios));
+        setSnapshotGuardado(snapshotDe(ingredientesLimpios, "", pasosLimpios));
         cargarTodo();
       } catch (err) {
         setError(err.response?.data?.error || "No se pudo guardar la receta");
@@ -280,15 +320,15 @@ export default function Recetas() {
     setMensaje(null);
     try {
       if (recetaId) {
-        await actualizarRecetaPorId(recetaId, nombreStandalone.trim(), ingredientesLimpios);
+        await actualizarRecetaPorId(recetaId, nombreStandalone.trim(), ingredientesLimpios, pasosLimpios);
         setMensaje("Receta actualizada correctamente");
       } else {
-        const creada = await crearRecetaStandalone(nombreStandalone.trim(), ingredientesLimpios);
+        const creada = await crearRecetaStandalone(nombreStandalone.trim(), ingredientesLimpios, pasosLimpios);
         setRecetaId(creada.id);
         setMensaje("Receta creada correctamente");
       }
       setTieneReceta(true);
-      setSnapshotGuardado(snapshotDe(ingredientesLimpios, nombreStandalone.trim()));
+      setSnapshotGuardado(snapshotDe(ingredientesLimpios, nombreStandalone.trim(), pasosLimpios));
       cargarTodo();
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo guardar la receta");
@@ -306,6 +346,7 @@ export default function Recetas() {
       if (modo === "producto") {
         await eliminarReceta(productoId);
         setIngredientes([ingredienteVacio()]);
+        setPasos([""]);
         setSnapshotGuardado(snapshotDe([ingredienteVacio()]));
         setTieneReceta(false);
       } else {
@@ -342,7 +383,10 @@ export default function Recetas() {
   ).length;
 
   const snapshotActual =
-    modo === "producto" ? snapshotDe(ingredientes) : snapshotDe(ingredientes, nombreStandalone);
+    modo === "producto"
+      ? snapshotDe(ingredientes, "", pasos)
+      : snapshotDe(ingredientes, nombreStandalone, pasos);
+
   const hayCambiosSinGuardar = snapshotActual !== snapshotGuardado;
 
   const mostrarPanelDetalle =
@@ -587,6 +631,55 @@ export default function Recetas() {
               <button type="button" className="rec-btn-agregar" onClick={agregarFila}>
                 <Plus size={14} />
                 Agregar ingrediente
+              </button>
+
+              <label className="rec-label rec-label-pasos">Paso a paso (opcional)</label>
+              <ol className="rec-pasos-lista">
+                {pasos.map((paso, index) => (
+                  <li key={index} className="rec-paso-fila">
+                    <span className="rec-paso-numero">{index + 1}</span>
+                    <textarea
+                      className="rec-paso-texto"
+                      rows={2}
+                      placeholder={`Describe el paso ${index + 1}`}
+                      value={paso}
+                      onChange={(e) => actualizarPaso(index, e.target.value)}
+                    />
+                    <div className="rec-paso-acciones">
+                      <button
+                        type="button"
+                        className="rec-paso-btn"
+                        onClick={() => moverPaso(index, -1)}
+                        disabled={index === 0}
+                        aria-label="Subir paso"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="rec-paso-btn"
+                        onClick={() => moverPaso(index, 1)}
+                        disabled={index === pasos.length - 1}
+                        aria-label="Bajar paso"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="rec-btn-quitar"
+                        onClick={() => quitarPaso(index)}
+                        aria-label="Quitar paso"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+
+              <button type="button" className="rec-btn-agregar" onClick={agregarPaso}>
+                <Plus size={14} />
+                Agregar paso
               </button>
 
               <div className="rec-botones-principales">

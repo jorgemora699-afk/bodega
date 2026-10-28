@@ -12,8 +12,8 @@ export async function obtenerReceta(productoId) {
   }
 }
 
-export async function guardarReceta(productoId, ingredientes) {
-  const response = await apiClient.post(`/recetas/producto/${productoId}`, { ingredientes });
+export async function guardarReceta(productoId, ingredientes, pasos = []) {
+  const response = await apiClient.post(`/recetas/producto/${productoId}`, { ingredientes, pasos });
   return response.data;
 }
 
@@ -27,8 +27,8 @@ export async function listarRecetas() {
   return response.data;
 }
 
-export async function crearRecetaStandalone(nombre, ingredientes) {
-  const response = await apiClient.post("/recetas/standalone", { nombre, ingredientes });
+export async function crearRecetaStandalone(nombre, ingredientes, pasos = []) {
+  const response = await apiClient.post("/recetas/standalone", { nombre, ingredientes, pasos });
   return response.data;
 }
 
@@ -37,8 +37,8 @@ export async function obtenerRecetaPorId(recetaId) {
   return response.data;
 }
 
-export async function actualizarRecetaPorId(recetaId, nombre, ingredientes) {
-  const response = await apiClient.put(`/recetas/${recetaId}`, { nombre, ingredientes });
+export async function actualizarRecetaPorId(recetaId, nombre, ingredientes, pasos = []) {
+  const response = await apiClient.put(`/recetas/${recetaId}`, { nombre, ingredientes, pasos });
   return response.data;
 }
 

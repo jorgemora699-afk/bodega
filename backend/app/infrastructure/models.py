@@ -505,6 +505,12 @@ class Receta(db.Model):
 
     producto = db.relationship("Producto", back_populates="receta")
     ingredientes = db.relationship("RecetaIngrediente", back_populates="receta", cascade="all, delete-orphan")
+    pasos = db.relationship(
+        "RecetaPaso",
+        back_populates="receta",
+        cascade="all, delete-orphan",
+        order_by="RecetaPaso.orden",
+    )
 
     __table_args__ = (
         db.CheckConstraint("producto_id IS NOT NULL OR nombre IS NOT NULL", name="ck_receta_producto_o_nombre"),
@@ -517,10 +523,27 @@ class Receta(db.Model):
             "nombre": self.producto.nombre if self.producto else self.nombre,
             "es_standalone": self.producto_id is None,
             "ingredientes": [i.to_dict() for i in self.ingredientes],
+            "pasos": [p.to_dict() for p in self.pasos],
         }
 
     def __repr__(self):
         return f"<Receta {self.producto_id or self.nombre}>"
+
+class RecetaPaso(db.Model):
+    __tablename__ = "receta_pasos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    receta_id = db.Column(db.Integer, db.ForeignKey("recetas.id"), nullable=False)
+    orden = db.Column(db.Integer, nullable=False)
+    descripcion = db.Column(db.Text, nullable=False)
+
+    receta = db.relationship("Receta", back_populates="pasos")
+
+    def to_dict(self):
+        return {"id": self.id, "orden": self.orden, "descripcion": self.descripcion}
+
+    def __repr__(self):
+        return f"<RecetaPaso {self.receta_id}#{self.orden}>"
 
 class RecetaIngrediente(db.Model):
     __tablename__ = "receta_ingredientes"

@@ -165,19 +165,35 @@ export default function Recetas() {
                 <div className="rec-sk-fila" />
               </div>
             ) : (
-              <ul className="rec-lista">
-                {recetaSeleccionada.ingredientes.map((ing) => (
-                  <li key={ing.id} className="rec-fila-vista">
-                    <span className="rec-ing-icono">
-                      <Scale size={15} />
-                    </span>
-                    <span className="rec-ing-nombre">{ing.nombre_ingrediente}</span>
-                    <span className="rec-ing-cantidad">
-                      {ing.cantidad} {ing.unidad}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="rec-lista">
+                  {recetaSeleccionada.ingredientes.map((ing) => (
+                    <li key={ing.id} className="rec-fila-vista">
+                      <span className="rec-ing-icono">
+                        <Scale size={15} />
+                      </span>
+                      <span className="rec-ing-nombre">{ing.nombre_ingrediente}</span>
+                      <span className="rec-ing-cantidad">
+                        {ing.cantidad} {ing.unidad}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {recetaSeleccionada.pasos?.length > 0 && (
+                  <>
+                    <h3 className="rec-seccion-titulo">Preparación</h3>
+                    <ol className="rec-pasos-vista">
+                      {recetaSeleccionada.pasos.map((paso) => (
+                        <li key={paso.id} className="rec-paso-vista">
+                          <span className="rec-paso-numero">{paso.orden}</span>
+                          <p>{paso.descripcion}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                )}
+              </>
             )}
           </div>
         </div>
