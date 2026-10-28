@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChefHat, Plus, Trash2, X, Search, ListChecks, Check, PackageSearch, ArrowLeft, ArrowUp, ArrowDown } from "lucide-react";
+import { ChefHat, Plus, Trash2, X, Search, ListChecks, Check, PackageSearch, ArrowLeft, ArrowUp, ArrowDown, Scale } from "lucide-react";
 import {
   obtenerReceta,
   guardarReceta,
@@ -382,6 +382,8 @@ export default function Recetas() {
     (i) => i.nombre_ingrediente.trim() && i.cantidad
   ).length;
 
+  const pasosValidos = pasos.filter((p) => p.trim()).length;
+
   const snapshotActual =
     modo === "producto"
       ? snapshotDe(ingredientes, "", pasos)
@@ -399,7 +401,7 @@ export default function Recetas() {
       <header className="rec-header">
         <div>
           <h1>Recetas</h1>
-          <p>Ingredientes y cantidades por producto, o recetas base independientes</p>
+          <p>Ingredientes, cantidades y paso a paso de cada producto o preparación base</p>
         </div>
       </header>
 
@@ -541,10 +543,16 @@ export default function Recetas() {
                     {modo === "producto" ? "Vinculada a producto" : "Receta independiente"}
                   </span>
                   <h2>{nombreEnEncabezado}</h2>
-                  <span className="rec-detalle-contador">
-                    <ListChecks size={13} />
-                    {ingredientesValidos} ingrediente{ingredientesValidos === 1 ? "" : "s"}
-                  </span>
+                  <div className="rec-detalle-meta">
+                    <span className="rec-detalle-contador">
+                      <Scale size={13} />
+                      {ingredientesValidos} ingrediente{ingredientesValidos === 1 ? "" : "s"}
+                    </span>
+                    <span className="rec-detalle-contador">
+                      <ListChecks size={13} />
+                      {pasosValidos} paso{pasosValidos === 1 ? "" : "s"}
+                    </span>
+                  </div>
                 </div>
 
                 {hayCambiosSinGuardar && (
@@ -564,6 +572,11 @@ export default function Recetas() {
                   />
                 </>
               )}
+
+              <div className="rec-seccion-head">
+                <h3>Ingredientes</h3>
+                <span className="rec-seccion-contador">{ingredientesValidos}</span>
+              </div>
 
               <table className="rec-tabla">
                 <thead>
@@ -633,7 +646,10 @@ export default function Recetas() {
                 Agregar ingrediente
               </button>
 
-              <label className="rec-label rec-label-pasos">Paso a paso (opcional)</label>
+              <div className="rec-seccion-head rec-seccion-head-sep">
+                <h3>Preparación <small>(opcional)</small></h3>
+                <span className="rec-seccion-contador">{pasosValidos}</span>
+              </div>
               <ol className="rec-pasos-lista">
                 {pasos.map((paso, index) => (
                   <li key={index} className="rec-paso-fila">
@@ -713,7 +729,7 @@ export default function Recetas() {
               <Trash2 size={20} />
             </div>
             <h3>¿Eliminar esta receta?</h3>
-            <p>Se eliminará permanentemente junto con todos sus ingredientes. Esta acción no se puede deshacer.</p>
+            <p>Se eliminará permanentemente junto con sus ingredientes y pasos. Esta acción no se puede deshacer.</p>
             <div className="rec-modal-botones">
               <button
                 className="rec-btn-secundario"

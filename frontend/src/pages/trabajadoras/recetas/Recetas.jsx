@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChefHat, Scale, Search, X, UtensilsCrossed } from "lucide-react";
+import { ChefHat, Scale, Search, X, UtensilsCrossed, Check, ListChecks } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarRecetas, obtenerRecetaPorId } from "../../../api/recetas";
 import "./Recetas.css";
@@ -11,6 +11,7 @@ export default function Recetas() {
 
   const [recetaSeleccionada, setRecetaSeleccionada] = useState(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  const [pasosHechos, setPasosHechos] = useState([]);
 
   const [cargandoLista, setCargandoLista] = useState(true);
   const [error, setError] = useState(null);
@@ -38,6 +39,7 @@ export default function Recetas() {
   }
 
   async function abrirReceta(receta) {
+    setPasosHechos([]);
     setCargandoDetalle(true);
     setError(null);
     try {
@@ -52,6 +54,12 @@ export default function Recetas() {
 
   function cerrarDetalle() {
     setRecetaSeleccionada(null);
+  }
+
+  function alternarPaso(id) {
+    setPasosHechos((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   // Combina productos (su nombre real) con recetas independientes (su propio nombre)
@@ -146,15 +154,38 @@ export default function Recetas() {
         <div className="rec-detalle-overlay" onClick={cerrarDetalle}>
           <div className="rec-detalle-panel" onClick={(e) => e.stopPropagation()}>
             <div className="rec-detalle-header">
-              <h2>
-                {cargandoDetalle
-                  ? "Cargando..."
-                  : recetaSeleccionada.producto_id
-                  ? productos.find((p) => p.id === recetaSeleccionada.producto_id)?.nombre
-                  : recetaSeleccionada.nombre}
-              </h2>
-              <button type="button" className="rec-detalle-cerrar" onClick={cerrarDetalle}>
-                <X size={18} />
+              <div className="rec-detalle-titulo">
+                {!cargandoDetalle && (
+                  <span className="rec-detalle-tipo">
+                    {recetaSeleccionada.producto_id ? "Receta de producto" : "Preparación base"}
+                  </span>
+                )}
+                <h2>
+                  {cargandoDetalle
+                    ? "Cargando..."
+                    : recetaSeleccionada.producto_id
+                    ? productos.find((p) => p.id === recetaSeleccionada.producto_id)?.nombre
+                    : recetaSeleccionada.nombre}
+                </h2>
+                {!cargandoDetalle && (
+                  <div className="rec-detalle-resumen">
+                    <span>
+                      <Scale size={13} />
+                      {recetaSeleccionada.ingredientes.length} ingrediente
+                      {recetaSeleccionada.ingredientes.length === 1 ? "" : "s"}
+                    </span>
+                    {recetaSeleccionada.pasos?.length > 0 && (
+                      <span>
+                        <ListChecks size={13} />
+                        {recetaSeleccionada.pasos.length} paso
+                        {recetaSeleccionada.pasos.length === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <button type="button" className="rec-detalle-cerrar" onClick={cerrarDetalle} aria-label="Cerrar">
+                <X size={20} />
               </button>
             </div>
 
@@ -166,15 +197,13 @@ export default function Recetas() {
               </div>
             ) : (
               <>
+                <h3 className="rec-seccion-titulo">Ingredientes</h3>
                 <ul className="rec-lista">
                   {recetaSeleccionada.ingredientes.map((ing) => (
                     <li key={ing.id} className="rec-fila-vista">
-                      <span className="rec-ing-icono">
-                        <Scale size={15} />
-                      </span>
                       <span className="rec-ing-nombre">{ing.nombre_ingrediente}</span>
                       <span className="rec-ing-cantidad">
-                        {ing.cantidad} {ing.unidad}
+                        {ing.cantidad} <small>{ing.unidad}</small>
                       </span>
                     </li>
                   ))}
@@ -182,14 +211,31 @@ export default function Recetas() {
 
                 {recetaSeleccionada.pasos?.length > 0 && (
                   <>
-                    <h3 className="rec-seccion-titulo">Preparación</h3>
+                    <div className="rec-seccion-cabecera">
+                      <h3 className="rec-seccion-titulo">Preparación</h3>
+                      <span className="rec-progreso">
+                        {pasosHechos.length} de {recetaSeleccionada.pasos.length}
+                      </span>
+                    </div>
                     <ol className="rec-pasos-vista">
-                      {recetaSeleccionada.pasos.map((paso) => (
-                        <li key={paso.id} className="rec-paso-vista">
-                          <span className="rec-paso-numero">{paso.orden}</span>
-                          <p>{paso.descripcion}</p>
-                        </li>
-                      ))}
+                      {recetaSeleccionada.pasos.map((paso) => {
+                        const hecho = pasosHechos.includes(paso.id);
+                        return (
+                          <li key={paso.id}>
+                            <button
+                              type="button"
+                              className={`rec-paso-vista ${hecho ? "hecho" : ""}`}
+                              onClick={() => alternarPaso(paso.id)}
+                              aria-pressed={hecho}
+                            >
+                              <span className="rec-paso-numero">
+                                {hecho ? <Check size={16} /> : paso.orden}
+                              </span>
+                              <span className="rec-paso-texto-vista">{paso.descripcion}</span>
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ol>
                   </>
                 )}
