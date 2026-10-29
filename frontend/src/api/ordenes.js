@@ -20,8 +20,14 @@ export async function actualizarOrden(ordenId, data) {
   return response.data;
 }
 
-export async function marcarOrdenPagada(ordenId) {
-  const response = await apiClient.put(`/ordenes/${ordenId}/marcar-pagada`);
+/* Sin metodoCobro, la cuenta queda pagada con metodo_cobro "credito" y NO
+   suma al efectivo esperado de la caja. Si se envía "efectivo", el cobro
+   entra a la caja del turno abierto (hoy ninguna pantalla lo usa). */
+export async function marcarOrdenPagada(ordenId, metodoCobro) {
+  const response = await apiClient.put(
+    `/ordenes/${ordenId}/marcar-pagada`,
+    metodoCobro ? { metodo_cobro: metodoCobro } : {}
+  );
   return response.data;
 }
 

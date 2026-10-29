@@ -23,6 +23,7 @@ import {
   sonidoActivoGuardado,
   guardarPreferenciaSonido,
 } from "../../api/notificacionSonido";
+import BotonTurno from "./BotonTurno";
 import "./TrabajadoraLayout.css";
 
 const TABS = [
@@ -165,6 +166,8 @@ export default function TrabajadoraLayout() {
             <VolumeX size={18} />
           )}
         </button>
+
+        <BotonTurno />
 
         <div className="trab-user">
 

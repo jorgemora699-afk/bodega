@@ -268,6 +268,11 @@ class Orden(db.Model):
     pagada = db.Column(db.Boolean, nullable=False, default=True)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     editado = db.Column(db.Boolean, nullable=False, default=False)
+    turno_id = db.Column(db.Integer, db.ForeignKey("turnos_caja.id"), nullable=True)
+    # Solo para cuentas por cobrar: cómo y en qué turno se cobraron
+    metodo_cobro = db.Column(db.String(30), nullable=True)
+    turno_cobro_id = db.Column(db.Integer, db.ForeignKey("turnos_caja.id"), nullable=True)
+    cobrada_en = db.Column(db.DateTime, nullable=True)
 
     trabajadora = db.relationship("Trabajadora")
     cliente = db.relationship("Cliente", back_populates="ordenes")
@@ -292,6 +297,9 @@ class Orden(db.Model):
             "pagada": self.pagada,
             "fecha": self.fecha.isoformat() + "Z",
             "editado": self.editado,
+            "turno_id": self.turno_id,
+            "metodo_cobro": self.metodo_cobro,
+            "cobrada_en": self.cobrada_en.isoformat() + "Z" if self.cobrada_en else None,
             "ventas": [v.to_dict() for v in self.ventas],
         }
 
@@ -849,3 +857,83 @@ class Nota(db.Model):
 
     def __repr__(self):
         return f"<Nota {self.id} - resuelta={self.resuelta}>"
+
+
+class TurnoCaja(db.Model):
+    __tablename__ = "turnos_caja"
+
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.Date, nullable=False)  # día local de apertura
+    numero_dia = db.Column(db.Integer, nullable=False)
+    trabajadora_id = db.Column(db.Integer, db.ForeignKey("trabajadoras.id"), nullable=False)
+    estado = db.Column(db.String(10), nullable=False, default="abierto")  # abierto | cerrado
+    monto_apertura = db.Column(db.Numeric(12, 2), nullable=False)
+    abierto_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cerrado_en = db.Column(db.DateTime, nullable=True)
+    cerrado_por = db.Column(db.String(100), nullable=True)
+    efectivo_contado = db.Column(db.Numeric(12, 2), nullable=True)
+    efectivo_esperado = db.Column(db.Numeric(12, 2), nullable=True)
+    diferencia = db.Column(db.Numeric(12, 2), nullable=True)
+    resumen_cierre = db.Column(db.Text, nullable=True)  # JSON con el desglose al cerrar
+    notas = db.Column(db.Text, nullable=True)
+
+    trabajadora = db.relationship("Trabajadora")
+    movimientos = db.relationship(
+        "MovimientoCaja",
+        back_populates="turno",
+        cascade="all, delete-orphan",
+        order_by="MovimientoCaja.id",
+    )
+
+    def to_dict(self):
+        def num(v):
+            return float(v) if v is not None else None
+
+        return {
+            "id": self.id,
+            "fecha": self.fecha.isoformat(),
+            "numero_dia": self.numero_dia,
+            "trabajadora_id": self.trabajadora_id,
+            "trabajadora_nombre": self.trabajadora.nombre if self.trabajadora else None,
+            "estado": self.estado,
+            "monto_apertura": float(self.monto_apertura),
+            "abierto_en": self.abierto_en.isoformat() + "Z",
+            "cerrado_en": self.cerrado_en.isoformat() + "Z" if self.cerrado_en else None,
+            "cerrado_por": self.cerrado_por,
+            "efectivo_contado": num(self.efectivo_contado),
+            "efectivo_esperado": num(self.efectivo_esperado),
+            "diferencia": num(self.diferencia),
+            "notas": self.notas,
+        }
+
+    def __repr__(self):
+        return f"<TurnoCaja {self.fecha} #{self.numero_dia} {self.estado}>"
+
+
+class MovimientoCaja(db.Model):
+    """Retiro o ingreso de efectivo durante un turno (ej. pago a un
+    proveedor desde la caja, consignación, base extra)."""
+    __tablename__ = "movimientos_caja"
+
+    id = db.Column(db.Integer, primary_key=True)
+    turno_id = db.Column(db.Integer, db.ForeignKey("turnos_caja.id"), nullable=False)
+    tipo = db.Column(db.String(10), nullable=False)  # "ingreso" | "egreso"
+    monto = db.Column(db.Numeric(12, 2), nullable=False)
+    motivo = db.Column(db.String(200), nullable=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    turno = db.relationship("TurnoCaja", back_populates="movimientos")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "turno_id": self.turno_id,
+            "tipo": self.tipo,
+            "monto": float(self.monto),
+            "motivo": self.motivo,
+            "creado_en": self.creado_en.isoformat() + "Z",
+        }
+
+    def __repr__(self):
+        return f"<MovimientoCaja {self.tipo} {self.monto}>"

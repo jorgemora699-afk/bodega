@@ -9,6 +9,7 @@ from app.domain.inventario import hay_stock_suficiente
 from app.infrastructure.models import PrecioEspecial
 from app.application.cliente_service import ClienteService
 from app.application.venta_service import VentaService
+from app.application.caja_service import CajaService, ERROR_SIN_TURNO
 
 
 def _resolver_recursos(producto, cantidad, seleccion_ids=None):
@@ -147,7 +148,11 @@ class OrdenService:
         return bool(cliente and cliente.sin_costo)
 
     @staticmethod
-    def crear(data):
+    def crear(data, exigir_turno=False):
+        if exigir_turno:
+            # solo el jefe puede registrar ventas con fecha distinta a hoy
+            data = {k: v for k, v in data.items() if k != "fecha"}
+
         trabajadora_id = data.get("trabajadora_id")
         metodo_pago = data.get("metodo_pago")
         items = data.get("items", [])
@@ -168,6 +173,14 @@ class OrdenService:
             fecha_personalizada = _resolver_fecha(data)
         except ValueError:
             return None, "Formato de fecha inválido, usa YYYY-MM-DD"
+
+        turno = CajaService.turno_abierto()
+        if exigir_turno and not turno:
+            return None, ERROR_SIN_TURNO
+        # una venta con fecha atrasada (solo jefe) no pertenece al turno abierto
+        turno_id = turno.id if (turno and not fecha_personalizada) else None
+
+        
 
         # Un cliente "sin costo" nunca genera una deuda, sin importar el
         # método de pago que haya tocado la trabajadora.
@@ -214,6 +227,7 @@ class OrdenService:
             descripcion=descripcion,
             pagada=pagada,
             total=0,
+            turno_id=turno_id,
         )
         if fecha_personalizada:
             orden.fecha = fecha_personalizada
@@ -439,6 +453,12 @@ class OrdenService:
         orden.cliente_id = cliente_id
         orden.descripcion = descripcion
         orden.pagada = pagada
+        if metodo_pago != "credito":
+            # si deja de ser cuenta por cobrar, se borra el cobro registrado
+            # para que no se cuente dos veces en la caja
+            orden.metodo_cobro = None
+            orden.turno_cobro_id = None
+            orden.cobrada_en = None
         orden.total = total_orden
         orden.editado = True
 
@@ -446,7 +466,7 @@ class OrdenService:
         return orden, None
 
     @staticmethod
-    def marcar_pagada(orden_id):
+    def marcar_pagada(orden_id, metodo_cobro=None, exigir_turno=False):
         orden = Orden.query.get(orden_id)
         if not orden:
             return None, "Orden no encontrada"
@@ -457,7 +477,24 @@ class OrdenService:
         if orden.pagada:
             return None, "Esta orden ya está marcada como pagada"
 
+        # Sin método (o "credito") = se marca pagada sin indicar cómo se cobró.
+        # No afecta la caja: solo "efectivo" suma al efectivo esperado.
+        if not metodo_cobro:
+            metodo_cobro = "credito"
+
+        if metodo_cobro not in ("efectivo", "transferencia", "credito"):
+            return None, "metodo_cobro debe ser efectivo, transferencia o credito"
+
+        turno = CajaService.turno_abierto()
+
+        # El turno solo es obligatorio cuando el cobro entra a la caja
+        if metodo_cobro == "efectivo" and exigir_turno and not turno:
+            return None, ERROR_SIN_TURNO
+
         orden.pagada = True
+        orden.metodo_cobro = metodo_cobro
+        orden.turno_cobro_id = turno.id if turno else None
+        orden.cobrada_en = datetime.utcnow()
         db.session.commit()
         return orden, None
 

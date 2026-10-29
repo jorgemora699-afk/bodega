@@ -22,6 +22,7 @@ import {
   ClipboardList,
   Volume2,
   VolumeX,
+  Landmark,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -46,6 +47,11 @@ const LINKS = [
     to: "/admin/ventas",
     label: "Ventas",
     Icon: Receipt,
+  },
+  {
+    to: "/admin/caja",
+    label: "Caja",
+    Icon: Landmark,
   },
   {
     to: "/admin/reportes",

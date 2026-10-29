@@ -1,8 +1,14 @@
 from flask import Blueprint, request, jsonify
 from app.application.orden_service import OrdenService
-from app.interfaces.auth_helpers import exigir_rol
+from app.application.caja_service import ERROR_SIN_TURNO
+from app.interfaces.auth_helpers import exigir_rol, es_jefe
 
 orden_bp = Blueprint("ordenes", __name__, url_prefix="/api/ordenes")
+
+def _error_respuesta(error, status=400):
+    if error == ERROR_SIN_TURNO:
+        return jsonify({"error": error, "codigo": "SIN_TURNO"}), 409
+    return jsonify({"error": error}), status
 
 @orden_bp.before_request
 def _proteger_ordenes():
@@ -36,9 +42,9 @@ def obtener_orden(orden_id):
 @orden_bp.route("", methods=["POST"])
 def crear_orden():
     data = request.get_json()
-    orden, error = OrdenService.crear(data)
+    orden, error = OrdenService.crear(data, exigir_turno=not es_jefe())
     if error:
-        return jsonify({"error": error}), 400
+        return _error_respuesta(error)
     return jsonify(orden.to_dict()), 201
 
 
@@ -54,10 +60,13 @@ def actualizar_orden(orden_id):
 
 @orden_bp.route("/<int:orden_id>/marcar-pagada", methods=["PUT"])
 def marcar_pagada(orden_id):
-    orden, error = OrdenService.marcar_pagada(orden_id)
+    data = request.get_json(silent=True) or {}
+    orden, error = OrdenService.marcar_pagada(
+        orden_id, data.get("metodo_cobro"), exigir_turno=not es_jefe()
+    )
     if error:
         status = 404 if error == "Orden no encontrada" else 400
-        return jsonify({"error": error}), status
+        return _error_respuesta(error, status)
     return jsonify(orden.to_dict()), 200
 
 

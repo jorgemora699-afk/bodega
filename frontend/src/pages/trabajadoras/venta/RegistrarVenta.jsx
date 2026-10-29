@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ShoppingBag,
   ShoppingCart,
@@ -20,10 +20,12 @@ import {
   Clock3,
   Info,
   PackageCheck,
+  Wallet,
 } from "lucide-react";
 import { listarProductos } from "../../../api/productos";
 import { listarTrabajadoras } from "../../../api/trabajadoras";
 import { crearOrden } from "../../../api/ordenes";
+import { obtenerCajaActual } from "../../../api/caja";
 import {
   listarClientes,
   crearCliente,
@@ -91,6 +93,24 @@ function esAdminActual() {
     return localStorage.getItem("rol") === "jefe";
   } catch {
     return false;
+  }
+}
+
+/* =========================
+   TURNO DE CAJA
+
+   true  = hay un turno abierto
+   false = no hay turno abierto
+   null  = no se pudo consultar (se deja pasar: el backend valida igual
+           al confirmar y responde SIN_TURNO si hace falta)
+   ========================= */
+
+async function consultarTurno() {
+  try {
+    const data = await obtenerCajaActual();
+    return Boolean(data.turno);
+  } catch {
+    return null;
   }
 }
 
@@ -239,6 +259,11 @@ export default function RegistrarVenta() {
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
 
+  /* Turno de caja: el aviso solo se muestra al continuar o confirmar */
+  const [sinTurno, setSinTurno] = useState(false);
+  const [comprobandoTurno, setComprobandoTurno] = useState(false);
+  const avisoSinTurnoRef = useRef(null);
+
   const [reciboOrden, setReciboOrden] = useState(null);
   const [reciboEfectivo, setReciboEfectivo] = useState(null);
   const [preciosEspeciales, setPreciosEspeciales] = useState({});
@@ -285,6 +310,26 @@ export default function RegistrarVenta() {
       /* si el storage no está disponible, se ignora */
     }
   }, [carrito]);
+
+  /* Aviso de "sin turno": se acerca a la vista y se oculta solo cuando
+     detecta que ya se abrió la caja (por si abrió el turno en otra pestaña
+     o volvió de Caja sin recargar). */
+  useEffect(() => {
+    if (!sinTurno) return undefined;
+
+    avisoSinTurnoRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+    const intervalo = setInterval(async () => {
+      if ((await consultarTurno()) === true) {
+        setSinTurno(false);
+      }
+    }, 4000);
+
+    return () => clearInterval(intervalo);
+  }, [sinTurno]);
 
   /* Sincronizar el carrito con el stock y precios más recientes */
   useEffect(() => {
@@ -627,6 +672,7 @@ export default function RegistrarVenta() {
 
   function volverAlCatalogo() {
     setError(null);
+    setSinTurno(false);
     setVista("catalogo");
   }
 
@@ -770,11 +816,28 @@ export default function RegistrarVenta() {
 
   /* ---------- Confirmar / enviar ---------- */
 
-  function irAConfirmar() {
+  async function irAConfirmar() {
     if (carrito.length === 0) {
       setError("Agrega al menos un producto al carrito");
       return;
     }
+
+    /* Sin turno de caja abierto la trabajadora no puede vender. El jefe sí.
+       Si no se logra consultar el turno, se deja seguir: el backend lo
+       valida de nuevo al confirmar. */
+    if (!esAdmin) {
+      setComprobandoTurno(true);
+      const hayTurno = await consultarTurno();
+      setComprobandoTurno(false);
+
+      if (hayTurno === false) {
+        setError(null);
+        setSinTurno(true);
+        return;
+      }
+    }
+
+    setSinTurno(false);
 
     if (!metodoPago || !trabajadoraId) {
       setError("Selecciona método de pago y quién realiza la venta");
@@ -844,15 +907,23 @@ export default function RegistrarVenta() {
       setDescripcion("");
       setFechaVenta(hoyISO());
       setSolicitudOrigen(null);
+      setSinTurno(false);
       limpiarCliente();
       setVista("recibo");
 
       await cargarDatos();
     } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          "No se pudo registrar la venta"
-      );
+      if (err.response?.data?.codigo === "SIN_TURNO") {
+        // El turno se cerró mientras armaba el pedido: vuelve al carrito
+        // (que sigue intacto) con el aviso para abrir la caja.
+        setSinTurno(true);
+        setError(null);
+      } else {
+        setError(
+          err.response?.data?.error ||
+            "No se pudo registrar la venta"
+        );
+      }
       setVista("carrito");
     } finally {
       setEnviando(false);
@@ -866,6 +937,7 @@ export default function RegistrarVenta() {
     setDescripcion("");
     setFechaVenta(hoyISO());
     setSolicitudOrigen(null);
+    setSinTurno(false);
     limpiarCliente();
     setMensaje(null);
     setError(null);
@@ -1762,6 +1834,34 @@ export default function RegistrarVenta() {
             </>
           )}
 
+          {/* =========================
+              AVISO: SIN TURNO DE CAJA
+              ========================= */}
+
+          {sinTurno && (
+            <div
+              className="venta-sinturno"
+              role="alert"
+              ref={avisoSinTurnoRef}
+            >
+              <div className="venta-sinturno-icono">
+                <Wallet size={20} />
+              </div>
+
+              <div className="venta-sinturno-texto">
+                <strong>Primero abre el turno de caja</strong>
+                <span>
+                  Tu pedido queda guardado en el carrito. Abre el turno y
+                  vuelve a continuar.
+                </span>
+              </div>
+
+              <Link to="/caja" className="venta-sinturno-btn">
+                Abrir turno
+              </Link>
+            </div>
+          )}
+
           <div className="venta-total">
             <span>Total</span>
 
@@ -1776,8 +1876,9 @@ export default function RegistrarVenta() {
           <button
             className="venta-btn-primario"
             onClick={irAConfirmar}
+            disabled={comprobandoTurno}
           >
-            Continuar
+            {comprobandoTurno ? "Verificando turno..." : "Continuar"}
           </button>
         </div>
       )}

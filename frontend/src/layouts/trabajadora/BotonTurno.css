@@ -1,0 +1,119 @@
+.turno-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  padding: 0.35rem 0.25rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.turno-link-punto {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  animation: turno-pulso 1.8s ease-in-out infinite;
+}
+
+.turno-link-titulo {
+  font-weight: 700;
+}
+
+.turno-link-hora {
+  font-weight: 500;
+}
+
+@keyframes turno-pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ---------- Turno abierto: texto blanco, punto verde ---------- */
+
+.turno-link.abierto {
+  color: white;
+}
+
+.turno-link.abierto .turno-link-punto {
+  background: #4ade80;
+}
+
+.turno-link.abierto .turno-link-hora {
+  opacity: 0.7;
+}
+
+.turno-link.abierto:hover .turno-link-titulo,
+.turno-link.abierto.en-caja .turno-link-titulo {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ---------- Caja cerrada: texto amarillo subrayado ---------- */
+
+.turno-link.cerrado {
+  color: var(--color-brand, #f5c400);
+}
+
+.turno-link.cerrado .turno-link-punto {
+  background: var(--color-brand, #f5c400);
+}
+
+.turno-link.cerrado .turno-link-titulo {
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.turno-link.cerrado .turno-link-hora {
+  color: white;
+  opacity: 0.65;
+}
+
+/* En celulares angostos se deja solo el título */
+@media (max-width: 600px) {
+  .turno-link-hora {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turno-link-punto {
+    animation: none;
+  }
+}
+
+.turno-link-skeleton {
+  width: 130px;
+  height: 20px;
+  margin-left: auto;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 25%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.08) 75%
+  );
+  background-size: 200% 100%;
+  animation: turno-shimmer 1.3s linear infinite;
+}
+
+@keyframes turno-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}

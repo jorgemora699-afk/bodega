@@ -10,6 +10,7 @@ import Inventariotrabajadora from "./pages/trabajadoras/inventario/Inventario";
 import Horario from "./pages/trabajadoras/horario/Horario";
 import RecetasTrabajadora from "./pages/trabajadoras/recetas/Recetas";
 import SolicitudesPedido from "./pages/trabajadoras/solicitudes/SolicitudesPedido";
+import Caja from "./pages/trabajadoras/caja/Caja";
 
 import Dashboard from "./pages/admin/dashboard/Dashboard";
 import Ventas from "./pages/admin/ventas/Ventas";
@@ -27,6 +28,7 @@ import MiCuenta from "./pages/admin/cuenta/MiCuenta";
 import VentasTrabajadora from "./pages/trabajadoras/venta/Ventas";
 import CuentasPorCobrar from "./pages/admin/cuentascobrar/CuentasPorCobrar";
 import Notas from "./pages/trabajadoras/notas/Notas";
+import HistorialCaja from "./pages/admin/caja/HistorialCaja";
 import Clientes from "./pages/admin/clientes/Clientes";
 
 import PedidoArteFrio from "./pages/arte_frio/pedido/PedidoArteFrio";
@@ -41,6 +43,7 @@ export default function App() {
 
           <Route element={<TrabajadoraLayout />}>
             <Route path="/venta" element={<RegistrarVenta />} />
+            <Route path="/caja" element={<Caja />} />
             <Route path="/ventas-hoy" element={<VentasTrabajadora />} />
             <Route path="/inventario" element={<Inventariotrabajadora />} />
             <Route path="/insumos" element={<InsumosTrabajadora />} />
@@ -55,6 +58,7 @@ export default function App() {
             <Route path="/admin/notas" element={<Notas />} />
             <Route path="/admin/ventas" element={<Ventas />} />
             <Route path="/admin/ventas/registrar" element={<RegistrarVenta />} />
+            <Route path="/admin/caja" element={<HistorialCaja />} />
             <Route path="/admin/reportes" element={<Reportes />} />
             <Route path="/admin/clientes" element={<Clientes />} />
             <Route path="/admin/cuentas-cobrar" element={<CuentasPorCobrar />} />

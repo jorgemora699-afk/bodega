@@ -39,26 +39,29 @@ export default function Ventas() {
     cargarDatos();
   }, []);
 
-  async function cargarDatos() {
-    setCargando(true);
+  async function cargarDatos(silencioso = false) {
+    if (!silencioso) setCargando(true);
     setError(null);
+
     try {
       const data = await listarOrdenes();
       setOrdenes(data.filter((o) => esHoyLocal(o.fecha)));
     } catch (err) {
       setError("No se pudieron cargar las ventas de hoy");
     } finally {
-      setCargando(false);
+      if (!silencioso) setCargando(false);
     }
   }
 
   async function marcarPagada(ordenId) {
     setMarcandoId(ordenId);
     setError(null);
+    setMensaje(null);
+
     try {
       await marcarOrdenPagada(ordenId);
       setMensaje("Pedido marcado como pagado");
-      cargarDatos();
+      await cargarDatos(true);
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo marcar como pagado");
     } finally {

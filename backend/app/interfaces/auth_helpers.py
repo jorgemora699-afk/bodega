@@ -16,3 +16,8 @@ def exigir_rol(*roles_permitidos):
     if claims.get("rol") not in roles_permitidos:
         return jsonify({"error": "No tienes permiso para esta acción"}), 403
     return None
+
+def es_jefe():
+    """True si el usuario del request actual tiene rol 'jefe'.
+    Solo usar después de exigir_rol (que ya verificó el JWT)."""
+    return get_jwt().get("rol") == "jefe"
