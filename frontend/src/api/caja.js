@@ -1,4 +1,4 @@
-import apiClient from "./Client";
+import apiClient from "./client";
 
 /* Avisa al botón de turno del layout para que se actualice al instante */
 function avisarCambioCaja() {
