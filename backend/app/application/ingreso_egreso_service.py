@@ -9,6 +9,15 @@ from app.infrastructure.models import (
     MovimientoInsumo,
 )
 
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
+from sqlalchemy import func, or_
+from app.infrastructure.models import IngresoEgreso, Venta, Orden
+from app.domain.periodos import rango_mes
+
+ZONA_COLOMBIA = ZoneInfo("America/Bogota")
+ZONA_UTC = ZoneInfo("UTC")
+
 
 class IngresoEgresoService:
 
@@ -203,3 +212,68 @@ class IngresoEgresoService:
         db.session.delete(registro)
         db.session.commit()
         return True
+
+    @staticmethod
+    def resumen_mes(anio, mes):
+        inicio, fin = rango_mes(anio, mes)
+
+        manuales = IngresoEgreso.query.filter(
+            IngresoEgreso.fecha.between(inicio, fin)
+        ).all()
+
+        # Día calendario en hora Colombia, no en UTC
+        dia_colombia = func.date(func.timezone("America/Bogota", func.timezone("UTC", Venta.fecha)))
+
+        filas = (
+            db.session.query(dia_colombia.label("dia"), func.sum(Venta.total).label("total"))
+            .outerjoin(Orden, Venta.orden_id == Orden.id)
+            .filter(Venta.fecha.between(inicio, fin))
+            # ventas sueltas (sin orden) o pedidos ya pagados; las cuentas por cobrar pendientes no cuentan
+            .filter(or_(Orden.id.is_(None), Orden.pagada.is_(True)))
+            .group_by(dia_colombia)
+            .all()
+        )
+
+        registros = []
+        for r in manuales:
+            d = r.to_dict()
+            d["origen"] = "manual"
+            registros.append(d)
+
+        total_ventas = 0.0
+        for f in filas:
+            total = float(f.total)
+            total_ventas += total
+
+            # Se envía al mediodía de Colombia para que el navegador muestre
+            # el día correcto sin importar su zona horaria.
+            mediodia = datetime.combine(f.dia, time(12, 0), tzinfo=ZONA_COLOMBIA)
+            fecha_iso = mediodia.astimezone(ZONA_UTC).replace(tzinfo=None).isoformat() + "Z"
+
+            registros.append({
+                "id": f"ventas-{f.dia.isoformat()}",
+                "origen": "ventas",
+                "tipo": "ingreso",
+                "monto": total,
+                "descripcion": f"Ventas del {f.dia.strftime('%d/%m')}",
+                "metodo_pago": None,
+                "proveedor_id": None,
+                "proveedor_nombre": None,
+                "fecha": fecha_iso,
+            })
+
+        registros.sort(key=lambda x: x["fecha"], reverse=True)
+
+        ingresos_manuales = sum(float(r.monto) for r in manuales if r.tipo == "ingreso")
+        total_egresos = sum(float(r.monto) for r in manuales if r.tipo == "egreso")
+        total_ingresos = ingresos_manuales + total_ventas
+
+        return {
+            "mes": f"{anio}-{mes:02d}",
+            "registros": registros,
+            "total_ventas": total_ventas,
+            "ingresos_manuales": ingresos_manuales,
+            "total_ingresos": total_ingresos,
+            "total_egresos": total_egresos,
+            "balance_neto": total_ingresos - total_egresos,
+        }

@@ -3,6 +3,7 @@ from datetime import datetime
 from app.application.ingreso_egreso_service import IngresoEgresoService
 from app.interfaces.auth_helpers import exigir_rol
 from app.interfaces.date_helpers import parsear_datetime
+from zoneinfo import ZoneInfo
 
 ingreso_egreso_bp = Blueprint("ingresos_egresos", __name__, url_prefix="/api/ingresos-egresos")
 
@@ -66,3 +67,20 @@ def eliminar(registro_id):
     if not exito:
         return jsonify({"error": "Registro no encontrado"}), 404
     return jsonify({"mensaje": "Registro eliminado"}), 200
+
+@ingreso_egreso_bp.route("/resumen-mes", methods=["GET"])
+def resumen_mes():
+    mes_str = request.args.get("mes")  # formato YYYY-MM
+
+    try:
+        if mes_str:
+            anio, mes = map(int, mes_str.split("-"))
+            if not (1 <= mes <= 12 and 2000 <= anio <= 2100):
+                raise ValueError
+        else:
+            hoy = datetime.now(ZoneInfo("America/Bogota"))
+            anio, mes = hoy.year, hoy.month
+    except ValueError:
+        return jsonify({"error": "mes debe tener formato YYYY-MM"}), 400
+
+    return jsonify(IngresoEgresoService.resumen_mes(anio, mes)), 200

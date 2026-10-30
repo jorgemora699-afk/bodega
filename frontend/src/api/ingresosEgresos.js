@@ -19,3 +19,10 @@ export async function eliminarIngresoEgreso(registroId) {
   const response = await apiClient.delete(`/ingresos-egresos/${registroId}`);
   return response.data;
 }
+
+export async function obtenerResumenMes(mes) {
+  const response = await apiClient.get("/ingresos-egresos/resumen-mes", {
+    params: { mes },
+  });
+  return response.data;
+}

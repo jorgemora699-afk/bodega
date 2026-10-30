@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, PackagePlus, X, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, PackagePlus, X, Calendar, ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import {
-  listarIngresosEgresos,
+  obtenerResumenMes,
   crearIngresoEgreso,
   actualizarIngresoEgreso,
   eliminarIngresoEgreso,
@@ -57,6 +57,25 @@ function formatearMoneda(valor) {
   return `$${Number(valor).toLocaleString("es-CO")}`;
 }
 
+function mesActualISO() {
+  return hoyISO().slice(0, 7);
+}
+
+function moverMes(mesISO, delta) {
+  const [anio, mes] = mesISO.split("-").map(Number);
+  const d = new Date(anio, mes - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function nombreMes(mesISO) {
+  const [anio, mes] = mesISO.split("-").map(Number);
+  const texto = new Date(anio, mes - 1, 1).toLocaleDateString("es-CO", {
+    month: "long",
+    year: "numeric",
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 function etiquetaMetodoPago(valor) {
   if (valor === "efectivo") return "Efectivo";
   if (valor === "transferencia") return "Transferencia";
@@ -70,6 +89,13 @@ function etiquetaEntrada(e) {
 
 export default function IngresosEgresos() {
   const [registros, setRegistros] = useState([]);
+  const [mes, setMes] = useState(mesActualISO);
+  const [totales, setTotales] = useState({
+    total_ingresos: 0,
+    total_egresos: 0,
+    balance_neto: 0,
+    total_ventas: 0,
+  });
   const [proveedores, setProveedores] = useState([]);
   const [productos, setProductos] = useState([]);
   const [insumos, setInsumos] = useState([]);
@@ -98,7 +124,7 @@ export default function IngresosEgresos() {
 
   useEffect(() => {
     cargarRegistros();
-  }, [filtroTipo]);
+  }, [mes]);
 
   async function cargarProveedores() {
     try {
@@ -127,8 +153,9 @@ export default function IngresosEgresos() {
   async function cargarRegistros() {
     setError(null);
     try {
-      const params = filtroTipo ? { tipo: filtroTipo } : {};
-      setRegistros(await listarIngresosEgresos(params));
+      const data = await obtenerResumenMes(mes);
+      setRegistros(data.registros);
+      setTotales(data);
     } catch (err) {
       setError("No se pudieron cargar los registros");
     }
@@ -307,12 +334,10 @@ export default function IngresosEgresos() {
     }
   }
 
-  const totalIngresos = registros
-    .filter((r) => r.tipo === "ingreso")
-    .reduce((sum, r) => sum + Number(r.monto), 0);
-  const totalEgresos = registros
-    .filter((r) => r.tipo === "egreso")
-    .reduce((sum, r) => sum + Number(r.monto), 0);
+  const registrosFiltrados = filtroTipo
+    ? registros.filter((r) => r.tipo === filtroTipo)
+    : registros;
+  const esMesActual = mes === mesActualISO();
 
   return (
     <div className="ie-container">
@@ -326,6 +351,36 @@ export default function IngresosEgresos() {
 
       {mensaje && <div className="ie-mensaje-exito">{mensaje}</div>}
       {error && !sheetAbierto && <div className="ie-mensaje-error">{error}</div>}
+
+      <div className="ie-mes">
+        <button
+          type="button"
+          className="ie-mes-flecha"
+          onClick={() => setMes((m) => moverMes(m, -1))}
+          aria-label="Mes anterior"
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        <div className="ie-mes-centro">
+          <strong>{nombreMes(mes)}</strong>
+          {!esMesActual && (
+            <button type="button" className="ie-mes-hoy" onClick={() => setMes(mesActualISO())}>
+              Ir al mes actual
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="ie-mes-flecha"
+          onClick={() => setMes((m) => moverMes(m, 1))}
+          disabled={esMesActual}
+          aria-label="Mes siguiente"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
 
       <div className="ie-filtros">
         {[
@@ -346,26 +401,41 @@ export default function IngresosEgresos() {
       <div className="ie-resumen">
         <div className="ie-resumen-item">
           <span>Ingresos</span>
-          <span className="ie-resumen-valor positivo">{formatearMoneda(totalIngresos)}</span>
+          <span className="ie-resumen-valor positivo">{formatearMoneda(totales.total_ingresos)}</span>
         </div>
         <div className="ie-resumen-item">
           <span>Egresos</span>
-          <span className="ie-resumen-valor negativo">{formatearMoneda(totalEgresos)}</span>
+          <span className="ie-resumen-valor negativo">{formatearMoneda(totales.total_egresos)}</span>
+        </div>
+        <div className="ie-resumen-item ie-resumen-balance">
+          <span>Balance del mes</span>
+          <span
+            className={`ie-resumen-valor ${totales.balance_neto >= 0 ? "positivo" : "negativo"}`}
+          >
+            {formatearMoneda(totales.balance_neto)}
+          </span>
         </div>
       </div>
 
       <div className="ie-lista">
-        {registros.map((r) => {
+        {registrosFiltrados.map((r) => {
           const metodoLabel = etiquetaMetodoPago(r.metodo_pago);
           const entradas = r.entradas_inventario || [];
+          const esVenta = r.origen === "ventas";
 
           return (
-            <div key={r.id} className="ie-tarjeta">
+            <div key={r.id} className={`ie-tarjeta ${esVenta ? "ie-tarjeta-ventas" : ""}`}>
               <div className="ie-fila-principal">
                 <div>
-                  <span className={`ie-badge-tipo ${r.tipo}`}>
-                    {r.tipo === "ingreso" ? "Ingreso" : "Egreso"}
-                  </span>
+                  {esVenta ? (
+                    <span className="ie-badge-tipo ventas">
+                      <Receipt size={10} /> Ventas
+                    </span>
+                  ) : (
+                    <span className={`ie-badge-tipo ${r.tipo}`}>
+                      {r.tipo === "ingreso" ? "Ingreso" : "Egreso"}
+                    </span>
+                  )}
                   <span className="ie-descripcion">{r.descripcion}</span>
                 </div>
                 <span className={`ie-monto ${r.tipo === "ingreso" ? "positivo" : "negativo"}`}>
@@ -400,47 +470,48 @@ export default function IngresosEgresos() {
                 </div>
               )}
 
-              {confirmandoEliminar === r.id ? (
-                <div className="ie-confirmar">
-                  <span>¿Eliminar este registro?</span>
-                  <div className="ie-botones">
-                    <button
-                      className="ie-btn-secundario"
-                      onClick={() => setConfirmandoEliminar(null)}
-                      disabled={guardando}
-                    >
-                      No
+              {!esVenta &&
+                (confirmandoEliminar === r.id ? (
+                  <div className="ie-confirmar">
+                    <span>¿Eliminar este registro?</span>
+                    <div className="ie-botones">
+                      <button
+                        className="ie-btn-secundario"
+                        onClick={() => setConfirmandoEliminar(null)}
+                        disabled={guardando}
+                      >
+                        No
+                      </button>
+                      <button
+                        className="ie-btn-peligro"
+                        onClick={() => confirmarEliminar(r.id)}
+                        disabled={guardando}
+                      >
+                        Sí, eliminar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="ie-acciones">
+                    <button className="ie-btn-secundario" onClick={() => iniciarEdicion(r)}>
+                      <Pencil size={13} />
+                      Editar
                     </button>
                     <button
-                      className="ie-btn-peligro"
-                      onClick={() => confirmarEliminar(r.id)}
-                      disabled={guardando}
+                      className="ie-btn-peligro-outline"
+                      onClick={() => setConfirmandoEliminar(r.id)}
                     >
-                      Sí, eliminar
+                      <Trash2 size={13} />
+                      Eliminar
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="ie-acciones">
-                  <button className="ie-btn-secundario" onClick={() => iniciarEdicion(r)}>
-                    <Pencil size={13} />
-                    Editar
-                  </button>
-                  <button
-                    className="ie-btn-peligro-outline"
-                    onClick={() => setConfirmandoEliminar(r.id)}
-                  >
-                    <Trash2 size={13} />
-                    Eliminar
-                  </button>
-                </div>
-              )}
+                ))}
             </div>
           );
         })}
 
-        {registros.length === 0 && (
-          <p className="ie-sin-datos">No hay registros para este filtro</p>
+        {registrosFiltrados.length === 0 && (
+          <p className="ie-sin-datos">No hay registros en este mes para este filtro</p>
         )}
       </div>
 

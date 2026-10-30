@@ -521,3 +521,77 @@
   font-size: 0.7rem;
   font-weight: 700;
 }
+
+/* ---------- Selector de mes ---------- */
+
+.ie-mes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.ie-mes-centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 0.95rem;
+}
+
+.ie-mes-hoy {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.ie-mes-flecha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.ie-mes-flecha:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.ie-mes-flecha:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ---------- Resumen con balance ---------- */
+
+.ie-resumen-balance {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Filas de ventas ---------- */
+
+.ie-badge-tipo.ventas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.ie-tarjeta-ventas {
+  background: var(--color-bg);
+}

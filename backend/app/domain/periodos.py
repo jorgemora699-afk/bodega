@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
+from calendar import monthrange
 
 ZONA_COLOMBIA = ZoneInfo("America/Bogota")
 ZONA_UTC = ZoneInfo("UTC")
@@ -56,3 +57,9 @@ def rango_por_mes(anio, mes):
     ultimo_dia = monthrange(anio, mes)[1]
     fin = date(anio, mes, ultimo_dia)
     return _utc_desde_fecha_local(inicio, fin)
+
+def rango_mes(anio, mes):
+    """Límites de un mes completo en hora Colombia, convertidos a UTC naive
+    para compararlos contra columnas guardadas con datetime.utcnow()."""
+    ultimo_dia = monthrange(anio, mes)[1]
+    return _utc_desde_fecha_local(date(anio, mes, 1), date(anio, mes, ultimo_dia))
