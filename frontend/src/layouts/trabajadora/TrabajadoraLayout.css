@@ -591,3 +591,15 @@ body.venta-selector-abierto .trab-tabbar {
   background: var(--color-success-tint);
   color: var(--color-success);
 }
+
+.trab-ultima-act {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .trab-ultima-act {
+    display: none;
+  }
+}

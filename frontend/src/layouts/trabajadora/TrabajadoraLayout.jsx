@@ -48,19 +48,30 @@ export default function TrabajadoraLayout() {
   const [notasPendientes, setNotasPendientes] = useState(0);
   const [pedidosPendientes, setPedidosPendientes] = useState(0);
   const [sonidoActivo, setSonidoActivo] = useState(() => sonidoActivoGuardado());
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
 
   const pedidosPendientesPrevRef = useRef(null);
 
   useEffect(() => {
-    cargarContadorNotas();
-    cargarContadorPedidos();
-
-    const intervalo = setInterval(() => {
+    const refrescar = () => {
       cargarContadorNotas();
       cargarContadorPedidos();
-    }, INTERVALO_REFRESCO_MS);
+    };
 
-    return () => clearInterval(intervalo);
+    refrescar();
+    const intervalo = setInterval(refrescar, INTERVALO_REFRESCO_MS);
+
+    const alVolver = () => {
+      if (document.visibilityState === "visible") refrescar();
+    };
+    document.addEventListener("visibilitychange", alVolver);
+    window.addEventListener("online", refrescar);
+
+    return () => {
+      clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", alVolver);
+      window.removeEventListener("online", refrescar);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
@@ -108,6 +119,7 @@ export default function TrabajadoraLayout() {
       pedidosPendientesPrevRef.current = pendientes;
 
       setPedidosPendientes(pendientes);
+      setUltimaActualizacion(new Date());
     } catch (err) {
       // Ignorar error para no bloquear el renderizado
     }
@@ -166,6 +178,16 @@ export default function TrabajadoraLayout() {
             <VolumeX size={18} />
           )}
         </button>
+
+        {ultimaActualizacion && (
+          <span className="trab-ultima-act">
+            Act. {ultimaActualizacion.toLocaleTimeString("es-CO", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })}
+          </span>
+        )}
 
         <BotonTurno />
 
