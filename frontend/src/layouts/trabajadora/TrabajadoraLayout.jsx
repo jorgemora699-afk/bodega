@@ -38,6 +38,7 @@ const TABS = [
 ];
 
 const INTERVALO_REFRESCO_MS = 5000;
+const INTERVALO_NOTAS_MS = 30000;
 
 export default function TrabajadoraLayout() {
   const { usuario, logout } = useAuth();
@@ -53,24 +54,31 @@ export default function TrabajadoraLayout() {
   const pedidosPendientesPrevRef = useRef(null);
 
   useEffect(() => {
-    const refrescar = () => {
+    cargarContadorNotas();
+    cargarContadorPedidos();
+
+    const intervaloPedidos = setInterval(cargarContadorPedidos, INTERVALO_REFRESCO_MS);
+    const intervaloNotas = setInterval(cargarContadorNotas, INTERVALO_NOTAS_MS);
+
+    const alVolver = () => {
+      if (document.visibilityState === "visible") {
+        cargarContadorNotas();
+        cargarContadorPedidos();
+      }
+    };
+    const alReconectar = () => {
       cargarContadorNotas();
       cargarContadorPedidos();
     };
 
-    refrescar();
-    const intervalo = setInterval(refrescar, INTERVALO_REFRESCO_MS);
-
-    const alVolver = () => {
-      if (document.visibilityState === "visible") refrescar();
-    };
     document.addEventListener("visibilitychange", alVolver);
-    window.addEventListener("online", refrescar);
+    window.addEventListener("online", alReconectar);
 
     return () => {
-      clearInterval(intervalo);
+      clearInterval(intervaloPedidos);
+      clearInterval(intervaloNotas);
       document.removeEventListener("visibilitychange", alVolver);
-      window.removeEventListener("online", refrescar);
+      window.removeEventListener("online", alReconectar);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);

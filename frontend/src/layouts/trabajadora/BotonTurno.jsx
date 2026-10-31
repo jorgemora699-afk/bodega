@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { obtenerCajaActual } from "../../api/caja";
 import "./BotonTurno.css";
 
-const REFRESCO_MS = 5000;
+const REFRESCO_MS = 30000;
 
 function formatearHora(isoString) {
   if (!isoString) return "";
