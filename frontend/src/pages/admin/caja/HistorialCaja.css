@@ -377,3 +377,258 @@
 .hc-subtitulo {
   margin-top: 1rem !important;
 }
+
+/* ---------- Mensaje de éxito ---------- */
+
+.hc-mensaje-exito {
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  background: var(--color-success-tint);
+  color: var(--color-success);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+/* ---------- Etiqueta "Editado" ---------- */
+
+.hc-badge-editado {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+  font-size: 0.58rem;
+  font-weight: 750;
+  vertical-align: middle;
+}
+
+/* ---------- Barra de edición ---------- */
+
+.hc-editar-barra {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.hc-btn-editar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 34px;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hc-btn-editar:hover {
+  border-color: var(--color-primary);
+  background: var(--color-bg);
+}
+
+/* ---------- Movimientos ---------- */
+
+.hc-bloque-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.hc-bloque-cabecera h3 {
+  margin: 0;
+}
+
+.hc-btn-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hc-btn-mini.peligro {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.hc-btn-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hc-mov {
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hc-mov:last-child {
+  border-bottom: none;
+}
+
+.hc-mov-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  margin-bottom: 0.2rem;
+}
+
+.hc-mov-confirmar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+}
+
+.hc-icono-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.hc-icono-btn:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.hc-icono-btn.peligro:hover {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+/* ---------- Historial de cambios ---------- */
+
+.hc-historial h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.hc-historial-item {
+  padding: 0.55rem 0.7rem;
+  margin-bottom: 0.4rem;
+  border-radius: 10px;
+  background: var(--color-bg);
+}
+
+.hc-historial-item small {
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.hc-historial-item ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+/* ---------- Formularios (Sheet) ---------- */
+
+.hc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hc-form label {
+  margin-top: 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+.hc-form input,
+.hc-form select,
+.hc-form textarea {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.hc-form textarea {
+  resize: vertical;
+}
+
+.hc-form-ayuda {
+  margin: 0.2rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
+.hc-tipos {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hc-tipo-btn {
+  flex: 1;
+  padding: 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hc-tipo-btn.activo-ingreso {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: #fff;
+}
+
+.hc-tipo-btn.activo-egreso {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.hc-btn-guardar {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hc-btn-guardar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

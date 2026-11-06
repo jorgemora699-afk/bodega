@@ -23,6 +23,7 @@ import {
   Volume2,
   VolumeX,
   Landmark,
+  BookOpen,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -107,6 +108,11 @@ const LINKS = [
     to: "/admin/recetas",
     label: "Recetas",
     Icon: ChefHat,
+  },
+  {
+    to: "/admin/carta",
+    label: "Carta digital",
+    Icon: BookOpen,
   },
   {
     to: "/admin/notas",

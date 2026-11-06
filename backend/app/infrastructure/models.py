@@ -43,6 +43,13 @@ class Producto(db.Model):
     cantidad_por_seleccion = db.Column(db.Integer, nullable=True, default=1)
  
     activo = db.Column(db.Boolean, nullable=False, default=True)
+    # Carta digital
+    carta_visible = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    carta_descripcion = db.Column(db.String(300), nullable=True)
+    carta_etiqueta = db.Column(db.String(30), nullable=True)
+    carta_orden = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    carta_imagen_url = db.Column(db.String(500), nullable=True)
+    carta_imagen_public_id = db.Column(db.String(200), nullable=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
  
     ventas = db.relationship("Venta", back_populates="producto")
@@ -877,6 +884,9 @@ class TurnoCaja(db.Model):
     diferencia = db.Column(db.Numeric(12, 2), nullable=True)
     resumen_cierre = db.Column(db.Text, nullable=True)  # JSON con el desglose al cerrar
     notas = db.Column(db.Text, nullable=True)
+    editado = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    editado_en = db.Column(db.DateTime, nullable=True)
+    historial_ediciones = db.Column(db.Text, nullable=True)  # JSON: lista de {fecha, cambios}
 
     trabajadora = db.relationship("Trabajadora")
     movimientos = db.relationship(
@@ -905,6 +915,8 @@ class TurnoCaja(db.Model):
             "efectivo_esperado": num(self.efectivo_esperado),
             "diferencia": num(self.diferencia),
             "notas": self.notas,
+            "editado": self.editado,
+            "editado_en": self.editado_en.isoformat() + "Z" if self.editado_en else None,
         }
 
     def __repr__(self):
@@ -937,3 +949,34 @@ class MovimientoCaja(db.Model):
 
     def __repr__(self):
         return f"<MovimientoCaja {self.tipo} {self.monto}>"
+
+
+class CartaConfig(db.Model):
+    """Datos del negocio para la carta digital. Hay una sola fila."""
+    __tablename__ = "carta_config"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre_negocio = db.Column(db.String(100), nullable=False, default="Punto Amarillo")
+    bienvenida = db.Column(db.String(300), nullable=True)
+    horario = db.Column(db.String(200), nullable=True)
+    direccion = db.Column(db.String(200), nullable=True)
+    whatsapp = db.Column(db.String(20), nullable=True)
+    logo_url = db.Column(db.String(500), nullable=True)
+    logo_public_id = db.Column(db.String(200), nullable=True)
+    banner_url = db.Column(db.String(500), nullable=True)
+    banner_public_id = db.Column(db.String(200), nullable=True)
+    orden_categorias = db.Column(db.Text, nullable=True)  # JSON: lista de nombres
+
+    def to_dict(self):
+        return {
+            "nombre_negocio": self.nombre_negocio,
+            "bienvenida": self.bienvenida,
+            "horario": self.horario,
+            "direccion": self.direccion,
+            "whatsapp": self.whatsapp,
+            "logo_url": self.logo_url,
+            "banner_url": self.banner_url,
+        }
+
+    def __repr__(self):
+        return f"<CartaConfig {self.nombre_negocio}>"

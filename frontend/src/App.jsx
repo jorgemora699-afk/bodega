@@ -30,6 +30,8 @@ import CuentasPorCobrar from "./pages/admin/cuentascobrar/CuentasPorCobrar";
 import Notas from "./pages/trabajadoras/notas/Notas";
 import HistorialCaja from "./pages/admin/caja/HistorialCaja";
 import Clientes from "./pages/admin/clientes/Clientes";
+import CartaPublica from "./pages/publica/carta/Carta";
+import CartaAdmin from "./pages/admin/carta/CartaAdmin";
 
 import PedidoArteFrio from "./pages/arte_frio/pedido/PedidoArteFrio";
 import MisPedidos from "./pages/arte_frio/mispedidos/MisPedidos";
@@ -40,6 +42,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/carta" element={<CartaPublica />} />
 
           <Route element={<TrabajadoraLayout />}>
             <Route path="/venta" element={<RegistrarVenta />} />
@@ -71,6 +74,7 @@ export default function App() {
             <Route path="/admin/trabajadoras" element={<Trabajadoras />} />
             <Route path="/admin/insumos" element={<Insumos />} />
             <Route path="/admin/recetas" element={<RecetasAdmin />} />
+            <Route path="/admin/carta" element={<CartaAdmin />} />
             <Route path="/admin/mi-cuenta" element={<MiCuenta />} />
           </Route>
 

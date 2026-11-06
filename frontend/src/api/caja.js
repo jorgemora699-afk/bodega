@@ -41,3 +41,18 @@ export async function obtenerTurnoCaja(id) {
   const { data } = await apiClient.get(`/caja/turnos/${id}`);
   return data;
 }
+
+export async function editarTurnoCaja(id, payload) {
+  const { data } = await apiClient.put(`/caja/turnos/${id}`, payload);
+  return data;
+}
+
+export async function agregarMovimientoATurno(turnoId, payload) {
+  const { data } = await apiClient.post(`/caja/turnos/${turnoId}/movimientos`, payload);
+  return data;
+}
+
+export async function editarMovimientoCaja(id, payload) {
+  const { data } = await apiClient.put(`/caja/movimientos/${id}`, payload);
+  return data;
+}

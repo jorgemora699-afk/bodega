@@ -863,3 +863,26 @@
     animation: none;
   }
 }
+
+/* =========================
+   AVISO: LA CAJA NO CUADRA
+   ========================= */
+
+.caja-aviso-cuadre {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 0 1.1rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.caja-aviso-cuadre svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}

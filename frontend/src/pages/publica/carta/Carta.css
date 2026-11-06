@@ -1,0 +1,352 @@
+.carta-pagina {
+  --c-amarillo: var(--pa-yellow, #f5c400);
+  --c-amarillo-osc: var(--pa-yellow-dark, #dcae00);
+  --c-amarillo-claro: var(--pa-yellow-light, #fff8d6);
+  --c-negro: var(--pa-black, #171717);
+  --c-fondo: var(--pa-bg, #f7f7f5);
+  --c-borde: var(--pa-border, #e8e8e4);
+  --c-texto: var(--pa-text, #202020);
+  --c-suave: var(--pa-text-soft, #777777);
+
+  min-height: 100vh;
+  padding-bottom: 5.5rem;
+  background: var(--c-fondo);
+  color: var(--c-texto);
+}
+
+.carta-hero {
+  background: var(--c-negro);
+  color: #fff;
+}
+
+.carta-banner {
+  height: 150px;
+  background: linear-gradient(135deg, var(--c-amarillo), var(--c-amarillo-osc)) center / cover no-repeat;
+}
+
+.carta-negocio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 1.25rem 1.5rem;
+  text-align: center;
+}
+
+.carta-logo {
+  width: 88px;
+  height: 88px;
+  margin-top: -44px;
+  border: 4px solid var(--c-negro);
+  border-radius: 50%;
+  background: #fff;
+  object-fit: cover;
+}
+
+.carta-negocio h1 {
+  margin: 0.5rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.carta-bienvenida {
+  max-width: 440px;
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.carta-datos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1rem;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--c-amarillo);
+}
+
+.carta-datos span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ---------- Barra de categorías ---------- */
+
+.carta-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 0.7rem 1rem 0.6rem;
+  border-bottom: 1px solid var(--c-borde);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(6px);
+}
+
+.carta-buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 720px;
+  margin: 0 auto 0.55rem;
+  padding: 0.55rem 0.8rem;
+  border: 1.5px solid var(--c-borde);
+  border-radius: 999px;
+  background: var(--c-fondo);
+  color: var(--c-suave);
+}
+
+.carta-buscador input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.88rem;
+}
+
+.carta-chips {
+  display: flex;
+  gap: 0.4rem;
+  max-width: 720px;
+  margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.carta-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.carta-chip {
+  flex-shrink: 0;
+  padding: 0.4rem 0.9rem;
+  border: 1.5px solid var(--c-borde);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--c-suave);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.carta-chip.activo {
+  border-color: var(--c-amarillo);
+  background: var(--c-amarillo);
+  color: var(--c-negro);
+}
+
+/* ---------- Productos ---------- */
+
+.carta-contenido {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 0;
+}
+
+.carta-seccion {
+  scroll-margin-top: 112px;
+  padding-top: 1.25rem;
+}
+
+.carta-seccion h2 {
+  margin: 0 0 0.7rem;
+  padding-left: 0.6rem;
+  border-left: 4px solid var(--c-amarillo);
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.carta-producto {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding: 0.85rem;
+  margin-bottom: 0.65rem;
+  border: 1px solid var(--c-borde);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.carta-producto.agotado .carta-producto-texto {
+  opacity: 0.5;
+}
+
+.carta-producto-texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.carta-producto-texto h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.carta-producto-texto p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--c-suave);
+}
+
+.carta-precio {
+  margin-top: auto;
+  padding-top: 0.3rem;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.carta-producto-foto {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--c-fondo);
+}
+
+.carta-producto-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carta-agotado {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(23, 23, 23, 0.6);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.carta-agotado-texto {
+  align-self: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: var(--c-negro);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.carta-etiqueta {
+  align-self: flex-start;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--c-amarillo-claro);
+  color: #8a6d00;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.carta-etiqueta.nuevo {
+  background: var(--c-negro);
+  color: var(--c-amarillo);
+}
+
+.carta-etiqueta.popular {
+  background: var(--c-amarillo);
+  color: var(--c-negro);
+}
+
+.carta-etiqueta.promo {
+  background: #fde8e4;
+  color: #b3261e;
+}
+
+.carta-vacio {
+  padding: 3rem 0;
+  text-align: center;
+  color: var(--c-suave);
+}
+
+/* ---------- WhatsApp ---------- */
+
+.carta-whatsapp {
+  position: fixed;
+  right: 1rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: 1rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 0.9rem;
+  border-radius: 999px;
+  background: var(--c-negro);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  color: var(--c-amarillo);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+/* ---------- Estados ---------- */
+
+.carta-estado {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--pa-text-soft, #777);
+}
+
+.carta-estado button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--pa-yellow, #f5c400);
+  color: var(--pa-black, #171717);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.carta-skeleton {
+  background: linear-gradient(90deg, #eee 25%, #e2e2de 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: carta-shimmer 1.3s linear infinite;
+}
+
+.carta-skeleton.banner {
+  height: 220px;
+}
+
+.carta-skeleton.fila {
+  height: 110px;
+  margin-top: 0.75rem;
+  border-radius: 16px;
+}
+
+@keyframes carta-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (min-width: 720px) {
+  .carta-banner {
+    height: 200px;
+  }
+}

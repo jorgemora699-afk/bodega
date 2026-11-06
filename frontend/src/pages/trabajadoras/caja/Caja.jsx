@@ -23,7 +23,9 @@ import {
 import "./Caja.css";
 
 /* Si es true, la trabajadora no ve el efectivo esperado ni la diferencia
-   hasta que cierra el turno (cierre "ciego"). El jefe siempre los ve. */
+   hasta que cierra el turno (cierre "ciego"). El jefe siempre los ve.
+   Con cierre ciego el botón de cerrar no se deshabilita por descuadre
+   (no revelaría cuánto falta): el backend es quien rechaza. */
 const CIERRE_CIEGO = false;
 
 const REFRESCO_MS = 30000;
@@ -227,7 +229,7 @@ export default function Caja() {
 
   useEffect(() => {
     if (!error) return undefined;
-    const t = setTimeout(() => setError(null), 6000);
+    const t = setTimeout(() => setError(null), 8000);
     return () => clearTimeout(t);
   }, [error]);
 
@@ -375,6 +377,9 @@ export default function Caja() {
       setVista("resultado");
     } catch (err) {
       setError(err.response?.data?.error || "No se pudo cerrar la caja");
+      /* El esperado pudo cambiar mientras contaba (otra venta, otro
+         movimiento): se refresca para que la comparación esté al día */
+      await cargar(true);
     } finally {
       setEnviando(false);
     }
@@ -401,7 +406,14 @@ export default function Caja() {
   const hayContado = modoConteo === "billetes" ? totalBilletes > 0 : efectivoContado !== "";
 
   const diferenciaPrevia =
-    resumen && hayContado ? contadoNum - Number(resumen.efectivo_esperado) : null;
+    resumen && hayContado
+      ? Math.round((contadoNum - Number(resumen.efectivo_esperado)) * 100) / 100
+      : null;
+
+  /* La trabajadora solo puede cerrar si la caja cuadra exacto. El jefe puede
+     cerrar con diferencia. Con cierre ciego no se bloquea aquí: lo rechaza
+     el backend, para no revelar cuánto falta. */
+  const bloqueaCierre = !esJefe && esperadoVisible && diferenciaPrevia !== 0;
 
   function ChipsTrabajadora({ valor, onElegir, etiqueta }) {
     return (
@@ -801,6 +813,7 @@ export default function Caja() {
 
             <p className="caja-ayuda">
               Cuenta todo el efectivo que hay en la caja, incluida la base con la que se abrió.
+              Para cerrar, el conteo debe cuadrar exacto.
             </p>
 
             <div className="caja-segmentos" role="tablist" aria-label="Forma de contar">
@@ -899,9 +912,24 @@ export default function Caja() {
               </div>
             )}
 
+            {bloqueaCierre && hayContado && (
+              <p className="caja-aviso-cuadre" role="alert">
+                <AlertTriangle size={15} />
+                <span>
+                  La caja debe cuadrar exacto para poder cerrar. Revisa si hubo un gasto
+                  o un ingreso sin registrar, vuelve al turno y regístralo. Si el descuadre es
+                  real, avisa al administrador.
+                </span>
+              </p>
+            )}
+
             <span className="caja-etiqueta">¿Quién cierra?</span>
 
-            <ChipsTrabajadora valor={cierraId} onElegir={(id) => setCierraId(String(id))} etiqueta="¿Quién cierra?" />
+            <ChipsTrabajadora
+              valor={cierraId}
+              onElegir={(id) => setCierraId(String(id))}
+              etiqueta="¿Quién cierra?"
+            />
 
             <div className="caja-campo">
               <label htmlFor="caja-notas">Notas (opcional)</label>
@@ -916,7 +944,11 @@ export default function Caja() {
               />
             </div>
 
-            <button className="caja-btn-primario" onClick={handleCerrar} disabled={enviando}>
+            <button
+              className="caja-btn-primario"
+              onClick={handleCerrar}
+              disabled={enviando || bloqueaCierre}
+            >
               {enviando ? "Cerrando..." : "Confirmar cierre"}
             </button>
           </div>

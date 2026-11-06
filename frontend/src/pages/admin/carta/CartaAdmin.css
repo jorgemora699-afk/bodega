@@ -1,0 +1,486 @@
+.cadm-container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.cadm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.cadm-header h1 {
+  margin: 0 0 0.2rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.cadm-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.cadm-btn-ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.cadm-mensaje-exito,
+.cadm-mensaje-error {
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.cadm-mensaje-exito {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+
+.cadm-mensaje-error {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.cadm-skeleton {
+  height: 180px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--color-bg) 25%, var(--color-border) 50%, var(--color-bg) 75%);
+  background-size: 200% 100%;
+  animation: cadm-shimmer 1.3s linear infinite;
+}
+
+@keyframes cadm-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* ---------- Pestañas ---------- */
+
+.cadm-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1.1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+}
+
+.cadm-tab {
+  padding: 0.55rem;
+  border: none;
+  border-radius: calc(var(--radius-lg) - 4px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cadm-tab.activo {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ---------- Productos ---------- */
+
+.cadm-buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  margin-bottom: 0.6rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.cadm-buscador input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.85rem;
+}
+
+.cadm-ayuda {
+  margin: 0.3rem 0 1rem;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.cadm-categoria {
+  margin-bottom: 1.25rem;
+}
+
+.cadm-categoria-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.cadm-categoria-cabecera h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.cadm-flechas {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.cadm-flechas.vertical {
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.cadm-flechas button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.cadm-flechas.vertical button {
+  height: 20px;
+}
+
+.cadm-flechas button:hover:not(:disabled) {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.cadm-flechas button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.cadm-producto {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem;
+  margin-bottom: 0.45rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.cadm-producto.oculto .cadm-foto,
+.cadm-producto.oculto .cadm-producto-info {
+  opacity: 0.5;
+}
+
+.cadm-foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.6rem;
+  text-align: center;
+}
+
+.cadm-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cadm-producto-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cadm-producto-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+}
+
+.cadm-producto-info span {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.cadm-producto-info em {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.cadm-agotado {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.cadm-etiqueta {
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.cadm-producto-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.cadm-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.cadm-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.cadm-switch.on {
+  background: var(--color-success);
+}
+
+.cadm-switch.on::after {
+  transform: translateX(18px);
+}
+
+.cadm-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.cadm-icono:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.cadm-vacio {
+  padding: 2rem 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Negocio y formularios ---------- */
+
+.cadm-tarjeta {
+  padding: 1.1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.cadm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cadm-form label,
+.cadm-label {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.cadm-form input,
+.cadm-form textarea,
+.cadm-form select {
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.cadm-form textarea {
+  resize: vertical;
+}
+
+.cadm-imagenes {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cadm-imagen-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cadm-imagen-vista {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+}
+
+.cadm-imagen-vista.logo {
+  width: 110px;
+  height: 110px;
+}
+
+.cadm-imagen-vista.banner {
+  width: 100%;
+  height: 120px;
+}
+
+.cadm-imagen-vista.producto {
+  width: 100%;
+  height: 180px;
+}
+
+.cadm-imagen-vista img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cadm-imagen-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cadm-btn-sec {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.8rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cadm-btn-sec.peligro {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.cadm-btn-sec:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cadm-btn-guardar {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cadm-btn-guardar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- Compartir ---------- */
+
+.cadm-compartir {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.cadm-qr {
+  width: 100%;
+  max-width: 280px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.cadm-enlace {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  word-break: break-all;
+}

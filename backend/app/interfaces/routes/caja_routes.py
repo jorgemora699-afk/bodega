@@ -8,9 +8,12 @@ caja_bp = Blueprint("caja", __name__, url_prefix="/api/caja")
 
 @caja_bp.before_request
 def _proteger_caja():
-    # El historial de turnos es solo del jefe; abrir, cerrar y movimientos
-    # los usan también las trabajadoras.
-    if request.method == "GET" and request.path.startswith("/api/caja/turnos"):
+    # Todo lo que cuelga de /turnos (historial y edición) y editar un
+    # movimiento es solo del jefe; abrir, cerrar, agregar y borrar
+    # movimientos del turno abierto los usan también las trabajadoras.
+    if request.path.startswith("/api/caja/turnos"):
+        return exigir_rol("jefe")
+    if request.method == "PUT":
         return exigir_rol("jefe")
     return exigir_rol("jefe", "trabajadora")
 
@@ -63,7 +66,7 @@ def crear_movimiento():
 
 @caja_bp.route("/movimientos/<int:movimiento_id>", methods=["DELETE"])
 def eliminar_movimiento(movimiento_id):
-    exito, error = CajaService.eliminar_movimiento(movimiento_id)
+    exito, error = CajaService.eliminar_movimiento(movimiento_id, es_jefe())
     if not exito:
         status = 404 if error == "Movimiento no encontrado" else 400
         return jsonify({"error": error}), status
@@ -89,3 +92,34 @@ def obtener_turno(turno_id):
     if not turno:
         return jsonify({"error": "Turno no encontrado"}), 404
     return jsonify(CajaService.serializar(turno, detalle=True)), 200
+
+@caja_bp.route("/turnos/<int:turno_id>", methods=["PUT"])
+def editar_turno(turno_id):
+    data = request.get_json(silent=True) or {}
+    turno, error = CajaService.editar_turno(turno_id, data)
+    if error:
+        status = 404 if error == "Turno no encontrado" else 400
+        return jsonify({"error": error}), status
+    return jsonify(CajaService.serializar(turno, detalle=True)), 200
+
+
+@caja_bp.route("/turnos/<int:turno_id>/movimientos", methods=["POST"])
+def agregar_movimiento_turno(turno_id):
+    data = request.get_json(silent=True) or {}
+    movimiento, error = CajaService.agregar_movimiento_a_turno(
+        turno_id, data.get("tipo"), data.get("monto"), data.get("motivo"),
+    )
+    if error:
+        status = 404 if error == "Turno no encontrado" else 400
+        return jsonify({"error": error}), status
+    return jsonify(movimiento.to_dict()), 201
+
+
+@caja_bp.route("/movimientos/<int:movimiento_id>", methods=["PUT"])
+def editar_movimiento(movimiento_id):
+    data = request.get_json(silent=True) or {}
+    movimiento, error = CajaService.editar_movimiento(movimiento_id, data)
+    if error:
+        status = 404 if error == "Movimiento no encontrado" else 400
+        return jsonify({"error": error}), status
+    return jsonify(movimiento.to_dict()), 200

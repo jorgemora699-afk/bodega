@@ -7,3 +7,4 @@ Flask-Migrate==4.0.7
 gunicorn==22.0.0
 Flask-JWT-Extended==4.6.0
 reportlab==4.2.5
+cloudinary==1.47.0

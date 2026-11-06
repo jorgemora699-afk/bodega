@@ -12,6 +12,11 @@ ZONA_LOCAL = timezone(timedelta(hours=-5))
 
 ERROR_SIN_TURNO = "No hay un turno de caja abierto. Abre la caja antes de continuar"
 
+ERROR_NO_CUADRA = (
+    "La caja no cuadra: el efectivo contado debe ser igual al esperado para cerrar el turno. "
+    "Revisa el conteo y los movimientos, o avisa al administrador."
+)
+
 
 def _hoy_local():
     return datetime.now(ZONA_LOCAL).date()
@@ -30,6 +35,26 @@ def _parsear_monto(valor, nombre, permitir_cero):
     if monto == 0 and not permitir_cero:
         return None, f"{nombre} debe ser mayor a cero"
     return monto, None
+
+def _fmt(valor):
+    return "$" + f"{float(valor):,.0f}".replace(",", ".")
+
+
+def _validar_movimiento(tipo, monto, motivo):
+    if tipo not in ("ingreso", "egreso"):
+        return None, None, "tipo debe ser 'ingreso' o 'egreso'"
+
+    monto, error = _parsear_monto(monto, "El monto", permitir_cero=False)
+    if error:
+        return None, None, error
+
+    motivo = (motivo or "").strip()
+    if not motivo:
+        return None, None, "El motivo es obligatorio"
+    if len(motivo) > 200:
+        return None, None, "El motivo no puede superar 200 caracteres"
+
+    return monto, motivo, None
 
 
 class CajaService:
@@ -96,6 +121,10 @@ class CajaService:
         else:
             data["resumen"] = json.loads(turno.resumen_cierre) if turno.resumen_cierre else None
 
+        data["historial_ediciones"] = (
+            json.loads(turno.historial_ediciones) if turno.historial_ediciones else []
+        )
+
         if detalle:
             data["movimientos"] = [m.to_dict() for m in turno.movimientos]
             ordenes = Orden.query.filter_by(turno_id=turno.id).order_by(Orden.fecha.asc()).all()
@@ -126,6 +155,26 @@ class CajaService:
     @staticmethod
     def obtener_por_id(turno_id):
         return TurnoCaja.query.get(turno_id)
+
+    @staticmethod
+    def _recalcular_cierre(turno):
+        """Vuelve a calcular el esperado y la diferencia de un turno cerrado
+        con los datos actuales; el efectivo contado no se toca."""
+        resumen = CajaService.calcular_resumen(turno)
+        turno.efectivo_esperado = resumen["efectivo_esperado"]
+        turno.diferencia = round(float(turno.efectivo_contado) - resumen["efectivo_esperado"], 2)
+        turno.resumen_cierre = json.dumps(resumen)
+
+    @staticmethod
+    def _registrar_edicion(turno, cambios):
+        historial = json.loads(turno.historial_ediciones) if turno.historial_ediciones else []
+        historial.append({
+            "fecha": datetime.utcnow().isoformat() + "Z",
+            "cambios": cambios,
+        })
+        turno.historial_ediciones = json.dumps(historial)
+        turno.editado = True
+        turno.editado_en = datetime.utcnow()
 
     # ---------- abrir / cerrar ----------
 
@@ -160,7 +209,10 @@ class CajaService:
     def cerrar(efectivo_contado, trabajadora_id, es_jefe, notas=None):
         """Cierra el turno abierto. trabajadora_id es quien hace el cierre;
         si no llega, se asume la misma que abrió. El jefe figura como
-        'Administrador'."""
+        'Administrador'.
+
+        La trabajadora solo puede cerrar si el efectivo contado es igual al
+        esperado. El jefe puede cerrar con diferencia (queda registrada)."""
         turno = CajaService.turno_abierto()
         if not turno:
             return None, ERROR_SIN_TURNO
@@ -181,13 +233,17 @@ class CajaService:
 
         resumen = CajaService.calcular_resumen(turno)
         esperado = resumen["efectivo_esperado"]
+        diferencia = round(contado - esperado, 2)
+
+        if not es_jefe and diferencia != 0:
+            return None, ERROR_NO_CUADRA
 
         turno.estado = "cerrado"
         turno.cerrado_en = datetime.utcnow()
         turno.cerrado_por = cerrado_por
         turno.efectivo_contado = contado
         turno.efectivo_esperado = esperado
-        turno.diferencia = round(contado - esperado, 2)
+        turno.diferencia = diferencia
         turno.resumen_cierre = json.dumps(resumen)
         turno.notas = (notas or "").strip() or None
 
@@ -220,14 +276,130 @@ class CajaService:
         db.session.commit()
         return movimiento, None
 
+        # ---------- edición (solo jefe) ----------
+
     @staticmethod
-    def eliminar_movimiento(movimiento_id):
+    def editar_turno(turno_id, data):
+        turno = TurnoCaja.query.get(turno_id)
+        if not turno:
+            return None, "Turno no encontrado"
+
+        cambios = []
+
+        if "monto_apertura" in data:
+            monto, error = _parsear_monto(data["monto_apertura"], "El monto de apertura", permitir_cero=True)
+            if error:
+                return None, error
+            if monto != float(turno.monto_apertura):
+                cambios.append(f"Apertura: {_fmt(turno.monto_apertura)} → {_fmt(monto)}")
+                turno.monto_apertura = monto
+
+        if "efectivo_contado" in data:
+            if turno.estado != "cerrado":
+                return None, "El efectivo contado solo se puede editar en turnos cerrados"
+            contado, error = _parsear_monto(data["efectivo_contado"], "El efectivo contado", permitir_cero=True)
+            if error:
+                return None, error
+            if contado != float(turno.efectivo_contado):
+                cambios.append(f"Contado: {_fmt(turno.efectivo_contado)} → {_fmt(contado)}")
+                turno.efectivo_contado = contado
+
+        if "trabajadora_id" in data and data["trabajadora_id"] != turno.trabajadora_id:
+            nueva = Trabajadora.query.get(data["trabajadora_id"])
+            if not nueva:
+                return None, "Trabajadora no encontrada"
+            cambios.append(f"Responsable: {turno.trabajadora.nombre} → {nueva.nombre}")
+            turno.trabajadora_id = nueva.id
+
+        if "notas" in data:
+            notas = (data["notas"] or "").strip() or None
+            if notas != turno.notas:
+                cambios.append("Notas modificadas")
+                turno.notas = notas
+
+        if not cambios:
+            return turno, None
+
+        if turno.estado == "cerrado":
+            CajaService._recalcular_cierre(turno)
+
+        CajaService._registrar_edicion(turno, cambios)
+        db.session.commit()
+        return turno, None
+
+    @staticmethod
+    def agregar_movimiento_a_turno(turno_id, tipo, monto, motivo):
+        turno = TurnoCaja.query.get(turno_id)
+        if not turno:
+            return None, "Turno no encontrado"
+
+        monto, motivo, error = _validar_movimiento(tipo, monto, motivo)
+        if error:
+            return None, error
+
+        movimiento = MovimientoCaja(turno_id=turno.id, tipo=tipo, monto=monto, motivo=motivo)
+        db.session.add(movimiento)
+        db.session.flush()
+
+        if turno.estado == "cerrado":
+            CajaService._recalcular_cierre(turno)
+
+        CajaService._registrar_edicion(
+            turno, [f"Movimiento agregado: {tipo} {_fmt(monto)} ({motivo})"]
+        )
+        db.session.commit()
+        return movimiento, None
+
+    @staticmethod
+    def editar_movimiento(movimiento_id, data):
+        movimiento = MovimientoCaja.query.get(movimiento_id)
+        if not movimiento:
+            return None, "Movimiento no encontrado"
+
+        tipo = data.get("tipo", movimiento.tipo)
+        monto, motivo, error = _validar_movimiento(
+            tipo, data.get("monto", movimiento.monto), data.get("motivo", movimiento.motivo)
+        )
+        if error:
+            return None, error
+
+        turno = movimiento.turno
+        antes = f"{movimiento.tipo} {_fmt(movimiento.monto)} ({movimiento.motivo})"
+        despues = f"{tipo} {_fmt(monto)} ({motivo})"
+        if antes == despues:
+            return movimiento, None
+
+        movimiento.tipo = tipo
+        movimiento.monto = monto
+        movimiento.motivo = motivo
+        db.session.flush()
+
+        if turno.estado == "cerrado":
+            CajaService._recalcular_cierre(turno)
+
+        CajaService._registrar_edicion(turno, [f"Movimiento: {antes} → {despues}"])
+        db.session.commit()
+        return movimiento, None
+
+    @staticmethod
+    def eliminar_movimiento(movimiento_id, es_jefe=False):
         movimiento = MovimientoCaja.query.get(movimiento_id)
         if not movimiento:
             return False, "Movimiento no encontrado"
-        if movimiento.turno.estado != "abierto":
+
+        turno = movimiento.turno
+        if turno.estado != "abierto" and not es_jefe:
             return False, "No se puede eliminar un movimiento de un turno cerrado"
 
+        detalle = f"{movimiento.tipo} {_fmt(movimiento.monto)} ({movimiento.motivo})"
         db.session.delete(movimiento)
+        db.session.flush()
+
+        if turno.estado == "cerrado":
+            CajaService._recalcular_cierre(turno)
+
+        if es_jefe:
+            CajaService._registrar_edicion(turno, [f"Movimiento eliminado: {detalle}"])
+
         db.session.commit()
         return True, None
