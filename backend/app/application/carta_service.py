@@ -16,6 +16,8 @@ MAX_BYTES = 5 * 1024 * 1024
 ETIQUETAS = ("Nuevo", "Más pedido", "Promo")
 LIMITE_NOMBRE_PRODUCTO = 100
 LIMITE_NOMBRE_CATEGORIA = 60
+LIMITE_GRUPO = 100
+LIMITE_SABOR = 100
 
 LIMITES_TEXTO = {
     "nombre_negocio": 100,
@@ -191,6 +193,8 @@ class CartaService:
             "carta_descripcion": p.carta_descripcion,
             "carta_etiqueta": p.carta_etiqueta,
             "carta_orden": p.carta_orden,
+            "carta_grupo": p.carta_grupo,
+            "carta_sabor": p.carta_sabor,
             "carta_imagen_url": p.carta_imagen_url,
         }
 
@@ -233,6 +237,20 @@ class CartaService:
                 return None, "Etiqueta no válida"
             producto.carta_etiqueta = etiqueta
 
+        if "carta_grupo" in data:
+            texto = (data["carta_grupo"] or "").strip()
+            if len(texto) > LIMITE_GRUPO:
+                return None, f"El grupo no puede superar {LIMITE_GRUPO} caracteres"
+            if texto:
+                texto = _canonica(texto, CartaService._grupos_existentes())
+            producto.carta_grupo = texto or None
+
+        if "carta_sabor" in data:
+            texto = (data["carta_sabor"] or "").strip()
+            if len(texto) > LIMITE_SABOR:
+                return None, f"El sabor no puede superar {LIMITE_SABOR} caracteres"
+            producto.carta_sabor = texto or None
+
         db.session.commit()
         return producto, None
 
@@ -274,6 +292,60 @@ class CartaService:
         producto.carta_imagen_public_id = None
         db.session.commit()
         return producto, None
+
+    @staticmethod
+    def _grupos_existentes():
+        return {p.carta_grupo for p in Producto.query.filter_by(activo=True).all() if p.carta_grupo}
+
+    @staticmethod
+    def agrupar_productos(grupo, items):
+        """items: lista de {"id": int, "sabor": str}. Deja todos esos productos en el mismo grupo."""
+        grupo = (grupo or "").strip()
+        if not grupo:
+            return "Escribe el nombre del grupo"
+        if len(grupo) > LIMITE_GRUPO:
+            return f"El grupo no puede superar {LIMITE_GRUPO} caracteres"
+        if not isinstance(items, list) or len(items) < 2:
+            return "Elige al menos 2 productos para formar un grupo"
+
+        ids = []
+        for it in items:
+            if not isinstance(it, dict) or not isinstance(it.get("id"), int):
+                return "items no válido"
+            sabor = (it.get("sabor") or "").strip()
+            if not sabor:
+                return "Cada producto necesita un sabor"
+            if len(sabor) > LIMITE_SABOR:
+                return f"El sabor no puede superar {LIMITE_SABOR} caracteres"
+            ids.append(it["id"])
+
+        productos = {
+            p.id: p
+            for p in Producto.query.filter(Producto.id.in_(ids), Producto.activo.is_(True)).all()
+        }
+        if len(productos) != len(set(ids)):
+            return "Producto no encontrado"
+
+        grupo = _canonica(grupo, CartaService._grupos_existentes())
+        for it in items:
+            p = productos[it["id"]]
+            p.carta_grupo = grupo
+            p.carta_sabor = it["sabor"].strip()
+
+        db.session.commit()
+        return None
+
+    @staticmethod
+    def desagrupar(grupo):
+        grupo = (grupo or "").strip()
+        productos = Producto.query.filter_by(activo=True, carta_grupo=grupo).all()
+        if not productos:
+            return "Grupo no encontrado"
+        for p in productos:
+            p.carta_grupo = None
+            p.carta_sabor = None
+        db.session.commit()
+        return None
 
     # ---------- categorías ----------
 
@@ -399,26 +471,65 @@ class CartaService:
             .all()
         )
 
-        grupos = {}
+        elementos = {}  # categoría -> tarjetas (producto suelto o grupo con sabores)
+        grupos = {}     # (categoría, grupo) -> tarjeta del grupo, para ir sumándole sabores
+
         for p in productos:
+            categoria = _categoria_de(p)
             stock = p.to_dict()["stock_actual"]
-            grupos.setdefault(_categoria_de(p), []).append({
+            agotado = (not p.requiere_seleccion) and stock <= 0
+            precio = float(p.precio_unitario)
+            tarjetas = elementos.setdefault(categoria, [])
+
+            if not p.carta_grupo:
+                tarjetas.append({
+                    "id": p.id,
+                    "nombre": _nombre_de(p),
+                    "precio": precio,
+                    "descripcion": p.carta_descripcion,
+                    "imagen_url": p.carta_imagen_url,
+                    "etiqueta": p.carta_etiqueta,
+                    "agotado": agotado,
+                })
+                continue
+
+            llave = (categoria, p.carta_grupo)
+            tarjeta = grupos.get(llave)
+            if not tarjeta:
+                tarjeta = {
+                    "id": f"grupo:{categoria}:{p.carta_grupo}",
+                    "nombre": p.carta_grupo,
+                    "precio": precio,
+                    "precio_max": precio,
+                    "descripcion": None,
+                    "imagen_url": None,
+                    "etiqueta": None,
+                    "agotado": True,
+                    "sabores": [],
+                }
+                grupos[llave] = tarjeta
+                tarjetas.append(tarjeta)
+
+            tarjeta["precio"] = min(tarjeta["precio"], precio)
+            tarjeta["precio_max"] = max(tarjeta["precio_max"], precio)
+            tarjeta["descripcion"] = tarjeta["descripcion"] or p.carta_descripcion
+            tarjeta["imagen_url"] = tarjeta["imagen_url"] or p.carta_imagen_url
+            tarjeta["etiqueta"] = tarjeta["etiqueta"] or p.carta_etiqueta
+            tarjeta["agotado"] = tarjeta["agotado"] and agotado
+            tarjeta["sabores"].append({
                 "id": p.id,
-                "nombre": _nombre_de(p),
-                "precio": float(p.precio_unitario),
-                "descripcion": p.carta_descripcion,
-                "imagen_url": p.carta_imagen_url,
-                "etiqueta": p.carta_etiqueta,
-                "agotado": (not p.requiere_seleccion) and stock <= 0,
+                "nombre": p.carta_sabor or _nombre_de(p),
+                "precio": precio,
+                "agotado": agotado,
             })
 
-        nombres = CartaService._ordenar_categorias(grupos.keys(), CartaService._orden_categorias(cfg))
+        nombres = CartaService._ordenar_categorias(elementos.keys(), CartaService._orden_categorias(cfg))
         imagenes = CartaService._imagenes_categorias()
 
         return {
             "negocio": cfg.to_dict(),
             "categorias": [
-                {"nombre": c, "imagen_url": imagenes.get(c), "productos": grupos[c]}
+                {"nombre": c, "imagen_url": imagenes.get(c), "productos": elementos[c]}
                 for c in nombres
             ],
         }

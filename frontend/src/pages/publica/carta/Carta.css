@@ -923,3 +923,68 @@
     max-width: 520px;
   }
 }
+
+/* ---------- Sabores agrupados ---------- */
+
+.carta-sabores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.1rem;
+}
+
+.carta-sabor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--oro-linea);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--crema);
+  font-family: var(--f-texto);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.carta-sabor.agotado {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.carta-sabores.grande {
+  gap: 0.5rem;
+}
+
+.carta-sabores.grande .carta-sabor {
+  padding: 0.5rem 0.95rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.carta-sabores.grande .carta-sabor:disabled {
+  cursor: not-allowed;
+}
+
+.carta-sabor.elegido {
+  border-color: var(--oro);
+  background: var(--oro);
+  color: #1a1409;
+}
+
+.carta-sabor small {
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
+
+.carta-modal-sabores {
+  width: 100%;
+  margin-top: 0.6rem;
+}
+
+.carta-modal-sabores .carta-rotulo {
+  display: block;
+  margin-bottom: 0.6rem;
+}

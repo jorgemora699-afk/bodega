@@ -46,7 +46,17 @@ function FilaProducto({ p, indice, alAbrir }) {
           )}
           <span className="carta-fila-nombre">{p.nombre}</span>
           {p.descripcion && <span className="carta-fila-desc">{p.descripcion}</span>}
+          {p.sabores && (
+            <span className="carta-sabores">
+              {p.sabores.map((s) => (
+                <span key={s.id} className={`carta-sabor ${s.agotado ? "agotado" : ""}`}>
+                  {s.nombre}
+                </span>
+              ))}
+            </span>
+          )}
           <span className="carta-fila-precio">
+            {p.precio_max > p.precio ? "desde " : ""}
             {moneda(p.precio)}
             {p.agotado && !p.imagen_url && <em>Agotado</em>}
           </span>
@@ -69,6 +79,16 @@ export default function Carta() {
   const [hash, setHash] = useState(hashActual);
   const [bajo, setBajo] = useState(false);
   const [detalle, setDetalle] = useState(null);
+  const [elegidos, setElegidos] = useState([]);
+
+  function abrirDetalle(p) {
+    setElegidos([]);
+    setDetalle(p);
+  }
+
+  function alternarSabor(id) {
+    setElegidos((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]));
+  }
 
   const posicionInicio = useRef(0);
   const desdeInicio = useRef(false);
@@ -211,10 +231,12 @@ export default function Carta() {
 
   const { negocio } = carta;
 
-  function enlaceWhatsapp(producto) {
+  function enlaceWhatsapp(producto, sabores = []) {
     if (!negocio.whatsapp) return null;
     const texto = producto
-      ? `Hola ${negocio.nombre_negocio}, quiero pedir: ${producto.nombre}`
+      ? `Hola ${negocio.nombre_negocio}, quiero pedir: ${producto.nombre}${
+          sabores.length ? ` — ${sabores.join(", ")}` : ""
+        }`
       : `Hola ${negocio.nombre_negocio}, quiero hacer un pedido`;
     return `https://wa.me/${negocio.whatsapp}?text=${encodeURIComponent(texto)}`;
   }
@@ -259,7 +281,7 @@ export default function Carta() {
             <main className="carta-columna">
               <ul className="carta-lista">
                 {categoriaActiva.productos.map((p, i) => (
-                  <FilaProducto key={p.id} p={p} indice={i} alAbrir={setDetalle} />
+                  <FilaProducto key={p.id} p={p} indice={i} alAbrir={abrirDetalle}/>
                 ))}
               </ul>
             </main>
@@ -302,7 +324,7 @@ export default function Carta() {
                           key={p.id}
                           type="button"
                           className="carta-reco"
-                          onClick={() => setDetalle(p)}
+                          onClick={() => abrirDetalle(p)}
                         >
                           <span className="carta-reco-foto">
                             <img src={p.imagen_url} alt="" loading="lazy" />
@@ -402,22 +424,52 @@ export default function Carta() {
               <h3>{detalle.nombre}</h3>
               <span className="carta-filete izquierda" aria-hidden="true" />
               {detalle.descripcion && <p>{detalle.descripcion}</p>}
-              <strong className="carta-modal-precio">{moneda(detalle.precio)}</strong>
+              <strong className="carta-modal-precio">
+                {detalle.precio_max > detalle.precio ? "desde " : ""}
+                {moneda(detalle.precio)}
+              </strong>
+
+              {detalle.sabores && (
+                <div className="carta-modal-sabores">
+                  <span className="carta-rotulo">Elige tus sabores</span>
+                  <div className="carta-sabores grande">
+                    {detalle.sabores.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        disabled={s.agotado}
+                        className={`carta-sabor ${s.agotado ? "agotado" : ""} ${
+                          elegidos.includes(s.id) ? "elegido" : ""
+                        }`}
+                        onClick={() => alternarSabor(s.id)}
+                      >
+                        {s.nombre}
+                        {detalle.precio_max > detalle.precio && <small>{moneda(s.precio)}</small>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {detalle.agotado ? (
                 <span className="carta-agotado-pastilla">Agotado por ahora</span>
               ) : (
-                enlaceWhatsapp(detalle) && (
-                  <a
-                    className="carta-modal-pedir"
-                    href={enlaceWhatsapp(detalle)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <MessageCircle size={18} />
-                    Pedir este producto
-                  </a>
-                )
+                (() => {
+                  const nombresElegidos = (detalle.sabores || [])
+                    .filter((s) => elegidos.includes(s.id))
+                    .map((s) => s.nombre);
+                  const enlace = enlaceWhatsapp(detalle, nombresElegidos);
+                  return (
+                    enlace && (
+                      <a className="carta-modal-pedir" href={enlace} target="_blank" rel="noreferrer">
+                        <MessageCircle size={18} />
+                        {nombresElegidos.length
+                          ? `Pedir ${nombresElegidos.join(", ")}`
+                          : "Pedir este producto"}
+                      </a>
+                    )
+                  );
+                })()
               )}
             </div>
           </div>

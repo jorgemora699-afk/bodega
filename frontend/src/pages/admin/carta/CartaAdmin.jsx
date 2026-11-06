@@ -11,6 +11,7 @@ import {
   Check,
   Search,
   RotateCcw,
+  Layers 
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
@@ -25,6 +26,8 @@ import {
   renombrarCategoriaCarta,
   subirImagenCategoria,
   quitarImagenCategoria,
+  agruparProductosCarta,
+  desagruparCarta,
 } from "../../../api/carta";
 import Sheet from "../../../components/Sheet";
 import "./CartaAdmin.css";
@@ -66,6 +69,32 @@ async function prepararImagen(archivo, maximo) {
   }
 }
 
+/* "Jugo en agua mora" + "Jugo en agua mango" -> grupo "Jugo en agua", sabores "Mora" y "Mango" */
+function sugerirAgrupacion(nombres) {
+  const limpios = nombres.map((n) => n.trim().split(/\s+/));
+  const igual = (a, b) => a.toLowerCase() === b.toLowerCase();
+  const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+  let inicio = 0;
+  while (
+    limpios.every((t) => t.length > inicio + 1) &&
+    limpios.every((t) => igual(t[inicio], limpios[0][inicio]))
+  ) inicio += 1;
+
+  let fin = 0;
+  while (
+    limpios.every((t) => t.length - inicio - fin > 1) &&
+    limpios.every((t) => igual(t[t.length - 1 - fin], limpios[0][limpios[0].length - 1 - fin]))
+  ) fin += 1;
+
+  return {
+    grupo: limpios[0].slice(0, inicio).join(" "),
+    sabores: limpios.map((t, i) =>
+      mayuscula(t.slice(inicio, t.length - fin).join(" ") || nombres[i])
+    ),
+  };
+}
+
 function Miniatura({ url, nombre }) {
   return url ? (
     <img className="cadm-mini" src={url} alt="" />
@@ -82,6 +111,10 @@ export default function CartaAdmin() {
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  const [modoAgrupar, setModoAgrupar] = useState(false);
+  const [seleccion, setSeleccion] = useState([]);
+  const [hojaGrupo, setHojaGrupo] = useState(false);
+  const [formGrupo, setFormGrupo] = useState({ grupo: "", items: [] });
 
   const [editandoId, setEditandoId] = useState(null);
   const [formProd, setFormProd] = useState({
@@ -89,6 +122,8 @@ export default function CartaAdmin() {
     categoria: "",
     carta_descripcion: "",
     carta_etiqueta: "",
+    carta_grupo: "",
+    carta_sabor: "",
   });
   const [errorForm, setErrorForm] = useState(null);
 
@@ -166,7 +201,8 @@ export default function CartaAdmin() {
   const categoriaEditando = datos.categorias.find((c) => c.nombre === editandoCat) || null;
   const visibles = datos.productos.filter((p) => p.carta_visible).length;
   const filtro = busqueda.trim().toLowerCase();
-  const reordenable = !filtro && estado === "todos";
+  const reordenable = !filtro && estado === "todos" && !modoAgrupar;
+  const gruposExistentes = [...new Set(datos.productos.map((p) => p.carta_grupo).filter(Boolean))];
 
   function pasaFiltro(p) {
     const texto =
@@ -190,6 +226,26 @@ export default function CartaAdmin() {
     }));
   }
 
+  function salirDeAgrupar() {
+    setModoAgrupar(false);
+    setSeleccion([]);
+  }
+
+  function alternarSeleccion(id) {
+    setSeleccion((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  }
+
+  function abrirAgrupar() {
+    const elegidos = datos.productos.filter((p) => seleccion.includes(p.id));
+    const sugerencia = sugerirAgrupacion(elegidos.map((p) => p.nombre));
+    setErrorForm(null);
+    setFormGrupo({
+      grupo: sugerencia.grupo,
+      items: elegidos.map((p, i) => ({ id: p.id, nombre: p.nombre, sabor: sugerencia.sabores[i] })),
+    });
+    setHojaGrupo(true);
+  }
+
   /* ---------- Productos ---------- */
 
   async function alternarVisible(p) {
@@ -199,6 +255,39 @@ export default function CartaAdmin() {
     } catch (err) {
       reemplazarProducto(p);
       fallar(err, "No se pudo cambiar la visibilidad");
+    }
+  }
+
+  async function guardarGrupo() {
+    setGuardando(true);
+    setErrorForm(null);
+    try {
+      setDatos(
+        await agruparProductosCarta(
+          formGrupo.grupo,
+          formGrupo.items.map((i) => ({ id: i.id, sabor: i.sabor }))
+        )
+      );
+      setHojaGrupo(false);
+      salirDeAgrupar();
+      avisar("Grupo creado");
+    } catch (err) {
+      setErrorForm(err.response?.data?.error || "No se pudo crear el grupo");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function deshacerGrupo(nombre) {
+    setGuardando(true);
+    try {
+      setDatos(await desagruparCarta(nombre));
+      setEditandoId(null);
+      avisar("Grupo deshecho");
+    } catch (err) {
+      setErrorForm(err.response?.data?.error || "No se pudo deshacer el grupo");
+    } finally {
+      setGuardando(false);
     }
   }
 
@@ -229,6 +318,8 @@ export default function CartaAdmin() {
       categoria: p.categoria,
       carta_descripcion: p.carta_descripcion || "",
       carta_etiqueta: p.carta_etiqueta || "",
+      carta_grupo: p.carta_grupo || "",
+      carta_sabor: p.carta_sabor || "",
     });
     setEditandoId(p.id);
   }
@@ -243,6 +334,8 @@ export default function CartaAdmin() {
         carta_categoria: formProd.categoria,
         carta_descripcion: formProd.carta_descripcion,
         carta_etiqueta: formProd.carta_etiqueta || null,
+        carta_grupo: formProd.carta_grupo,
+        carta_sabor: formProd.carta_sabor,
       });
       reemplazarProducto(actualizado);
       // si cambió de categoría, la lista de categorías y sus conteos también cambian
@@ -476,6 +569,15 @@ export default function CartaAdmin() {
             ))}
           </div>
 
+          <button
+            type="button"
+            className={`cadm-btn-sec cadm-btn-agrupar ${modoAgrupar ? "activo" : ""}`}
+            onClick={() => (modoAgrupar ? salirDeAgrupar() : setModoAgrupar(true))}
+          >
+            <Layers size={14} />
+            {modoAgrupar ? "Cancelar" : "Agrupar sabores"}
+          </button>
+
           <p className="cadm-ayuda">
             Activa el interruptor para que el producto salga en la carta. Los productos nuevos
             empiezan ocultos. Toca el lápiz para cambiar su nombre, foto o categoría.
@@ -498,6 +600,15 @@ export default function CartaAdmin() {
 
                 {lista.map((p, i) => (
                   <div key={p.id} className={`cadm-producto ${p.carta_visible ? "" : "oculto"}`}>
+                    {modoAgrupar && (
+                        <input
+                            type="checkbox"
+                            className="cadm-check"
+                            checked={seleccion.includes(p.id)}
+                            onChange={() => alternarSeleccion(p.id)}
+                            aria-label={`Elegir ${p.nombre}`}
+                        />
+                    )}
                     <div className="cadm-foto">
                       {p.carta_imagen_url ? (
                         <img src={p.carta_imagen_url} alt="" loading="lazy" />
@@ -512,6 +623,11 @@ export default function CartaAdmin() {
                         {moneda(p.precio_unitario)}
                         {p.agotado && <em className="cadm-agotado">Agotado</em>}
                         {p.carta_etiqueta && <em className="cadm-etiqueta">{p.carta_etiqueta}</em>}
+                        {p.carta_grupo && (
+                            <em className="cadm-grupo">
+                                {p.carta_grupo} · {p.carta_sabor}
+                            </em>
+                        )}
                       </span>
                     </div>
 
@@ -761,6 +877,68 @@ export default function CartaAdmin() {
         </div>
       )}
 
+      {modoAgrupar && (
+        <div className="cadm-barra-agrupar">
+          <span>
+            {seleccion.length} {seleccion.length === 1 ? "elegido" : "elegidos"}
+          </span>
+          <button
+            type="button"
+            className="cadm-btn-guardar"
+            disabled={seleccion.length < 2}
+            onClick={abrirAgrupar}
+          >
+            Agrupar
+          </button>
+        </div>
+      )}
+
+      <Sheet open={hojaGrupo} onOpenChange={(a) => !a && setHojaGrupo(false)} title="Nuevo grupo">
+        <div className="cadm-form">
+          {errorForm && <div className="cadm-mensaje-error">{errorForm}</div>}
+
+          <label>Nombre del grupo</label>
+          <input
+            type="text"
+            list="cadm-lista-grupos"
+            maxLength={100}
+            value={formGrupo.grupo}
+            onChange={(e) => setFormGrupo((f) => ({ ...f, grupo: e.target.value }))}
+            placeholder="Ej: Jugo en agua"
+          />
+          <datalist id="cadm-lista-grupos">
+            {gruposExistentes.map((g) => (
+              <option key={g} value={g} />
+            ))}
+          </datalist>
+
+          <p className="cadm-ayuda">
+            Revisa el sabor de cada producto. Lo puedes corregir antes de guardar.
+          </p>
+
+          {formGrupo.items.map((it, i) => (
+            <div key={it.id} className="cadm-grupo-fila">
+              <span title={it.nombre}>{it.nombre}</span>
+              <input
+                type="text"
+                maxLength={100}
+                value={it.sabor}
+                onChange={(e) =>
+                  setFormGrupo((f) => ({
+                    ...f,
+                    items: f.items.map((x, j) => (j === i ? { ...x, sabor: e.target.value } : x)),
+                  }))
+                }
+              />
+            </div>
+          ))}
+
+          <button type="button" className="cadm-btn-guardar" onClick={guardarGrupo} disabled={guardando}>
+            {guardando ? "Guardando..." : "Crear grupo"}
+          </button>
+        </div>
+      </Sheet>
+
       {/* ================= EDITAR PRODUCTO ================= */}
 
       <Sheet
@@ -860,9 +1038,56 @@ export default function CartaAdmin() {
               ))}
             </select>
 
+
+
+            <label>Grupo (opcional)</label>
+            <input
+            type="text"
+            list="cadm-lista-grupos"
+            maxLength={100}
+            value={formProd.carta_grupo}
+            onChange={(e) =>
+                setFormProd((f) => ({ ...f, carta_grupo: e.target.value }))
+            }
+            placeholder="Ej: Empanada coctelera"
+            />
+
+            <datalist id="cadm-lista-grupos">
+            {gruposExistentes.map((g) => (
+                <option key={g} value={g} />
+            ))}
+            </datalist>
+
+            {formProd.carta_grupo.trim() && (
+            <>
+                <label>Sabor</label>
+                <input
+                type="text"
+                maxLength={100}
+                value={formProd.carta_sabor}
+                onChange={(e) =>
+                    setFormProd((f) => ({ ...f, carta_sabor: e.target.value }))
+                }
+                placeholder="Ej: Pollo"
+                />
+            </>
+            )}
+
+            {productoEditando.carta_grupo && (
+            <button
+                type="button"
+                className="cadm-restaurar"
+                onClick={() => deshacerGrupo(productoEditando.carta_grupo)}
+                disabled={guardando}
+            >
+                <RotateCcw size={12} />
+                Deshacer todo el grupo “{productoEditando.carta_grupo}”
+            </button>
+            )}
+
             <p className="cadm-ayuda">
-              Los cambios de nombre y categoría solo se ven en la carta. En ventas, inventario y
-              reportes el producto sigue igual. El precio se edita en la sección Productos.
+            Los productos del mismo grupo salen en una sola tarjeta con sus sabores.
+            La foto y la descripción de la tarjeta salen del primer sabor que las tenga.
             </p>
 
             <button

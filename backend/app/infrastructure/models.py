@@ -52,6 +52,8 @@ class Producto(db.Model):
     carta_imagen_public_id = db.Column(db.String(200), nullable=True)
     carta_nombre = db.Column(db.String(100), nullable=True)
     carta_categoria = db.Column(db.String(60), nullable=True)
+    carta_grupo = db.Column(db.String(100), nullable=True)
+    carta_sabor = db.Column(db.String(100), nullable=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
  
     ventas = db.relationship("Venta", back_populates="producto")

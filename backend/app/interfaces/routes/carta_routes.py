@@ -5,7 +5,7 @@ from app.interfaces.auth_helpers import exigir_rol
 carta_publica_bp = Blueprint("carta_publica", __name__, url_prefix="/api/carta")
 carta_admin_bp = Blueprint("carta_admin", __name__, url_prefix="/api/carta-admin")
 
-NO_ENCONTRADO = {"Producto no encontrado", "Categoría no encontrada"}
+NO_ENCONTRADO = {"Producto no encontrado", "Categoría no encontrada", "Grupo no encontrado"}
 
 
 # ---------- pública (sin login) ----------
@@ -120,3 +120,19 @@ def quitar_imagen_categoria():
     if error:
         return _respuesta_error(error)
     return jsonify(vista), 200
+
+@carta_admin_bp.route("/grupos", methods=["PUT"])
+def agrupar_productos():
+    data = request.get_json(silent=True) or {}
+    error = CartaService.agrupar_productos(data.get("grupo"), data.get("items"))
+    if error:
+        return _respuesta_error(error)
+    return jsonify(CartaService.vista_admin()), 200
+
+
+@carta_admin_bp.route("/grupos", methods=["DELETE"])
+def desagrupar():
+    error = CartaService.desagrupar(request.args.get("nombre"))
+    if error:
+        return _respuesta_error(error)
+    return jsonify(CartaService.vista_admin()), 200

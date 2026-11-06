@@ -715,3 +715,64 @@
     transition: none;
   }
 }
+
+.cadm-btn-agrupar {
+  margin: 0.3rem 0 0.6rem;
+}
+
+.cadm-btn-agrupar.activo {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.cadm-check {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+}
+
+.cadm-grupo {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+.cadm-grupo-fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cadm-grupo-fila span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.cadm-barra-agrupar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0.8rem 1rem;
+  border-top: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.cadm-barra-agrupar .cadm-btn-guardar {
+  width: auto;
+  margin: 0;
+  padding: 0.6rem 1.4rem;
+}

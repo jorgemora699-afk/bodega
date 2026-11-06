@@ -81,3 +81,13 @@ export async function quitarImagenCategoria(nombre) {
   });
   return data;
 }
+
+export async function agruparProductosCarta(grupo, items) {
+  const { data } = await apiClient.put("/carta-admin/grupos", { grupo, items });
+  return data;
+}
+
+export async function desagruparCarta(nombre) {
+  const { data } = await apiClient.delete("/carta-admin/grupos", { params: { nombre } });
+  return data;
+}
