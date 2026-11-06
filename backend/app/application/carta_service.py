@@ -3,6 +3,7 @@ import re
 
 import cloudinary
 import cloudinary.uploader
+from flask import current_app
 
 from app import db
 from app.infrastructure.models import Producto, CartaConfig, CartaCategoria
@@ -46,7 +47,9 @@ def _subir_imagen(archivo, carpeta, ancho):
                 {"quality": "auto", "fetch_format": "auto"},
             ],
         )
-    except Exception:
+    except Exception as e:
+        # el motivo real queda en los logs del servidor (Railway > Deployments > Logs)
+        current_app.logger.exception("Cloudinary rechazó la subida: %s", e)
         return None, "No se pudo subir la imagen. Intenta de nuevo"
 
     return resultado, None
