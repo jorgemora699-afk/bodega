@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, Clock, MessageCircle, Search, X, ArrowLeft, ArrowRight } from "lucide-react";
+import { MapPin, Clock, MessageCircle, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { obtenerCartaPublica } from "../../../api/carta";
 import "./Carta.css";
 
@@ -66,12 +66,10 @@ function FilaProducto({ p, indice, alAbrir }) {
 export default function Carta() {
   const [carta, setCarta] = useState(null);
   const [error, setError] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
   const [hash, setHash] = useState(hashActual);
   const [bajo, setBajo] = useState(false);
   const [detalle, setDetalle] = useState(null);
 
-  const chipsRef = useRef(null);
   const posicionInicio = useRef(0);
   const desdeInicio = useRef(false);
   const vistaPrevia = useRef(undefined);
@@ -85,7 +83,6 @@ export default function Carta() {
   const categorias = useMemo(() => carta?.categorias ?? [], [carta]);
   const indiceActivo = categorias.findIndex((c) => c.nombre === hash);
   const categoriaActiva = indiceActivo >= 0 ? categorias[indiceActivo] : null;
-  const filtro = busqueda.trim().toLowerCase();
 
   /* Productos con etiqueta y foto, disponibles */
   const recomendados = useMemo(
@@ -96,20 +93,6 @@ export default function Carta() {
         .slice(0, 8),
     [categorias]
   );
-
-  const resultados = useMemo(() => {
-    if (!filtro) return null;
-    return categorias
-      .map((c) => ({
-        ...c,
-        productos: c.productos.filter(
-          (p) =>
-            p.nombre.toLowerCase().includes(filtro) ||
-            (p.descripcion || "").toLowerCase().includes(filtro)
-        ),
-      }))
-      .filter((c) => c.productos.length > 0);
-  }, [categorias, filtro]);
 
   /* Botón atrás / adelante del navegador */
   useEffect(() => {
@@ -151,17 +134,6 @@ export default function Carta() {
     const destino = nombreVista === null ? posicionInicio.current : 0;
     requestAnimationFrame(() => window.scrollTo({ top: destino, behavior: "instant" }));
   }, [nombreVista, carta]);
-
-  /* Centra el chip de la categoría abierta en la barra */
-  useEffect(() => {
-    const contenedor = chipsRef.current;
-    const chip = contenedor?.querySelector(".carta-chip.activo");
-    if (!contenedor || !chip) return;
-    contenedor.scrollTo({
-      left: chip.offsetLeft - contenedor.clientWidth / 2 + chip.clientWidth / 2,
-      behavior: "smooth",
-    });
-  }, [nombreVista]);
 
   /* Detalle del producto: bloquea el scroll y cierra con Escape */
   useEffect(() => {
@@ -248,8 +220,6 @@ export default function Carta() {
   }
 
   const enlaceGeneral = enlaceWhatsapp();
-  const anterior = categoriaActiva ? categorias[indiceActivo - 1] : null;
-  const siguiente = categoriaActiva ? categorias[indiceActivo + 1] : null;
 
   return (
     <div className="carta-pagina">
@@ -263,34 +233,21 @@ export default function Carta() {
 
       {categoriaActiva ? (
         <>
-          <div className="carta-barra">
-            <a className="carta-volver" href={urlDe("")} onClick={volverInicio}>
-              <ArrowLeft size={15} />
-              Inicio
-            </a>
-            <div className="carta-chips" ref={chipsRef}>
-              {categorias.map((c) => (
-                <a
-                  key={c.nombre}
-                  href={urlDe(c.nombre)}
-                  className={`carta-chip ${c.nombre === categoriaActiva.nombre ? "activo" : ""}`}
-                  onClick={(e) => alClicEnlace(e, c.nombre, { reemplazar: true })}
-                >
-                  {c.nombre}
-                </a>
-              ))}
-            </div>
-          </div>
+          <a className="carta-volver" href={urlDe("")} onClick={volverInicio}>
+            <ArrowLeft size={15} />
+            Volver
+          </a>
 
           <div className="carta-vista" key={`cat-${categoriaActiva.nombre}`}>
-            <header
-              className={`carta-cat-hero ${categoriaActiva.imagen_url ? "con-foto" : ""}`}
-              style={
-                categoriaActiva.imagen_url
-                  ? { backgroundImage: `url(${categoriaActiva.imagen_url})` }
-                  : undefined
-              }
-            >
+            <header className={`carta-cat-hero ${categoriaActiva.imagen_url ? "con-foto" : "sin-foto"}`}>
+              {categoriaActiva.imagen_url && (
+                <div
+                  className="carta-cat-foto"
+                  style={{ "--foto": `url(${categoriaActiva.imagen_url})` }}
+                >
+                  <img src={categoriaActiva.imagen_url} alt={categoriaActiva.nombre} />
+                </div>
+              )}
               <div className="carta-cat-hero-texto">
                 <span className="carta-num">{numero(indiceActivo)}</span>
                 <h1>{categoriaActiva.nombre}</h1>
@@ -305,36 +262,6 @@ export default function Carta() {
                   <FilaProducto key={p.id} p={p} indice={i} alAbrir={setDetalle} />
                 ))}
               </ul>
-
-              <nav className="carta-pasar" aria-label="Otras categorías">
-                {anterior ? (
-                  <a
-                    href={urlDe(anterior.nombre)}
-                    onClick={(e) => alClicEnlace(e, anterior.nombre, { reemplazar: true })}
-                  >
-                    <span className="rot">
-                      <ArrowLeft size={12} /> Anterior
-                    </span>
-                    <span className="nom">{anterior.nombre}</span>
-                  </a>
-                ) : (
-                  <span className="carta-pasar-vacio" />
-                )}
-                {siguiente ? (
-                  <a
-                    className="siguiente"
-                    href={urlDe(siguiente.nombre)}
-                    onClick={(e) => alClicEnlace(e, siguiente.nombre, { reemplazar: true })}
-                  >
-                    <span className="rot">
-                      Siguiente <ArrowRight size={12} />
-                    </span>
-                    <span className="nom">{siguiente.nombre}</span>
-                  </a>
-                ) : (
-                  <span className="carta-pasar-vacio" />
-                )}
-              </nav>
             </main>
           </div>
         </>
@@ -365,44 +292,7 @@ export default function Carta() {
           </header>
 
           <main className="carta-columna">
-            <div className="carta-buscador">
-              <Search size={16} />
-              <input
-                type="text"
-                placeholder="Buscar en la carta"
-                aria-label="Buscar en la carta"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
-              {busqueda && (
-                <button
-                  type="button"
-                  className="carta-buscador-limpiar"
-                  onClick={() => setBusqueda("")}
-                  aria-label="Borrar búsqueda"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            {resultados ? (
-              resultados.length > 0 ? (
-                resultados.map((c) => (
-                  <section key={c.nombre} className="carta-bloque">
-                    <h2 className="carta-rotulo">{c.nombre}</h2>
-                    <ul className="carta-lista">
-                      {c.productos.map((p, i) => (
-                        <FilaProducto key={p.id} p={p} indice={i} alAbrir={setDetalle} />
-                      ))}
-                    </ul>
-                  </section>
-                ))
-              ) : (
-                <p className="carta-vacio">Nada coincide con tu búsqueda</p>
-              )
-            ) : (
-              <>
+            <>
                 {recomendados.length >= 2 && (
                   <section className="carta-bloque" aria-label="Recomendados">
                     <h2 className="carta-rotulo">Recomendados</h2>
@@ -460,8 +350,7 @@ export default function Carta() {
                 ) : (
                   <p className="carta-vacio">La carta se está preparando</p>
                 )}
-              </>
-            )}
+            </>
           </main>
         </div>
       )}
@@ -499,7 +388,7 @@ export default function Carta() {
             </button>
 
             {detalle.imagen_url && (
-              <div className="carta-modal-foto">
+              <div className="carta-modal-foto" style={{ "--foto": `url(${detalle.imagen_url})` }}>
                 <img src={detalle.imagen_url} alt={detalle.nombre} />
               </div>
             )}
