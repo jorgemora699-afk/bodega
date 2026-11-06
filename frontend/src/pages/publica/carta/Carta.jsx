@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapPin, Clock, MessageCircle, Search, X } from "lucide-react";
+import { MapPin, Clock, MessageCircle, Search, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { obtenerCartaPublica } from "../../../api/carta";
 import "./Carta.css";
 
@@ -13,114 +13,155 @@ function moneda(v) {
   return `$${Number(v || 0).toLocaleString("es-CO")}`;
 }
 
+const numero = (i) => String(i + 1).padStart(2, "0");
+const cuenta = (n) => `${n} ${n === 1 ? "producto" : "productos"}`;
+
+/* La categoría abierta vive en el hash (#Entradas): el botón "atrás" funciona
+   y se puede compartir el enlace directo a una categoría. */
+function hashActual() {
+  try {
+    return decodeURIComponent(window.location.hash.slice(1));
+  } catch {
+    return "";
+  }
+}
+
+function urlDe(nombre) {
+  return nombre
+    ? `#${encodeURIComponent(nombre)}`
+    : `${window.location.pathname}${window.location.search}`;
+}
+
+function FilaProducto({ p, indice, alAbrir }) {
+  return (
+    <li style={{ "--i": Math.min(indice, 8) }}>
+      <button
+        type="button"
+        className={`carta-fila ${p.agotado ? "agotado" : ""}`}
+        onClick={() => alAbrir(p)}
+      >
+        <span className="carta-fila-texto">
+          {p.etiqueta && (
+            <span className={`carta-etiqueta ${CLASE_ETIQUETA[p.etiqueta] || ""}`}>{p.etiqueta}</span>
+          )}
+          <span className="carta-fila-nombre">{p.nombre}</span>
+          {p.descripcion && <span className="carta-fila-desc">{p.descripcion}</span>}
+          <span className="carta-fila-precio">
+            {moneda(p.precio)}
+            {p.agotado && !p.imagen_url && <em>Agotado</em>}
+          </span>
+        </span>
+
+        {p.imagen_url && (
+          <span className="carta-fila-foto">
+            <img src={p.imagen_url} alt="" loading="lazy" />
+            {p.agotado && <span className="carta-agotado">Agotado</span>}
+          </span>
+        )}
+      </button>
+    </li>
+  );
+}
+
 export default function Carta() {
   const [carta, setCarta] = useState(null);
   const [error, setError] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const [activa, setActiva] = useState(null);
-  const [pegado, setPegado] = useState(false);
+  const [hash, setHash] = useState(hashActual);
+  const [bajo, setBajo] = useState(false);
   const [detalle, setDetalle] = useState(null);
-  const bannerRef = useRef(null);
+
   const chipsRef = useRef(null);
+  const posicionInicio = useRef(0);
+  const desdeInicio = useRef(false);
+  const vistaPrevia = useRef(undefined);
 
   useEffect(() => {
     obtenerCartaPublica()
-      .then((data) => {
-        setCarta(data);
-        document.title = data.negocio.nombre_negocio || "Carta";
-      })
+      .then(setCarta)
       .catch(() => setError(true));
   }, []);
 
+  const categorias = useMemo(() => carta?.categorias ?? [], [carta]);
+  const indiceActivo = categorias.findIndex((c) => c.nombre === hash);
+  const categoriaActiva = indiceActivo >= 0 ? categorias[indiceActivo] : null;
   const filtro = busqueda.trim().toLowerCase();
 
-  const categorias = useMemo(() => {
-    if (!carta) return [];
-    return carta.categorias
+  /* Productos con etiqueta y foto, disponibles */
+  const recomendados = useMemo(
+    () =>
+      categorias
+        .flatMap((c) => c.productos)
+        .filter((p) => p.etiqueta && p.imagen_url && !p.agotado)
+        .slice(0, 8),
+    [categorias]
+  );
+
+  const resultados = useMemo(() => {
+    if (!filtro) return null;
+    return categorias
       .map((c) => ({
         ...c,
         productos: c.productos.filter(
           (p) =>
-            !filtro ||
             p.nombre.toLowerCase().includes(filtro) ||
             (p.descripcion || "").toLowerCase().includes(filtro)
         ),
       }))
       .filter((c) => c.productos.length > 0);
-  }, [carta, filtro]);
+  }, [categorias, filtro]);
 
-  /* Productos con etiqueta y foto, disponibles: van en el carrusel de arriba */
-  const destacados = useMemo(() => {
-    if (!carta) return [];
-    return carta.categorias
-      .flatMap((c) => c.productos)
-      .filter((p) => p.etiqueta && p.imagen_url && !p.agotado)
-      .slice(0, 8);
-  }, [carta]);
-
-  /* Parallax suave del banner + sombra de la barra cuando queda pegada */
+  /* Botón atrás / adelante del navegador */
   useEffect(() => {
-    if (!carta) return undefined;
-    const reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let pendiente = false;
+    const alCambiar = () => setHash(hashActual());
+    window.addEventListener("popstate", alCambiar);
+    return () => window.removeEventListener("popstate", alCambiar);
+  }, []);
 
+  /* El botón de WhatsApp aparece cuando el cliente empieza a bajar */
+  useEffect(() => {
+    let pendiente = false;
     function alScroll() {
       if (pendiente) return;
       pendiente = true;
       requestAnimationFrame(() => {
         pendiente = false;
-        const y = window.scrollY;
-        if (bannerRef.current && !reducir && y < 400) {
-          bannerRef.current.style.transform = `translate3d(0, ${y * 0.35}px, 0) scale(1.08)`;
-        }
-        setPegado(y > 200);
+        setBajo(window.scrollY > 200);
       });
     }
-
-    alScroll();
     window.addEventListener("scroll", alScroll, { passive: true });
     return () => window.removeEventListener("scroll", alScroll);
-  }, [carta]);
+  }, []);
 
-  /* Marca en la barra la categoría que se está viendo */
   useEffect(() => {
-    if (categorias.length === 0) return undefined;
-    const obs = new IntersectionObserver(
-      (entradas) => {
-        entradas.forEach((e) => {
-          if (e.isIntersecting) setActiva(e.target.dataset.cat);
-        });
-      },
-      { rootMargin: "-120px 0px -70% 0px" }
-    );
-    document.querySelectorAll("[data-cat]").forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
-  }, [categorias]);
+    if (!carta) return;
+    const nombre = carta.negocio.nombre_negocio || "Carta";
+    document.title = categoriaActiva ? `${categoriaActiva.nombre} · ${nombre}` : nombre;
+  }, [carta, categoriaActiva]);
 
-  /* Mantiene visible el chip activo dentro de la barra horizontal */
+  /* Al cambiar de vista: arriba del todo, o de vuelta donde estaba en el inicio */
+  const nombreVista = categoriaActiva ? categoriaActiva.nombre : null;
   useEffect(() => {
-    const chip = chipsRef.current?.querySelector(".carta-chip.activo");
-    chip?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
-  }, [activa]);
+    if (!carta) return;
+    if (vistaPrevia.current === undefined) {
+      vistaPrevia.current = nombreVista;
+      return;
+    }
+    vistaPrevia.current = nombreVista;
+    const destino = nombreVista === null ? posicionInicio.current : 0;
+    requestAnimationFrame(() => window.scrollTo({ top: destino, behavior: "instant" }));
+  }, [nombreVista, carta]);
 
-  /* Los productos aparecen una sola vez al entrar en pantalla */
+  /* Centra el chip de la categoría abierta en la barra */
   useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entradas) => {
-        entradas.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.dataset.visto = "1";
-            obs.unobserve(e.target);
-          }
-        });
-      },
-      { rootMargin: "0px 0px -8% 0px" }
-    );
-    document
-      .querySelectorAll(".carta-producto:not([data-visto])")
-      .forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
-  }, [categorias]);
+    const contenedor = chipsRef.current;
+    const chip = contenedor?.querySelector(".carta-chip.activo");
+    if (!contenedor || !chip) return;
+    contenedor.scrollTo({
+      left: chip.offsetLeft - contenedor.clientWidth / 2 + chip.clientWidth / 2,
+      behavior: "smooth",
+    });
+  }, [nombreVista]);
 
   /* Detalle del producto: bloquea el scroll y cierra con Escape */
   useEffect(() => {
@@ -135,17 +176,42 @@ export default function Carta() {
     };
   }, [detalle]);
 
-  function irA(nombre) {
-    document.getElementById(`cat-${nombre}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  function navegar(nombre, { reemplazar = false } = {}) {
+    if (!window.location.hash && nombre) {
+      posicionInicio.current = window.scrollY;
+      if (!reemplazar) desdeInicio.current = true;
+    }
+    const url = urlDe(nombre);
+    if (reemplazar) window.history.replaceState(window.history.state, "", url);
+    else window.history.pushState(window.history.state, "", url);
+    setHash(nombre || "");
   }
+
+  function alClicEnlace(e, nombre, opciones) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+    e.preventDefault();
+    navegar(nombre, opciones);
+  }
+
+  function volverInicio(e) {
+    e.preventDefault();
+    if (desdeInicio.current && window.history.length > 1) window.history.back();
+    else navegar("", { reemplazar: true });
+  }
+
+  /* ---------- Estados ---------- */
 
   if (error) {
     return (
-      <div className="carta-estado">
-        <p>No pudimos cargar la carta. Intenta de nuevo en un momento.</p>
-        <button type="button" onClick={() => window.location.reload()}>
-          Reintentar
-        </button>
+      <div className="carta-pagina carta-estado">
+        <div className="carta-fondo" />
+        <div className="carta-velo" />
+        <div className="carta-estado-caja">
+          <p>No pudimos cargar la carta. Intenta de nuevo en un momento.</p>
+          <button type="button" onClick={() => window.location.reload()}>
+            Reintentar
+          </button>
+        </div>
       </div>
     );
   }
@@ -153,11 +219,19 @@ export default function Carta() {
   if (!carta) {
     return (
       <div className="carta-pagina">
-        <div className="carta-skeleton banner" />
-        <div className="carta-contenido">
-          <div className="carta-skeleton fila" />
-          <div className="carta-skeleton fila" />
-          <div className="carta-skeleton fila" />
+        <div className="carta-fondo" />
+        <div className="carta-velo" />
+        <div className="carta-vista">
+          <div className="carta-portada">
+            <div className="carta-skeleton redondo" />
+            <div className="carta-skeleton linea grande" />
+            <div className="carta-skeleton linea" />
+          </div>
+          <div className="carta-columna">
+            <div className="carta-skeleton fila" />
+            <div className="carta-skeleton fila" />
+            <div className="carta-skeleton fila" />
+          </div>
         </div>
       </div>
     );
@@ -174,153 +248,227 @@ export default function Carta() {
   }
 
   const enlaceGeneral = enlaceWhatsapp();
+  const anterior = categoriaActiva ? categorias[indiceActivo - 1] : null;
+  const siguiente = categoriaActiva ? categorias[indiceActivo + 1] : null;
 
   return (
     <div className="carta-pagina">
-      <header className="carta-hero">
-        <div className="carta-banner-marco">
-          <div
-            ref={bannerRef}
-            className="carta-banner"
-            style={negocio.banner_url ? { backgroundImage: `url(${negocio.banner_url})` } : undefined}
-          />
-        </div>
-        <div className="carta-negocio">
-          {negocio.logo_url && <img className="carta-logo" src={negocio.logo_url} alt="" />}
-          <h1>{negocio.nombre_negocio}</h1>
-          {negocio.bienvenida && <p className="carta-bienvenida">{negocio.bienvenida}</p>}
-          <div className="carta-datos">
-            {negocio.horario && (
-              <span>
-                <Clock size={13} />
-                {negocio.horario}
-              </span>
-            )}
-            {negocio.direccion && (
-              <span>
-                <MapPin size={13} />
-                {negocio.direccion}
-              </span>
-            )}
-          </div>
-        </div>
-      </header>
+      <div
+        className="carta-fondo"
+        style={negocio.banner_url ? { backgroundImage: `url(${negocio.banner_url})` } : undefined}
+      />
+      <div className="carta-velo" />
 
-      <nav className={`carta-nav ${pegado ? "pegado" : ""}`}>
-        <div className="carta-buscador">
-          <Search size={15} />
-          <input
-            type="text"
-            placeholder="Buscar en la carta..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-          />
-          {busqueda && (
-            <button
-              type="button"
-              className="carta-buscador-limpiar"
-              onClick={() => setBusqueda("")}
-              aria-label="Borrar búsqueda"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-        <div className="carta-chips" ref={chipsRef}>
-          {categorias.map((c) => (
-            <button
-              key={c.nombre}
-              type="button"
-              className={`carta-chip ${activa === c.nombre ? "activo" : ""}`}
-              onClick={() => irA(c.nombre)}
-            >
-              {c.imagen_url && <img className="carta-chip-img" src={c.imagen_url} alt="" />}
-              {c.nombre}
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* ================= CATEGORÍA ABIERTA ================= */}
 
-      <main className="carta-contenido">
-        {!filtro && destacados.length >= 2 && (
-          <section className="carta-destacados" aria-label="Destacados">
-            <h2>Para empezar</h2>
-            <div className="carta-destacados-pista">
-              {destacados.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className="carta-destacado"
-                  onClick={() => setDetalle(p)}
+      {categoriaActiva ? (
+        <>
+          <div className="carta-barra">
+            <a className="carta-volver" href={urlDe("")} onClick={volverInicio}>
+              <ArrowLeft size={15} />
+              Inicio
+            </a>
+            <div className="carta-chips" ref={chipsRef}>
+              {categorias.map((c) => (
+                <a
+                  key={c.nombre}
+                  href={urlDe(c.nombre)}
+                  className={`carta-chip ${c.nombre === categoriaActiva.nombre ? "activo" : ""}`}
+                  onClick={(e) => alClicEnlace(e, c.nombre, { reemplazar: true })}
                 >
-                  <img src={p.imagen_url} alt="" loading="lazy" />
-                  <span className={`carta-etiqueta ${CLASE_ETIQUETA[p.etiqueta] || ""}`}>
-                    {p.etiqueta}
-                  </span>
-                  <strong>{p.nombre}</strong>
-                  <em>{moneda(p.precio)}</em>
-                </button>
+                  {c.nombre}
+                </a>
               ))}
             </div>
-          </section>
-        )}
+          </div>
 
-        {categorias.map((c) => (
-          <section key={c.nombre} id={`cat-${c.nombre}`} data-cat={c.nombre} className="carta-seccion">
-            {c.imagen_url ? (
-              <div
-                className="carta-seccion-portada"
-                style={{ backgroundImage: `url(${c.imagen_url})` }}
-              >
-                <h2>{c.nombre}</h2>
+          <div className="carta-vista" key={`cat-${categoriaActiva.nombre}`}>
+            <header
+              className={`carta-cat-hero ${categoriaActiva.imagen_url ? "con-foto" : ""}`}
+              style={
+                categoriaActiva.imagen_url
+                  ? { backgroundImage: `url(${categoriaActiva.imagen_url})` }
+                  : undefined
+              }
+            >
+              <div className="carta-cat-hero-texto">
+                <span className="carta-num">{numero(indiceActivo)}</span>
+                <h1>{categoriaActiva.nombre}</h1>
+                <span className="carta-filete izquierda" aria-hidden="true" />
+                <span className="carta-cuenta">{cuenta(categoriaActiva.productos.length)}</span>
               </div>
-            ) : (
-              <h2>{c.nombre}</h2>
-            )}
+            </header>
 
-            {c.productos.map((p) => (
-              <article
-                key={p.id}
-                className={`carta-producto ${p.agotado ? "agotado" : ""}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => setDetalle(p)}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setDetalle(p)}
-              >
-                <div className="carta-producto-texto">
-                  {p.etiqueta && (
-                    <span className={`carta-etiqueta ${CLASE_ETIQUETA[p.etiqueta] || ""}`}>
-                      {p.etiqueta}
+            <main className="carta-columna">
+              <ul className="carta-lista">
+                {categoriaActiva.productos.map((p, i) => (
+                  <FilaProducto key={p.id} p={p} indice={i} alAbrir={setDetalle} />
+                ))}
+              </ul>
+
+              <nav className="carta-pasar" aria-label="Otras categorías">
+                {anterior ? (
+                  <a
+                    href={urlDe(anterior.nombre)}
+                    onClick={(e) => alClicEnlace(e, anterior.nombre, { reemplazar: true })}
+                  >
+                    <span className="rot">
+                      <ArrowLeft size={12} /> Anterior
                     </span>
-                  )}
-                  <h3>{p.nombre}</h3>
-                  {p.descripcion && <p>{p.descripcion}</p>}
-                  <strong className="carta-precio">{moneda(p.precio)}</strong>
-                </div>
+                    <span className="nom">{anterior.nombre}</span>
+                  </a>
+                ) : (
+                  <span className="carta-pasar-vacio" />
+                )}
+                {siguiente ? (
+                  <a
+                    className="siguiente"
+                    href={urlDe(siguiente.nombre)}
+                    onClick={(e) => alClicEnlace(e, siguiente.nombre, { reemplazar: true })}
+                  >
+                    <span className="rot">
+                      Siguiente <ArrowRight size={12} />
+                    </span>
+                    <span className="nom">{siguiente.nombre}</span>
+                  </a>
+                ) : (
+                  <span className="carta-pasar-vacio" />
+                )}
+              </nav>
+            </main>
+          </div>
+        </>
+      ) : (
+        /* ================= INICIO ================= */
+        <div className="carta-vista" key="inicio">
+          <header className="carta-portada">
+            {negocio.logo_url && <img className="carta-logo" src={negocio.logo_url} alt="" />}
+            <h1>{negocio.nombre_negocio}</h1>
+            {negocio.bienvenida && <p className="carta-lema">{negocio.bienvenida}</p>}
+            <span className="carta-filete" aria-hidden="true" />
+            {(negocio.horario || negocio.direccion) && (
+              <div className="carta-datos">
+                {negocio.horario && (
+                  <span>
+                    <Clock size={13} />
+                    {negocio.horario}
+                  </span>
+                )}
+                {negocio.direccion && (
+                  <span>
+                    <MapPin size={13} />
+                    {negocio.direccion}
+                  </span>
+                )}
+              </div>
+            )}
+          </header>
 
-                {p.imagen_url && (
-                  <div className="carta-producto-foto">
-                    <img src={p.imagen_url} alt={p.nombre} loading="lazy" />
-                    {p.agotado && <span className="carta-agotado">Agotado</span>}
-                  </div>
+          <main className="carta-columna">
+            <div className="carta-buscador">
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Buscar en la carta"
+                aria-label="Buscar en la carta"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+              {busqueda && (
+                <button
+                  type="button"
+                  className="carta-buscador-limpiar"
+                  onClick={() => setBusqueda("")}
+                  aria-label="Borrar búsqueda"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {resultados ? (
+              resultados.length > 0 ? (
+                resultados.map((c) => (
+                  <section key={c.nombre} className="carta-bloque">
+                    <h2 className="carta-rotulo">{c.nombre}</h2>
+                    <ul className="carta-lista">
+                      {c.productos.map((p, i) => (
+                        <FilaProducto key={p.id} p={p} indice={i} alAbrir={setDetalle} />
+                      ))}
+                    </ul>
+                  </section>
+                ))
+              ) : (
+                <p className="carta-vacio">Nada coincide con tu búsqueda</p>
+              )
+            ) : (
+              <>
+                {recomendados.length >= 2 && (
+                  <section className="carta-bloque" aria-label="Recomendados">
+                    <h2 className="carta-rotulo">Recomendados</h2>
+                    <div className="carta-reco-pista">
+                      {recomendados.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="carta-reco"
+                          onClick={() => setDetalle(p)}
+                        >
+                          <span className="carta-reco-foto">
+                            <img src={p.imagen_url} alt="" loading="lazy" />
+                            <span className={`carta-etiqueta ${CLASE_ETIQUETA[p.etiqueta] || ""}`}>
+                              {p.etiqueta}
+                            </span>
+                          </span>
+                          <span className="carta-reco-nombre">{p.nombre}</span>
+                          <span className="carta-reco-precio">{moneda(p.precio)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 )}
 
-                {!p.imagen_url && p.agotado && <span className="carta-agotado-texto">Agotado</span>}
-              </article>
-            ))}
-          </section>
-        ))}
-
-        {categorias.length === 0 && (
-          <p className="carta-vacio">
-            {filtro ? "Nada coincide con tu búsqueda" : "La carta se está preparando"}
-          </p>
-        )}
-      </main>
+                {categorias.length > 0 ? (
+                  <section className="carta-bloque">
+                    <h2 className="carta-rotulo">¿Qué deseas ver?</h2>
+                    <ul className="carta-categorias">
+                      {categorias.map((c, i) => (
+                        <li key={c.nombre} style={{ "--i": Math.min(i, 8) }}>
+                          <a
+                            className="carta-categoria"
+                            href={urlDe(c.nombre)}
+                            onClick={(e) => alClicEnlace(e, c.nombre)}
+                          >
+                            <span className="carta-num">{numero(i)}</span>
+                            <span className="carta-categoria-foto">
+                              {c.imagen_url ? (
+                                <img src={c.imagen_url} alt="" loading="lazy" />
+                              ) : (
+                                c.nombre.charAt(0).toUpperCase()
+                              )}
+                            </span>
+                            <span className="carta-categoria-texto">
+                              <span className="carta-categoria-nombre">{c.nombre}</span>
+                              <span className="carta-cuenta">{cuenta(c.productos.length)}</span>
+                            </span>
+                            <ArrowRight size={17} className="carta-flecha" />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : (
+                  <p className="carta-vacio">La carta se está preparando</p>
+                )}
+              </>
+            )}
+          </main>
+        </div>
+      )}
 
       {enlaceGeneral && (
         <a
-          className={`carta-whatsapp ${pegado && !detalle ? "visible" : ""}`}
+          className={`carta-whatsapp ${(categoriaActiva || bajo) && !detalle ? "visible" : ""}`}
           href={enlaceGeneral}
           target="_blank"
           rel="noreferrer"
@@ -329,6 +477,8 @@ export default function Carta() {
           Pedir por WhatsApp
         </a>
       )}
+
+      {/* ================= DETALLE ================= */}
 
       {detalle && (
         <div className="carta-modal" onClick={() => setDetalle(null)}>
@@ -361,11 +511,12 @@ export default function Carta() {
                 </span>
               )}
               <h3>{detalle.nombre}</h3>
+              <span className="carta-filete izquierda" aria-hidden="true" />
               {detalle.descripcion && <p>{detalle.descripcion}</p>}
-              <strong className="carta-precio">{moneda(detalle.precio)}</strong>
+              <strong className="carta-modal-precio">{moneda(detalle.precio)}</strong>
 
               {detalle.agotado ? (
-                <span className="carta-agotado-texto">Agotado por ahora</span>
+                <span className="carta-agotado-pastilla">Agotado por ahora</span>
               ) : (
                 enlaceWhatsapp(detalle) && (
                   <a
