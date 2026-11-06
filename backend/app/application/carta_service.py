@@ -5,7 +5,7 @@ import cloudinary
 import cloudinary.uploader
 
 from app import db
-from app.infrastructure.models import Producto, CartaConfig
+from app.infrastructure.models import Producto, CartaConfig, CartaCategoria
 
 # Lee CLOUDINARY_URL del entorno
 cloudinary.config(secure=True)
@@ -13,6 +13,8 @@ cloudinary.config(secure=True)
 TIPOS_IMAGEN = {"image/jpeg", "image/png", "image/webp"}
 MAX_BYTES = 5 * 1024 * 1024
 ETIQUETAS = ("Nuevo", "Más pedido", "Promo")
+LIMITE_NOMBRE_PRODUCTO = 100
+LIMITE_NOMBRE_CATEGORIA = 60
 
 LIMITES_TEXTO = {
     "nombre_negocio": 100,
@@ -68,6 +70,25 @@ def _normalizar_whatsapp(valor):
     if not 11 <= len(digitos) <= 15:
         return None, "El número de WhatsApp no es válido"
     return digitos, None
+
+
+# Nombre y categoría tal como se ven en la carta: el cambio hecho en la carta
+# (carta_nombre / carta_categoria) tiene prioridad, y si no hay, se usa el real.
+# Así editar la carta nunca altera ventas, inventario ni reportes.
+def _nombre_de(p):
+    return p.carta_nombre or p.nombre
+
+
+def _categoria_de(p):
+    return p.carta_categoria or p.categoria or "Otros"
+
+
+def _canonica(texto, existentes):
+    """Si ya existe una categoría igual sin importar mayúsculas, usa esa escritura."""
+    for nombre in existentes:
+        if nombre.lower() == texto.lower():
+            return nombre
+    return texto
 
 
 class CartaService:
@@ -157,8 +178,10 @@ class CartaService:
         stock = p.to_dict()["stock_actual"]
         return {
             "id": p.id,
-            "nombre": p.nombre,
-            "categoria": p.categoria,
+            "nombre": _nombre_de(p),
+            "nombre_original": p.nombre,
+            "categoria": _categoria_de(p),
+            "categoria_original": p.categoria or "Otros",
             "precio_unitario": float(p.precio_unitario),
             "agotado": (not p.requiere_seleccion) and stock <= 0,
             "carta_visible": p.carta_visible,
@@ -176,6 +199,24 @@ class CartaService:
 
         if "carta_visible" in data:
             producto.carta_visible = bool(data["carta_visible"])
+
+        if "carta_nombre" in data:
+            texto = (data["carta_nombre"] or "").strip()
+            if len(texto) > LIMITE_NOMBRE_PRODUCTO:
+                return None, f"El nombre no puede superar {LIMITE_NOMBRE_PRODUCTO} caracteres"
+            # vacío o igual al real = volver al nombre original
+            producto.carta_nombre = texto if texto and texto != producto.nombre else None
+
+        if "carta_categoria" in data:
+            texto = (data["carta_categoria"] or "").strip()
+            if len(texto) > LIMITE_NOMBRE_CATEGORIA:
+                return None, f"La categoría no puede superar {LIMITE_NOMBRE_CATEGORIA} caracteres"
+            if texto:
+                existentes = {_categoria_de(p) for p in Producto.query.filter_by(activo=True).all()}
+                texto = _canonica(texto, existentes)
+            producto.carta_categoria = (
+                texto if texto and texto != (producto.categoria or "Otros") else None
+            )
 
         if "carta_descripcion" in data:
             texto = (data["carta_descripcion"] or "").strip()
@@ -231,6 +272,98 @@ class CartaService:
         db.session.commit()
         return producto, None
 
+    # ---------- categorías ----------
+
+    @staticmethod
+    def _existentes():
+        return {_categoria_de(p) for p in Producto.query.filter_by(activo=True).all()}
+
+    @staticmethod
+    def _imagenes_categorias():
+        return {c.nombre: c.imagen_url for c in CartaCategoria.query.all() if c.imagen_url}
+
+    @staticmethod
+    def renombrar_categoria(actual, nuevo):
+        """Cambia el nombre de una categoría solo en la carta. Si el nuevo nombre ya
+        existe, las dos categorías se unen."""
+        actual = (actual or "").strip()
+        nuevo = (nuevo or "").strip()
+        if not actual or not nuevo:
+            return None, "Escribe el nombre de la categoría"
+        if len(nuevo) > LIMITE_NOMBRE_CATEGORIA:
+            return None, f"El nombre no puede superar {LIMITE_NOMBRE_CATEGORIA} caracteres"
+
+        productos = Producto.query.filter_by(activo=True).all()
+        existentes = {_categoria_de(p) for p in productos}
+        if actual not in existentes:
+            return None, "Categoría no encontrada"
+
+        nuevo = _canonica(nuevo, existentes - {actual})
+        if nuevo == actual:
+            return CartaService.vista_admin(), None
+
+        for p in productos:
+            if _categoria_de(p) == actual:
+                p.carta_categoria = None if nuevo == (p.categoria or "Otros") else nuevo
+
+        # el orden de categorías sigue al nombre nuevo
+        cfg = CartaService.config()
+        orden = []
+        for nombre in CartaService._orden_categorias(cfg):
+            nombre = nuevo if nombre == actual else nombre
+            if nombre not in orden:
+                orden.append(nombre)
+        cfg.orden_categorias = json.dumps(orden)
+
+        # la imagen sigue al nombre; si se unen dos categorías, gana la que ya tenía foto
+        origen = CartaCategoria.query.filter_by(nombre=actual).first()
+        destino = CartaCategoria.query.filter_by(nombre=nuevo).first()
+        if origen:
+            if not destino:
+                origen.nombre = nuevo
+            else:
+                if not destino.imagen_url and origen.imagen_url:
+                    destino.imagen_url = origen.imagen_url
+                    destino.imagen_public_id = origen.imagen_public_id
+                else:
+                    _borrar_imagen(origen.imagen_public_id)
+                db.session.delete(origen)
+
+        db.session.commit()
+        return CartaService.vista_admin(), None
+
+    @staticmethod
+    def subir_imagen_categoria(nombre, archivo):
+        nombre = (nombre or "").strip()
+        if nombre not in CartaService._existentes():
+            return None, "Categoría no encontrada"
+
+        resultado, error = _subir_imagen(archivo, "categorias", 1000)
+        if error:
+            return None, error
+
+        fila = CartaCategoria.query.filter_by(nombre=nombre).first()
+        if not fila:
+            fila = CartaCategoria(nombre=nombre)
+            db.session.add(fila)
+        else:
+            _borrar_imagen(fila.imagen_public_id)
+
+        fila.imagen_url = resultado["secure_url"]
+        fila.imagen_public_id = resultado["public_id"]
+        db.session.commit()
+        return CartaService.vista_admin(), None
+
+    @staticmethod
+    def quitar_imagen_categoria(nombre):
+        nombre = (nombre or "").strip()
+        fila = CartaCategoria.query.filter_by(nombre=nombre).first()
+        if fila:
+            _borrar_imagen(fila.imagen_public_id)
+            db.session.delete(fila)
+            db.session.commit()
+        return CartaService.vista_admin(), None
+
     # ---------- vistas ----------
 
     @staticmethod
@@ -242,12 +375,13 @@ class CartaService:
             .all()
         )
 
-        nombres = {p.categoria or "Otros" for p in productos}
+        nombres = {_categoria_de(p) for p in productos}
         categorias = CartaService._ordenar_categorias(nombres, CartaService._orden_categorias(cfg))
+        imagenes = CartaService._imagenes_categorias()
 
         return {
             "config": cfg.to_dict(),
-            "categorias": categorias,
+            "categorias": [{"nombre": c, "imagen_url": imagenes.get(c)} for c in categorias],
             "etiquetas": list(ETIQUETAS),
             "productos": [CartaService._producto_admin(p) for p in productos],
         }
@@ -265,9 +399,9 @@ class CartaService:
         grupos = {}
         for p in productos:
             stock = p.to_dict()["stock_actual"]
-            grupos.setdefault(p.categoria or "Otros", []).append({
+            grupos.setdefault(_categoria_de(p), []).append({
                 "id": p.id,
-                "nombre": p.nombre,
+                "nombre": _nombre_de(p),
                 "precio": float(p.precio_unitario),
                 "descripcion": p.carta_descripcion,
                 "imagen_url": p.carta_imagen_url,
@@ -276,8 +410,12 @@ class CartaService:
             })
 
         nombres = CartaService._ordenar_categorias(grupos.keys(), CartaService._orden_categorias(cfg))
+        imagenes = CartaService._imagenes_categorias()
 
         return {
             "negocio": cfg.to_dict(),
-            "categorias": [{"nombre": c, "productos": grupos[c]} for c in nombres],
+            "categorias": [
+                {"nombre": c, "imagen_url": imagenes.get(c), "productos": grupos[c]}
+                for c in nombres
+            ],
         }

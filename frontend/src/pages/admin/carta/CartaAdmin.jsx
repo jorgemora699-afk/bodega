@@ -10,6 +10,7 @@ import {
   Copy,
   Check,
   Search,
+  RotateCcw,
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
@@ -21,11 +22,27 @@ import {
   ordenarProductosCarta,
   subirImagenProducto,
   quitarImagenProducto,
+  renombrarCategoriaCarta,
+  subirImagenCategoria,
+  quitarImagenCategoria,
 } from "../../../api/carta";
 import Sheet from "../../../components/Sheet";
 import "./CartaAdmin.css";
 
 const clave = (p) => p.categoria || "Otros";
+
+const TABS = [
+  { v: "productos", l: "Productos" },
+  { v: "categorias", l: "Categorías" },
+  { v: "negocio", l: "Negocio" },
+  { v: "compartir", l: "Compartir" },
+];
+
+const ESTADOS = [
+  { v: "todos", l: "Todos" },
+  { v: "visibles", l: "En la carta" },
+  { v: "ocultos", l: "Ocultos" },
+];
 
 function moneda(v) {
   return `$${Number(v || 0).toLocaleString("es-CO")}`;
@@ -49,17 +66,34 @@ async function prepararImagen(archivo, maximo) {
   }
 }
 
+function Miniatura({ url, nombre }) {
+  return url ? (
+    <img className="cadm-mini" src={url} alt="" />
+  ) : (
+    <span className="cadm-mini vacia">{nombre.charAt(0).toUpperCase()}</span>
+  );
+}
+
 export default function CartaAdmin() {
   const [datos, setDatos] = useState(null);
   const [tab, setTab] = useState("productos");
   const [busqueda, setBusqueda] = useState("");
+  const [estado, setEstado] = useState("todos");
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
   const [editandoId, setEditandoId] = useState(null);
-  const [formProd, setFormProd] = useState({ carta_descripcion: "", carta_etiqueta: "" });
+  const [formProd, setFormProd] = useState({
+    nombre: "",
+    categoria: "",
+    carta_descripcion: "",
+    carta_etiqueta: "",
+  });
   const [errorForm, setErrorForm] = useState(null);
+
+  const [editandoCat, setEditandoCat] = useState(null);
+  const [formCat, setFormCat] = useState("");
 
   const [formNegocio, setFormNegocio] = useState(null);
 
@@ -70,6 +104,12 @@ export default function CartaAdmin() {
   useEffect(() => {
     cargar();
   }, []);
+
+  useEffect(() => {
+    if (!mensaje) return undefined;
+    const t = setTimeout(() => setMensaje(null), 3000);
+    return () => clearTimeout(t);
+  }, [mensaje]);
 
   useEffect(() => {
     if (tab !== "compartir") return;
@@ -89,6 +129,15 @@ export default function CartaAdmin() {
       });
     } catch {
       setError("No se pudo cargar la carta");
+    }
+  }
+
+  /* Vuelve a pedir los datos sin tocar el formulario del negocio */
+  async function refrescar() {
+    try {
+      setDatos(await obtenerCartaAdmin());
+    } catch {
+      /* la vista actual sigue siendo válida */
     }
   }
 
@@ -114,8 +163,25 @@ export default function CartaAdmin() {
   }
 
   const productoEditando = datos.productos.find((p) => p.id === editandoId) || null;
+  const categoriaEditando = datos.categorias.find((c) => c.nombre === editandoCat) || null;
   const visibles = datos.productos.filter((p) => p.carta_visible).length;
   const filtro = busqueda.trim().toLowerCase();
+  const reordenable = !filtro && estado === "todos";
+
+  function pasaFiltro(p) {
+    const texto =
+      !filtro ||
+      p.nombre.toLowerCase().includes(filtro) ||
+      p.nombre_original.toLowerCase().includes(filtro);
+    const porEstado =
+      estado === "todos" || (estado === "visibles" ? p.carta_visible : !p.carta_visible);
+    return texto && porEstado;
+  }
+
+  function conteo(nombre) {
+    const lista = datos.productos.filter((p) => clave(p) === nombre);
+    return { total: lista.length, visibles: lista.filter((p) => p.carta_visible).length };
+  }
 
   function reemplazarProducto(actualizado) {
     setDatos((d) => ({
@@ -144,7 +210,7 @@ export default function CartaAdmin() {
     [lista[i], lista[j]] = [lista[j], lista[i]];
 
     const nuevos = datos.categorias.flatMap((c) =>
-      c === categoria ? lista : datos.productos.filter((p) => clave(p) === c)
+      c.nombre === categoria ? lista : datos.productos.filter((p) => clave(p) === c.nombre)
     );
     setDatos((d) => ({ ...d, productos: nuevos }));
 
@@ -156,24 +222,11 @@ export default function CartaAdmin() {
     }
   }
 
-  async function moverCategoria(index, delta) {
-    const j = index + delta;
-    if (j < 0 || j >= datos.categorias.length) return;
-    const nuevas = [...datos.categorias];
-    [nuevas[index], nuevas[j]] = [nuevas[j], nuevas[index]];
-    setDatos((d) => ({ ...d, categorias: nuevas }));
-
-    try {
-      await actualizarConfigCarta({ orden_categorias: nuevas });
-    } catch (err) {
-      fallar(err, "No se pudo guardar el orden");
-      cargar();
-    }
-  }
-
   function abrirEdicion(p) {
     setErrorForm(null);
     setFormProd({
+      nombre: p.nombre,
+      categoria: p.categoria,
       carta_descripcion: p.carta_descripcion || "",
       carta_etiqueta: p.carta_etiqueta || "",
     });
@@ -184,11 +237,16 @@ export default function CartaAdmin() {
     setGuardando(true);
     setErrorForm(null);
     try {
+      const categoriaAntes = productoEditando.categoria;
       const actualizado = await actualizarProductoCarta(editandoId, {
+        carta_nombre: formProd.nombre,
+        carta_categoria: formProd.categoria,
         carta_descripcion: formProd.carta_descripcion,
         carta_etiqueta: formProd.carta_etiqueta || null,
       });
       reemplazarProducto(actualizado);
+      // si cambió de categoría, la lista de categorías y sus conteos también cambian
+      if (actualizado.categoria !== categoriaAntes) await refrescar();
       setEditandoId(null);
       avisar("Producto actualizado");
     } catch (err) {
@@ -219,6 +277,81 @@ export default function CartaAdmin() {
     setGuardando(true);
     try {
       reemplazarProducto(await quitarImagenProducto(editandoId));
+    } catch (err) {
+      setErrorForm(err.response?.data?.error || "No se pudo quitar la foto");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  /* ---------- Categorías ---------- */
+
+  async function moverCategoria(index, delta) {
+    const j = index + delta;
+    if (j < 0 || j >= datos.categorias.length) return;
+    const nuevas = [...datos.categorias];
+    [nuevas[index], nuevas[j]] = [nuevas[j], nuevas[index]];
+    setDatos((d) => ({ ...d, categorias: nuevas }));
+
+    try {
+      await actualizarConfigCarta({ orden_categorias: nuevas.map((c) => c.nombre) });
+    } catch (err) {
+      fallar(err, "No se pudo guardar el orden");
+      cargar();
+    }
+  }
+
+  function abrirCategoria(c) {
+    setErrorForm(null);
+    setFormCat(c.nombre);
+    setEditandoCat(c.nombre);
+  }
+
+  async function guardarCategoria() {
+    const nuevo = formCat.trim();
+    if (!nuevo) {
+      setErrorForm("Escribe un nombre para la categoría");
+      return;
+    }
+    if (nuevo === editandoCat) {
+      setEditandoCat(null);
+      return;
+    }
+
+    setGuardando(true);
+    setErrorForm(null);
+    try {
+      setDatos(await renombrarCategoriaCarta(editandoCat, nuevo));
+      setEditandoCat(null);
+      avisar("Categoría actualizada");
+    } catch (err) {
+      setErrorForm(err.response?.data?.error || "No se pudo guardar");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function cambiarFotoCategoria(e) {
+    const archivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!archivo) return;
+
+    setGuardando(true);
+    setErrorForm(null);
+    try {
+      const lista = await prepararImagen(archivo, 1600);
+      setDatos(await subirImagenCategoria(editandoCat, lista));
+    } catch (err) {
+      setErrorForm(err.response?.data?.error || "No se pudo subir la foto");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function quitarFotoCategoria() {
+    setGuardando(true);
+    try {
+      setDatos(await quitarImagenCategoria(editandoCat));
     } catch (err) {
       setErrorForm(err.response?.data?.error || "No se pudo quitar la foto");
     } finally {
@@ -283,13 +416,15 @@ export default function CartaAdmin() {
     }
   }
 
+  const imagenCategoria = (nombre) => datos.categorias.find((c) => c.nombre === nombre)?.imagen_url;
+
   return (
     <div className="cadm-container">
       <header className="cadm-header">
         <div>
           <h1>Carta digital</h1>
           <p>
-            {visibles} de {datos.productos.length} productos visibles para los clientes
+            {visibles} de {datos.productos.length} productos en la carta
           </p>
         </div>
         <a className="cadm-btn-ver" href="/carta" target="_blank" rel="noreferrer">
@@ -302,11 +437,7 @@ export default function CartaAdmin() {
       {error && <div className="cadm-mensaje-error">{error}</div>}
 
       <div className="cadm-tabs">
-        {[
-          { v: "productos", l: "Productos" },
-          { v: "negocio", l: "Negocio" },
-          { v: "compartir", l: "Compartir" },
-        ].map((t) => (
+        {TABS.map((t) => (
           <button
             key={t.v}
             type="button"
@@ -321,7 +452,7 @@ export default function CartaAdmin() {
       {/* ================= PRODUCTOS ================= */}
 
       {tab === "productos" && (
-        <>
+        <div className="cadm-panel">
           <div className="cadm-buscador">
             <Search size={15} />
             <input
@@ -332,41 +463,37 @@ export default function CartaAdmin() {
             />
           </div>
 
+          <div className="cadm-filtros">
+            {ESTADOS.map((e) => (
+              <button
+                key={e.v}
+                type="button"
+                className={`cadm-filtro ${estado === e.v ? "activo" : ""}`}
+                onClick={() => setEstado(e.v)}
+              >
+                {e.l}
+              </button>
+            ))}
+          </div>
+
           <p className="cadm-ayuda">
             Activa el interruptor para que el producto salga en la carta. Los productos nuevos
-            empiezan ocultos.
+            empiezan ocultos. Toca el lápiz para cambiar su nombre, foto o categoría.
           </p>
 
-          {datos.categorias.map((cat, indexCat) => {
-            const lista = datos.productos.filter(
-              (p) => clave(p) === cat && (!filtro || p.nombre.toLowerCase().includes(filtro))
-            );
+          {datos.categorias.map((cat) => {
+            const lista = datos.productos.filter((p) => clave(p) === cat.nombre && pasaFiltro(p));
             if (lista.length === 0) return null;
+            const { total, visibles: enCarta } = conteo(cat.nombre);
 
             return (
-              <section key={cat} className="cadm-categoria">
+              <section key={cat.nombre} className="cadm-categoria">
                 <div className="cadm-categoria-cabecera">
-                  <h2>{cat}</h2>
-                  {!filtro && (
-                    <div className="cadm-flechas">
-                      <button
-                        type="button"
-                        onClick={() => moverCategoria(indexCat, -1)}
-                        disabled={indexCat === 0}
-                        aria-label="Subir categoría"
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moverCategoria(indexCat, 1)}
-                        disabled={indexCat === datos.categorias.length - 1}
-                        aria-label="Bajar categoría"
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                    </div>
-                  )}
+                  <Miniatura url={cat.imagen_url} nombre={cat.nombre} />
+                  <h2>{cat.nombre}</h2>
+                  <span className="cadm-contador">
+                    {enCarta}/{total}
+                  </span>
                 </div>
 
                 {lista.map((p, i) => (
@@ -401,15 +528,15 @@ export default function CartaAdmin() {
                         type="button"
                         className="cadm-icono"
                         onClick={() => abrirEdicion(p)}
-                        aria-label="Editar"
+                        aria-label={`Editar ${p.nombre}`}
                       >
                         <Pencil size={14} />
                       </button>
-                      {!filtro && (
+                      {reordenable && (
                         <div className="cadm-flechas vertical">
                           <button
                             type="button"
-                            onClick={() => moverProducto(cat, p.id, -1)}
+                            onClick={() => moverProducto(cat.nombre, p.id, -1)}
                             disabled={i === 0}
                             aria-label="Subir"
                           >
@@ -417,7 +544,7 @@ export default function CartaAdmin() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => moverProducto(cat, p.id, 1)}
+                            onClick={() => moverProducto(cat.nombre, p.id, 1)}
                             disabled={i === lista.length - 1}
                             aria-label="Bajar"
                           >
@@ -433,13 +560,81 @@ export default function CartaAdmin() {
           })}
 
           {datos.productos.length === 0 && <p className="cadm-vacio">No hay productos activos</p>}
-        </>
+          {datos.productos.length > 0 && !datos.productos.some(pasaFiltro) && (
+            <p className="cadm-vacio">Ningún producto coincide</p>
+          )}
+        </div>
+      )}
+
+      {/* ================= CATEGORÍAS ================= */}
+
+      {tab === "categorias" && (
+        <div className="cadm-panel">
+          <p className="cadm-ayuda">
+            Toca una categoría para cambiarle el nombre o la foto. Usa las flechas para decidir en
+            qué orden las ve el cliente.
+          </p>
+
+          <div className="cadm-cats">
+            {datos.categorias.map((c, i) => {
+              const { total, visibles: enCarta } = conteo(c.nombre);
+              return (
+                <div key={c.nombre} className="cadm-cat">
+                  <button
+                    type="button"
+                    className={`cadm-cat-portada ${c.imagen_url ? "" : "vacia"}`}
+                    onClick={() => abrirCategoria(c)}
+                    aria-label={`Editar categoría ${c.nombre}`}
+                  >
+                    {c.imagen_url ? (
+                      <img src={c.imagen_url} alt="" loading="lazy" />
+                    ) : (
+                      <span className="cadm-cat-inicial">{c.nombre.charAt(0).toUpperCase()}</span>
+                    )}
+                    <span className="cadm-cat-editar">
+                      <Pencil size={12} />
+                    </span>
+                  </button>
+
+                  <div className="cadm-cat-pie">
+                    <div className="cadm-cat-texto">
+                      <strong>{c.nombre}</strong>
+                      <span>
+                        {total} {total === 1 ? "producto" : "productos"} · {enCarta} en la carta
+                      </span>
+                    </div>
+                    <div className="cadm-flechas vertical">
+                      <button
+                        type="button"
+                        onClick={() => moverCategoria(i, -1)}
+                        disabled={i === 0}
+                        aria-label={`Subir ${c.nombre}`}
+                      >
+                        <ArrowUp size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moverCategoria(i, 1)}
+                        disabled={i === datos.categorias.length - 1}
+                        aria-label={`Bajar ${c.nombre}`}
+                      >
+                        <ArrowDown size={12} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {datos.categorias.length === 0 && <p className="cadm-vacio">Aún no hay categorías</p>}
+        </div>
       )}
 
       {/* ================= NEGOCIO ================= */}
 
       {tab === "negocio" && formNegocio && (
-        <div className="cadm-tarjeta">
+        <div className="cadm-tarjeta cadm-panel">
           <div className="cadm-imagenes">
             {["logo", "banner"].map((tipo) => {
               const url = datos.config[`${tipo}_url`];
@@ -540,8 +735,12 @@ export default function CartaAdmin() {
       {/* ================= COMPARTIR ================= */}
 
       {tab === "compartir" && (
-        <div className="cadm-tarjeta cadm-compartir">
-          {qr ? <img src={qr} alt="Código QR de la carta" className="cadm-qr" /> : <div className="cadm-skeleton" />}
+        <div className="cadm-tarjeta cadm-compartir cadm-panel">
+          {qr ? (
+            <img src={qr} alt="Código QR de la carta" className="cadm-qr" />
+          ) : (
+            <div className="cadm-skeleton" />
+          )}
           <p className="cadm-enlace">{urlCarta}</p>
           <div className="cadm-imagen-botones">
             {qr && (
@@ -606,6 +805,39 @@ export default function CartaAdmin() {
               )}
             </div>
 
+            <label>Nombre en la carta</label>
+            <input
+              type="text"
+              maxLength={100}
+              value={formProd.nombre}
+              onChange={(e) => setFormProd((f) => ({ ...f, nombre: e.target.value }))}
+            />
+            {formProd.nombre.trim() !== productoEditando.nombre_original && (
+              <button
+                type="button"
+                className="cadm-restaurar"
+                onClick={() => setFormProd((f) => ({ ...f, nombre: productoEditando.nombre_original }))}
+              >
+                <RotateCcw size={12} />
+                Volver a “{productoEditando.nombre_original}”
+              </button>
+            )}
+
+            <label>Categoría</label>
+            <input
+              type="text"
+              list="cadm-lista-categorias"
+              maxLength={60}
+              value={formProd.categoria}
+              onChange={(e) => setFormProd((f) => ({ ...f, categoria: e.target.value }))}
+            />
+            <datalist id="cadm-lista-categorias">
+              {datos.categorias.map((c) => (
+                <option key={c.nombre} value={c.nombre} />
+              ))}
+            </datalist>
+            <p className="cadm-ayuda">Elige una de la lista o escribe una nueva para crearla.</p>
+
             <label>Descripción (opcional)</label>
             <textarea
               rows={3}
@@ -629,7 +861,8 @@ export default function CartaAdmin() {
             </select>
 
             <p className="cadm-ayuda">
-              El nombre, la categoría y el precio se editan en la sección Productos.
+              Los cambios de nombre y categoría solo se ven en la carta. En ventas, inventario y
+              reportes el producto sigue igual. El precio se edita en la sección Productos.
             </p>
 
             <button
@@ -639,6 +872,74 @@ export default function CartaAdmin() {
               disabled={guardando}
             >
               {guardando ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+        )}
+      </Sheet>
+
+      {/* ================= EDITAR CATEGORÍA ================= */}
+
+      <Sheet
+        open={Boolean(categoriaEditando)}
+        onOpenChange={(abierto) => !abierto && setEditandoCat(null)}
+        title={categoriaEditando ? categoriaEditando.nombre : "Categoría"}
+      >
+        {categoriaEditando && (
+          <div className="cadm-form">
+            {errorForm && <div className="cadm-mensaje-error">{errorForm}</div>}
+
+            <span className="cadm-label">Foto de la categoría</span>
+            <div className="cadm-imagen-vista producto">
+              {imagenCategoria(editandoCat) ? (
+                <img src={imagenCategoria(editandoCat)} alt="" />
+              ) : (
+                <span>Sin foto</span>
+              )}
+            </div>
+            <div className="cadm-imagen-botones">
+              <label className="cadm-btn-sec">
+                <ImagePlus size={14} />
+                {imagenCategoria(editandoCat) ? "Cambiar foto" : "Subir foto"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  hidden
+                  disabled={guardando}
+                  onChange={cambiarFotoCategoria}
+                />
+              </label>
+              {imagenCategoria(editandoCat) && (
+                <button
+                  type="button"
+                  className="cadm-btn-sec peligro"
+                  onClick={quitarFotoCategoria}
+                  disabled={guardando}
+                >
+                  <Trash2 size={14} />
+                  Quitar
+                </button>
+              )}
+            </div>
+
+            <label>Nombre de la categoría</label>
+            <input
+              type="text"
+              maxLength={60}
+              value={formCat}
+              onChange={(e) => setFormCat(e.target.value)}
+            />
+            <p className="cadm-ayuda">
+              Si escribes el nombre de otra categoría que ya existe, las dos se unen en una sola.
+              El cambio solo se ve en la carta.
+            </p>
+
+            <button
+              type="button"
+              className="cadm-btn-guardar"
+              onClick={guardarCategoria}
+              disabled={guardando}
+            >
+              {guardando ? "Guardando..." : "Guardar nombre"}
             </button>
           </div>
         )}

@@ -5,6 +5,8 @@ from app.interfaces.auth_helpers import exigir_rol
 carta_publica_bp = Blueprint("carta_publica", __name__, url_prefix="/api/carta")
 carta_admin_bp = Blueprint("carta_admin", __name__, url_prefix="/api/carta-admin")
 
+NO_ENCONTRADO = {"Producto no encontrado", "Categoría no encontrada"}
+
 
 # ---------- pública (sin login) ----------
 
@@ -23,7 +25,7 @@ def _proteger_carta_admin():
 
 
 def _respuesta_error(error):
-    status = 404 if error == "Producto no encontrado" else 400
+    status = 404 if error in NO_ENCONTRADO else 400
     return jsonify({"error": error}), status
 
 
@@ -89,3 +91,32 @@ def quitar_imagen_producto(producto_id):
     if error:
         return _respuesta_error(error)
     return jsonify(CartaService._producto_admin(producto)), 200
+
+
+# ---------- categorías (el nombre va en el cuerpo, no en la URL: puede tener espacios o tildes) ----------
+
+@carta_admin_bp.route("/categorias/renombrar", methods=["PUT"])
+def renombrar_categoria():
+    data = request.get_json(silent=True) or {}
+    vista, error = CartaService.renombrar_categoria(data.get("actual"), data.get("nuevo"))
+    if error:
+        return _respuesta_error(error)
+    return jsonify(vista), 200
+
+
+@carta_admin_bp.route("/categorias/imagen", methods=["POST"])
+def subir_imagen_categoria():
+    vista, error = CartaService.subir_imagen_categoria(
+        request.form.get("nombre"), request.files.get("imagen")
+    )
+    if error:
+        return _respuesta_error(error)
+    return jsonify(vista), 200
+
+
+@carta_admin_bp.route("/categorias/imagen", methods=["DELETE"])
+def quitar_imagen_categoria():
+    vista, error = CartaService.quitar_imagen_categoria(request.args.get("nombre"))
+    if error:
+        return _respuesta_error(error)
+    return jsonify(vista), 200

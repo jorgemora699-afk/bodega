@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap");
+
 .carta-pagina {
   --c-amarillo: var(--pa-yellow, #f5c400);
   --c-amarillo-osc: var(--pa-yellow-dark, #dcae00);
@@ -7,21 +9,42 @@
   --c-borde: var(--pa-border, #e8e8e4);
   --c-texto: var(--pa-text, #202020);
   --c-suave: var(--pa-text-soft, #777777);
+  --f-titulo: "Bricolage Grotesque", system-ui, sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   min-height: 100vh;
-  padding-bottom: 5.5rem;
+  padding-bottom: 6rem;
   background: var(--c-fondo);
   color: var(--c-texto);
 }
 
+.carta-pagina h1,
+.carta-pagina h2,
+.carta-pagina h3,
+.carta-precio {
+  font-family: var(--f-titulo);
+}
+
+/* ---------- Hero (única secuencia de entrada) ---------- */
+
 .carta-hero {
+  position: relative;
   background: var(--c-negro);
   color: #fff;
 }
 
+.carta-banner-marco {
+  height: 170px;
+  overflow: hidden;
+  background: var(--c-amarillo);
+}
+
 .carta-banner {
-  height: 150px;
+  height: 100%;
   background: linear-gradient(135deg, var(--c-amarillo), var(--c-amarillo-osc)) center / cover no-repeat;
+  transform: scale(1.08);
+  will-change: transform;
+  animation: carta-banner-in 1.2s var(--ease) both;
 }
 
 .carta-negocio {
@@ -29,31 +52,36 @@
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  padding: 0 1.25rem 1.5rem;
+  padding: 0 1.25rem 1.75rem;
   text-align: center;
 }
 
 .carta-logo {
-  width: 88px;
-  height: 88px;
-  margin-top: -44px;
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin-top: -48px;
   border: 4px solid var(--c-negro);
   border-radius: 50%;
   background: #fff;
   object-fit: cover;
+  animation: carta-logo-in 0.7s 0.25s var(--ease) both;
 }
 
 .carta-negocio h1 {
-  margin: 0.5rem 0 0;
-  font-size: 1.5rem;
+  margin: 0.55rem 0 0;
+  font-size: 1.85rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
+  animation: carta-subir 0.6s 0.4s var(--ease) both;
 }
 
 .carta-bienvenida {
   max-width: 440px;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: rgba(255, 255, 255, 0.78);
+  animation: carta-subir 0.6s 0.5s var(--ease) both;
 }
 
 .carta-datos {
@@ -61,15 +89,32 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.4rem 1rem;
-  margin-top: 0.4rem;
+  margin-top: 0.5rem;
   font-size: 0.78rem;
   color: var(--c-amarillo);
+  animation: carta-subir 0.6s 0.6s var(--ease) both;
 }
 
 .carta-datos span {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+}
+
+@keyframes carta-banner-in {
+  from { opacity: 0; filter: blur(8px); }
+  to { opacity: 1; filter: blur(0); }
+}
+
+@keyframes carta-logo-in {
+  0% { opacity: 0; transform: scale(0.4) rotate(-12deg); }
+  70% { transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes carta-subir {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ---------- Barra de categorías ---------- */
@@ -80,8 +125,13 @@
   z-index: 10;
   padding: 0.7rem 1rem 0.6rem;
   border-bottom: 1px solid var(--c-borde);
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  transition: box-shadow 0.25s ease;
+}
+
+.carta-nav.pegado {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
 .carta-buscador {
@@ -95,14 +145,33 @@
   border-radius: 999px;
   background: var(--c-fondo);
   color: var(--c-suave);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.carta-buscador:focus-within {
+  border-color: var(--c-amarillo);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(245, 196, 0, 0.25);
 }
 
 .carta-buscador input {
   flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
   background: transparent;
   font-size: 0.88rem;
+}
+
+.carta-buscador-limpiar {
+  display: flex;
+  padding: 0.15rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--c-borde);
+  color: var(--c-texto);
+  cursor: pointer;
+  animation: carta-pop 0.2s var(--ease);
 }
 
 .carta-chips {
@@ -129,6 +198,11 @@
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.15s ease;
+}
+
+.carta-chip:active {
+  transform: scale(0.94);
 }
 
 .carta-chip.activo {
@@ -147,15 +221,16 @@
 
 .carta-seccion {
   scroll-margin-top: 112px;
-  padding-top: 1.25rem;
+  padding-top: 1.5rem;
 }
 
 .carta-seccion h2 {
-  margin: 0 0 0.7rem;
+  margin: 0 0 0.8rem;
   padding-left: 0.6rem;
   border-left: 4px solid var(--c-amarillo);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
   text-transform: capitalize;
 }
 
@@ -166,10 +241,43 @@
   justify-content: space-between;
   gap: 0.9rem;
   padding: 0.85rem;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.7rem;
   border: 1px solid var(--c-borde);
   border-radius: 16px;
   background: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.carta-producto:focus-visible {
+  outline: 3px solid var(--c-amarillo);
+  outline-offset: 2px;
+}
+
+.carta-producto:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) {
+  .carta-producto:hover {
+    border-color: var(--c-amarillo);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.07);
+  }
+
+  .carta-producto:hover .carta-producto-foto img {
+    transform: scale(1.08);
+  }
+}
+
+/* Entrada al hacer scroll: solo una vez por producto */
+.carta-producto:not([data-visto]) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.carta-producto[data-visto] {
+  animation: carta-subir 0.5s var(--ease) both;
 }
 
 .carta-producto.agotado .carta-producto-texto {
@@ -186,13 +294,17 @@
 
 .carta-producto-texto h3 {
   margin: 0;
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-size: 1.02rem;
+  font-weight: 600;
   line-height: 1.25;
 }
 
 .carta-producto-texto p {
   margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   font-size: 0.82rem;
   line-height: 1.4;
   color: var(--c-suave);
@@ -201,14 +313,14 @@
 .carta-precio {
   margin-top: auto;
   padding-top: 0.3rem;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 800;
 }
 
 .carta-producto-foto {
   position: relative;
-  width: 104px;
-  height: 104px;
+  width: 108px;
+  height: 108px;
   flex-shrink: 0;
   overflow: hidden;
   border-radius: 12px;
@@ -219,6 +331,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s var(--ease);
 }
 
 .carta-agotado {
@@ -251,7 +364,6 @@
   color: #8a6d00;
   font-size: 0.65rem;
   font-weight: 800;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
@@ -274,9 +386,10 @@
   padding: 3rem 0;
   text-align: center;
   color: var(--c-suave);
+  animation: carta-subir 0.4s var(--ease) both;
 }
 
-/* ---------- WhatsApp ---------- */
+/* ---------- Botón de WhatsApp ---------- */
 
 .carta-whatsapp {
   position: fixed;
@@ -298,6 +411,151 @@
   font-size: 0.95rem;
   font-weight: 800;
   text-decoration: none;
+  opacity: 0;
+  transform: translateY(140%);
+  pointer-events: none;
+  transition: transform 0.5s var(--ease), opacity 0.3s ease;
+}
+
+.carta-whatsapp.visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  animation: carta-latido 2.8s 1.2s ease-in-out 2;
+}
+
+@keyframes carta-latido {
+  0%, 100% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 0 0 rgba(245, 196, 0, 0.55); }
+  50% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 0 12px rgba(245, 196, 0, 0); }
+}
+
+/* ---------- Detalle del producto ---------- */
+
+.carta-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(23, 23, 23, 0.55);
+  backdrop-filter: blur(3px);
+  animation: carta-fundido 0.25s ease both;
+}
+
+.carta-modal-hoja {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 24px 24px 0 0;
+  background: #fff;
+  animation: carta-hoja 0.4s var(--ease) both;
+}
+
+.carta-modal-cerrar {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1;
+  display: flex;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--c-negro);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.carta-modal-foto {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--c-fondo);
+}
+
+.carta-modal-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: carta-zoom 0.7s var(--ease) both;
+}
+
+.carta-modal-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.25rem 1.25rem max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.carta-modal-cuerpo h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.carta-modal-cuerpo p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--c-suave);
+}
+
+.carta-modal-cuerpo .carta-precio {
+  margin-top: 0.4rem;
+  font-size: 1.35rem;
+}
+
+.carta-modal-pedir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  padding: 0.9rem;
+  border-radius: 999px;
+  background: var(--c-amarillo);
+  color: var(--c-negro);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+
+.carta-modal-pedir:active {
+  transform: scale(0.97);
+}
+
+@keyframes carta-fundido {
+  from { opacity: 0; }
+}
+
+@keyframes carta-hoja {
+  from { transform: translateY(100%); }
+}
+
+@keyframes carta-zoom {
+  from { transform: scale(1.15); }
+}
+
+@keyframes carta-pop {
+  from { transform: scale(0); }
+}
+
+@media (min-width: 720px) {
+  .carta-banner-marco {
+    height: 220px;
+  }
+
+  .carta-modal {
+    align-items: center;
+  }
+
+  .carta-modal-hoja {
+    border-radius: 24px;
+  }
 }
 
 /* ---------- Estados ---------- */
@@ -345,8 +603,161 @@
   to { background-position: -200% 0; }
 }
 
-@media (min-width: 720px) {
-  .carta-banner {
-    height: 200px;
+/* ---------- Accesibilidad: sin movimiento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .carta-pagina *,
+  .carta-pagina *::before,
+  .carta-pagina *::after,
+  .carta-modal,
+  .carta-modal * {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+
+  .carta-producto:not([data-visto]) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Carrusel de destacados ---------- */
+
+.carta-destacados {
+  padding-top: 1.5rem;
+}
+
+.carta-destacados h2 {
+  margin: 0 0 0.8rem;
+  padding-left: 0.6rem;
+  border-left: 4px solid var(--c-amarillo);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.carta-destacados-pista {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0 -1rem;
+  padding: 0.25rem 1rem 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 1rem;
+  scrollbar-width: none;
+}
+
+.carta-destacados-pista::-webkit-scrollbar {
+  display: none;
+}
+
+.carta-destacado {
+  position: relative;
+  display: flex;
+  flex: 0 0 160px;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.5rem 0.5rem 0.75rem;
+  border: 1px solid var(--c-borde);
+  border-radius: 18px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  scroll-snap-align: start;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s ease;
+  animation: carta-subir 0.5s var(--ease) both;
+}
+
+.carta-destacado:nth-child(2) { animation-delay: 0.06s; }
+.carta-destacado:nth-child(3) { animation-delay: 0.12s; }
+.carta-destacado:nth-child(n + 4) { animation-delay: 0.18s; }
+
+.carta-destacado:active {
+  transform: scale(0.96);
+}
+
+.carta-destacado:focus-visible {
+  outline: 3px solid var(--c-amarillo);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .carta-destacado:hover {
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.09);
+    transform: translateY(-3px);
+  }
+}
+
+.carta-destacado img {
+  width: 100%;
+  aspect-ratio: 1;
+  margin-bottom: 0.3rem;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.carta-destacado .carta-etiqueta {
+  position: absolute;
+  top: 0.9rem;
+  left: 0.9rem;
+}
+
+.carta-destacado strong {
+  font-family: var(--f-titulo);
+  font-size: 0.92rem;
+  line-height: 1.2;
+  padding: 0 0.25rem;
+}
+
+.carta-destacado em {
+  padding: 0 0.25rem;
+  font-family: var(--f-titulo);
+  font-size: 0.9rem;
+  font-style: normal;
+  font-weight: 800;
+  color: var(--c-suave);
+}
+
+/* ---------- Fotos de categoría ---------- */
+
+.carta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.carta-chip:has(.carta-chip-img) {
+  padding-left: 0.35rem;
+}
+
+.carta-chip-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.carta-seccion-portada {
+  display: flex;
+  align-items: flex-end;
+  height: 110px;
+  margin-bottom: 0.8rem;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--c-negro) center / cover no-repeat;
+}
+
+.carta-seccion-portada h2 {
+  width: 100%;
+  margin: 0;
+  padding: 2.5rem 1rem 0.8rem;
+  border-left: none;
+  background: linear-gradient(to top, rgba(23, 23, 23, 0.85), transparent);
+  color: #fff;
+  font-size: 1.35rem;
 }

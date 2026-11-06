@@ -60,3 +60,24 @@ export async function quitarImagenProducto(id) {
   const { data } = await apiClient.delete(`/carta-admin/productos/${id}/imagen`);
   return data;
 }
+
+/* Categorías: estas tres devuelven la vista completa del admin */
+
+export async function renombrarCategoriaCarta(actual, nuevo) {
+  const { data } = await apiClient.put("/carta-admin/categorias/renombrar", { actual, nuevo });
+  return data;
+}
+
+export async function subirImagenCategoria(nombre, archivo) {
+  const fd = formConImagen(archivo);
+  fd.append("nombre", nombre);
+  const { data } = await apiClient.post("/carta-admin/categorias/imagen", fd, SUBIDA);
+  return data;
+}
+
+export async function quitarImagenCategoria(nombre) {
+  const { data } = await apiClient.delete("/carta-admin/categorias/imagen", {
+    params: { nombre },
+  });
+  return data;
+}

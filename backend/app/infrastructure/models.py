@@ -50,6 +50,8 @@ class Producto(db.Model):
     carta_orden = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     carta_imagen_url = db.Column(db.String(500), nullable=True)
     carta_imagen_public_id = db.Column(db.String(200), nullable=True)
+    carta_nombre = db.Column(db.String(100), nullable=True)
+    carta_categoria = db.Column(db.String(60), nullable=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
  
     ventas = db.relationship("Venta", back_populates="producto")
@@ -980,3 +982,15 @@ class CartaConfig(db.Model):
 
     def __repr__(self):
         return f"<CartaConfig {self.nombre_negocio}>"
+
+class CartaCategoria(db.Model):
+    """Foto de cada categoría de la carta. Se enlaza por el nombre que se ve en la carta."""
+    __tablename__ = "carta_categoria"
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(60), nullable=False, unique=True)
+    imagen_url = db.Column(db.String(500), nullable=True)
+    imagen_public_id = db.Column(db.String(200), nullable=True)
+
+    def __repr__(self):
+        return f"<CartaCategoria {self.nombre}>"
