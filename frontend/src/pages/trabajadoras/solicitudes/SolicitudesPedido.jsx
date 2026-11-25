@@ -7,11 +7,15 @@ import {
   Check,
   RefreshCw,
   Clock3,
+  Inbox,
+  ChefHat,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import {
   listarSolicitudesPendientes,
   rechazarSolicitud,
+  recibirSolicitud,
+  prepararSolicitud,
 } from "../../../api/solicitudesPedido";
 import "./SolicitudesPedido.css";
 
@@ -23,11 +27,23 @@ function formatearFecha(isoString) {
     minute: "2-digit",
   });
 }
+function formatearHora(isoString) {
+  return new Date(isoString).toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const ESTADOS = {
+  pendiente: { label: "Pendiente", Icon: Clock3, clase: "sp-badge-pendiente" },
+  recibida: { label: "Recibido", Icon: Inbox, clase: "sp-badge-recibida" },
+  preparada: { label: "Preparado", Icon: ChefHat, clase: "sp-badge-preparada" },
+};
 
 export default function SolicitudesPedido() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
-
+  const [avanzandoId, setAvanzandoId] = useState(null);
   const [solicitudes, setSolicitudes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -50,6 +66,25 @@ export default function SolicitudesPedido() {
       setError("No se pudieron cargar los pedidos pendientes");
     } finally {
       setCargando(false);
+    }
+  }
+
+  async function avanzar(solicitudId, accion) {
+    setAvanzandoId(solicitudId);
+    setError(null);
+    try {
+      const actualizada =
+        accion === "recibir"
+          ? await recibirSolicitud(solicitudId)
+          : await prepararSolicitud(solicitudId);
+      setSolicitudes((prev) =>
+        prev.map((s) => (s.id === solicitudId ? actualizada : s))
+      );
+    } catch (err) {
+      setError(err.response?.data?.error || "No se pudo actualizar el pedido");
+      cargar();
+    } finally {
+      setAvanzandoId(null);
     }
   }
 
@@ -92,7 +127,7 @@ export default function SolicitudesPedido() {
             <ClipboardList size={20} />
             Pedidos de Arte Frío
           </h1>
-          <p>Solicitudes pendientes por preparar y registrar</p>
+          <p>Solicitudes por recibir, preparar y registrar</p>
         </div>
 
         <button className="sp-btn-refrescar" onClick={cargar} disabled={cargando}>
@@ -118,10 +153,15 @@ export default function SolicitudesPedido() {
         {solicitudes.map((s) => (
           <div key={s.id} className="sp-tarjeta">
             <div className="sp-fila-principal">
-              <span className="sp-badge-pendiente">
-                <Clock3 size={12} />
-                Pendiente
-              </span>
+              {(() => {
+                const est = ESTADOS[s.estado] || ESTADOS.pendiente;
+                return (
+                  <span className={`sp-badge ${est.clase}`}>
+                    <est.Icon size={12} />
+                    {est.label}
+                  </span>
+                );
+              })()}
               <span className="sp-fecha">{formatearFecha(s.fecha)}</span>
             </div>
 
@@ -134,6 +174,12 @@ export default function SolicitudesPedido() {
             </div>
 
             {s.nota && <p className="sp-nota">"{s.nota}"</p>}
+            {(s.recibida_en || s.preparada_en) && (
+              <p className="sp-linea-tiempo">
+                {s.recibida_en && <span>Recibido {formatearHora(s.recibida_en)}</span>}
+                {s.preparada_en && <span>Preparado {formatearHora(s.preparada_en)}</span>}
+              </p>
+            )}
 
             {rechazandoId === s.id ? (
               <div className="sp-rechazo">
@@ -165,6 +211,29 @@ export default function SolicitudesPedido() {
                 </div>
               </div>
             ) : (
+              <>
+              {s.estado !== "preparada" && (
+                <div className="sp-acciones-estado">
+                  {s.estado === "pendiente" && (
+                    <button
+                      className="sp-btn-estado"
+                      onClick={() => avanzar(s.id, "recibir")}
+                      disabled={avanzandoId === s.id}
+                    >
+                      <Inbox size={14} />
+                      Recibido
+                    </button>
+                  )}
+                  <button
+                    className="sp-btn-estado"
+                    onClick={() => avanzar(s.id, "preparar")}
+                    disabled={avanzandoId === s.id}
+                  >
+                    <ChefHat size={14} />
+                    Preparado
+                  </button>
+                </div>
+              )}
               <div className="sp-acciones">
                 <button
                   className="sp-btn-primario"
@@ -181,6 +250,7 @@ export default function SolicitudesPedido() {
                   Rechazar
                 </button>
               </div>
+              </>
             )}
           </div>
         ))}

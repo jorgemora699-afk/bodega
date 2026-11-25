@@ -1,7 +1,8 @@
 from datetime import datetime
 from app import db
 from app.infrastructure.models import SolicitudPedido, SolicitudPedidoItem, Cliente, Producto, Orden
-
+ESTADOS_ABIERTOS = ("pendiente", "recibida", "preparada")
+_ORDEN_ESTADO = {"pendiente": 0, "recibida": 1, "preparada": 2}
 
 class SolicitudPedidoService:
 
@@ -58,10 +59,14 @@ class SolicitudPedidoService:
 
     @staticmethod
     def listar_pendientes():
-        return SolicitudPedido.query.filter_by(estado="pendiente").order_by(SolicitudPedido.fecha.desc()).all()
+        # "Por atender": todo lo que sigue abierto (pendiente, recibida, preparada)
+        return (SolicitudPedido.query
+                .filter(SolicitudPedido.estado.in_(ESTADOS_ABIERTOS))
+                .order_by(SolicitudPedido.fecha.desc()).all())
 
     @staticmethod
     def contar_pendientes():
+        # Solo las NUEVAS, sin ver. Es lo que debe sonar / mostrar en el badge.
         return SolicitudPedido.query.filter_by(estado="pendiente").count()
 
     @staticmethod
@@ -76,8 +81,8 @@ class SolicitudPedidoService:
         solicitud = SolicitudPedido.query.get(solicitud_id)
         if not solicitud or solicitud.cliente_id != cliente_id:
             return None, "Solicitud no encontrada"
-        if solicitud.estado == "pendiente":
-            return None, "Un pedido pendiente no se puede quitar de la lista"
+        if solicitud.estado in ESTADOS_ABIERTOS:
+            return None, "Un pedido en proceso no se puede quitar de la lista"
 
         solicitud.oculto_cliente = True
         db.session.commit()
@@ -98,11 +103,35 @@ class SolicitudPedidoService:
         return SolicitudPedido.query.get(solicitud_id)
 
     @staticmethod
+    def avanzar_estado(solicitud_id, nuevo_estado, usuario):
+        """Pasa a 'recibida' o 'preparada'. Se pueden saltar pasos,
+        pero nunca retroceder."""
+        solicitud = SolicitudPedido.query.get(solicitud_id)
+        if not solicitud:
+            return None, "Solicitud no encontrada"
+        if solicitud.estado not in ESTADOS_ABIERTOS:
+            return None, f"Esta solicitud ya fue {solicitud.estado}"
+        if _ORDEN_ESTADO[nuevo_estado] <= _ORDEN_ESTADO[solicitud.estado]:
+            return None, f"Esta solicitud ya está {solicitud.estado}"
+
+        ahora = datetime.utcnow()
+        if nuevo_estado == "recibida":
+            solicitud.recibida_en = ahora
+            solicitud.recibida_por = usuario
+        else:  # preparada
+            solicitud.preparada_en = ahora
+            solicitud.preparada_por = usuario
+
+        solicitud.estado = nuevo_estado
+        db.session.commit()
+        return solicitud, None
+
+    @staticmethod
     def marcar_atendida(solicitud_id, atendida_por, orden_id):
         solicitud = SolicitudPedido.query.get(solicitud_id)
         if not solicitud:
             return None, "Solicitud no encontrada"
-        if solicitud.estado != "pendiente":
+        if solicitud.estado not in ESTADOS_ABIERTOS:
             return None, f"Esta solicitud ya fue {solicitud.estado}"
 
         orden = Orden.query.get(orden_id)
@@ -122,7 +151,7 @@ class SolicitudPedidoService:
         solicitud = SolicitudPedido.query.get(solicitud_id)
         if not solicitud:
             return None, "Solicitud no encontrada"
-        if solicitud.estado != "pendiente":
+        if solicitud.estado not in ESTADOS_ABIERTOS:
             return None, f"Esta solicitud ya fue {solicitud.estado}"
 
         solicitud.estado = "rechazada"

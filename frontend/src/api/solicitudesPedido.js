@@ -55,3 +55,13 @@ export async function mostrarSolicitud(solicitudId) {
   const response = await apiClient.put(`/solicitudes-pedido/${solicitudId}/mostrar`);
   return response.data;
 }
+
+export async function recibirSolicitud(solicitudId) {
+  const response = await apiClient.put(`/solicitudes-pedido/${solicitudId}/recibir`);
+  return response.data;
+}
+
+export async function prepararSolicitud(solicitudId) {
+  const response = await apiClient.put(`/solicitudes-pedido/${solicitudId}/preparar`);
+  return response.data;
+}

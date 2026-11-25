@@ -330,6 +330,10 @@ class SolicitudPedido(db.Model):
     atendida_por = db.Column(db.String(50), nullable=True)  # username de quien la atendió/rechazó
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     resuelta_en = db.Column(db.DateTime, nullable=True)
+    recibida_en = db.Column(db.DateTime, nullable=True)
+    recibida_por = db.Column(db.String(50), nullable=True)
+    preparada_en = db.Column(db.DateTime, nullable=True)
+    preparada_por = db.Column(db.String(50), nullable=True)
     oculto_cliente = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
 
     cliente = db.relationship("Cliente", back_populates="solicitudes")
@@ -349,6 +353,10 @@ class SolicitudPedido(db.Model):
             "atendida_por": self.atendida_por,
             "fecha": self.fecha.isoformat() + "Z",
             "resuelta_en": self.resuelta_en.isoformat() + "Z" if self.resuelta_en else None,
+            "recibida_en": self.recibida_en.isoformat() + "Z" if self.recibida_en else None,
+            "recibida_por": self.recibida_por,
+            "preparada_en": self.preparada_en.isoformat() + "Z" if self.preparada_en else None,
+            "preparada_por": self.preparada_por,
             "oculto_cliente": self.oculto_cliente,
             "items": [i.to_dict() for i in self.items],
         }

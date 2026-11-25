@@ -239,3 +239,61 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+.sp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sp-badge-pendiente {
+  background: var(--color-brand-tint);
+  color: var(--color-brand-dark);
+}
+
+.sp-badge-recibida {
+  background: var(--color-surface-alt, #eef2f7);
+  color: var(--color-text-secondary);
+}
+
+.sp-badge-preparada {
+  background: var(--color-success-tint, #e6f6ec);
+  color: var(--color-success);
+}
+
+.sp-linea-tiempo {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.sp-acciones-estado {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sp-btn-estado {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary, inherit);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-btn-estado:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -107,6 +107,25 @@ def crear_solicitud():
         return jsonify({"error": error}), 400
     return jsonify(solicitud.to_dict()), 201
 
+@solicitud_pedido_bp.route("/<int:solicitud_id>/recibir", methods=["PUT"])
+def recibir_solicitud(solicitud_id):
+    username = get_jwt().get("username")
+    solicitud, error = SolicitudPedidoService.avanzar_estado(solicitud_id, "recibida", username)
+    if error:
+        status = 404 if error == "Solicitud no encontrada" else 400
+        return jsonify({"error": error}), status
+    return jsonify(solicitud.to_dict()), 200
+
+
+@solicitud_pedido_bp.route("/<int:solicitud_id>/preparar", methods=["PUT"])
+def preparar_solicitud(solicitud_id):
+    username = get_jwt().get("username")
+    solicitud, error = SolicitudPedidoService.avanzar_estado(solicitud_id, "preparada", username)
+    if error:
+        status = 404 if error == "Solicitud no encontrada" else 400
+        return jsonify({"error": error}), status
+    return jsonify(solicitud.to_dict()), 200
+
 
 @solicitud_pedido_bp.route("/<int:solicitud_id>/atender", methods=["PUT"])
 def atender_solicitud(solicitud_id):

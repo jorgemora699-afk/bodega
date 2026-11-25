@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Clock3, Check, X, RefreshCw, Calendar, ChevronDown, ChevronUp,
-  EyeOff, Eye, Trash2, Undo2,
+  EyeOff, Eye, Trash2, Undo2, Inbox, ChefHat,
 } from "lucide-react";
 import {
   listarMisSolicitudes,
@@ -20,10 +20,12 @@ const RANGOS = [
 
 const ESTADOS = [
   { id: "todos", texto: "Todos" },
-  { id: "pendiente", texto: "Pendientes" },
+  { id: "abiertos", texto: "En proceso" },
   { id: "atendida", texto: "Atendidos" },
   { id: "rechazada", texto: "Rechazados" },
 ];
+
+const ESTADOS_ABIERTOS = ["pendiente", "recibida", "preparada"];
 
 function formatearFecha(isoString) {
   return new Date(isoString).toLocaleString("es-CO", {
@@ -34,8 +36,17 @@ function formatearFecha(isoString) {
   });
 }
 
+function formatearHora(isoString) {
+  return new Date(isoString).toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function etiquetaEstado(estado) {
   if (estado === "pendiente") return { texto: "Pendiente", clase: "pendiente", Icon: Clock3 };
+  if (estado === "recibida") return { texto: "Recibido", clase: "recibida", Icon: Inbox };
+  if (estado === "preparada") return { texto: "Preparado", clase: "preparada", Icon: ChefHat };
   if (estado === "atendida") return { texto: "Atendido", clase: "atendida", Icon: Check };
   return { texto: "Rechazado", clase: "rechazada", Icon: X };
 }
@@ -83,6 +94,41 @@ function enRango(pedido, rango, fechaSel) {
   }
 }
 
+function LineaTiempo({ pedido }) {
+  const abierto = ESTADOS_ABIERTOS.includes(pedido.estado);
+  let pasos = [
+    { texto: "Enviado", fecha: pedido.fecha },
+    { texto: "Recibido", fecha: pedido.recibida_en },
+    { texto: "Preparado", fecha: pedido.preparada_en },
+  ];
+
+  if (pedido.estado === "atendida") {
+    pasos.push({ texto: "Atendido", fecha: pedido.resuelta_en });
+  } else if (pedido.estado === "rechazada") {
+    pasos.push({ texto: "Rechazado", fecha: pedido.resuelta_en, rechazo: true });
+  } else {
+    pasos.push({ texto: "Atendido", fecha: null });
+  }
+
+  // En pedidos cerrados solo se muestran los pasos que sí ocurrieron
+  if (!abierto) pasos = pasos.filter((p) => p.fecha);
+
+  return (
+    <ol className="mp-timeline">
+      {pasos.map((p) => (
+        <li
+          key={p.texto}
+          className={`mp-paso ${p.fecha ? "hecho" : ""} ${p.rechazo ? "rechazo" : ""}`}
+        >
+          <span className="mp-paso-punto" />
+          <span className="mp-paso-texto">{p.texto}</span>
+          <span className="mp-paso-hora">{p.fecha ? formatearHora(p.fecha) : "—"}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export default function MisPedidos() {
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -97,20 +143,37 @@ export default function MisPedidos() {
 
   useEffect(() => {
     cargar();
+
+    const intervalo = setInterval(() => {
+      if (!document.hidden) cargar(true);
+    }, 30000);
+
+    // Al volver a la pestaña, refresca de una vez
+    function alVolver() {
+      if (!document.hidden) cargar(true);
+    }
+    document.addEventListener("visibilitychange", alVolver);
+
+    return () => {
+      clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", alVolver);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [verQuitados]);
 
-  async function cargar() {
-    setCargando(true);
-    setError(null);
+  async function cargar(silencioso = false) {
+    if (!silencioso) {
+      setCargando(true);
+      setError(null);
+    }
 
     try {
       const data = await listarMisSolicitudes(verQuitados);
       setPedidos(data);
     } catch (err) {
-      setError("No se pudo cargar tu historial de pedidos");
+      if (!silencioso) setError("No se pudo cargar tu historial de pedidos");
     } finally {
-      setCargando(false);
+      if (!silencioso) setCargando(false);
     }
   }
 
@@ -160,30 +223,32 @@ export default function MisPedidos() {
     setRango("fecha");
   }
 
-  const totalPendientes = pedidos.filter(
-    (p) => p.estado === "pendiente" && !p.oculto_cliente
+ const totalEnProceso = pedidos.filter(
+    (p) => ESTADOS_ABIERTOS.includes(p.estado) && !p.oculto_cliente
   ).length;
 
-  /* Los pendientes se ven siempre (aunque sean de otro día): son los que
-     el cliente está esperando. El rango de fechas aplica al resto. */
-  const pedidosFiltrados = pedidos
+ const pedidosFiltrados = pedidos
     .filter((p) => enRango(p, rango, fechaSel))
-    .filter((p) => filtroEstado === "todos" || p.estado === filtroEstado)
+    .filter((p) => {
+      if (filtroEstado === "todos") return true;
+      if (filtroEstado === "abiertos") return ESTADOS_ABIERTOS.includes(p.estado);
+      return p.estado === filtroEstado;
+    })
     .sort((a, b) => {
-      const aPend = a.estado === "pendiente" ? 0 : 1;
-      const bPend = b.estado === "pendiente" ? 0 : 1;
-      if (aPend !== bPend) return aPend - bPend;
+      const aAbierto = ESTADOS_ABIERTOS.includes(a.estado) ? 0 : 1;
+      const bAbierto = ESTADOS_ABIERTOS.includes(b.estado) ? 0 : 1;
+      if (aAbierto !== bAbierto) return aAbierto - bAbierto;
       return new Date(b.fecha) - new Date(a.fecha);
-    });
+   });
 
   return (
     <div className="mp-container">
       <header className="mp-header">
         <h1>
           Mis pedidos
-          {totalPendientes > 0 && (
+          {totalEnProceso > 0 && (
             <span className="mp-contador-pendientes">
-              {totalPendientes} {totalPendientes === 1 ? "pendiente" : "pendientes"}
+              {totalEnProceso} en proceso
             </span>
           )}
         </h1>
@@ -240,7 +305,7 @@ export default function MisPedidos() {
       {error && (
         <div className="mp-mensaje-error">
           <span>{error}</span>
-          <button onClick={cargar}>
+          <button onClick={() => cargar()}>
             <RefreshCw size={13} />
             Reintentar
           </button>
@@ -255,7 +320,7 @@ export default function MisPedidos() {
             const estado = etiquetaEstado(pedido.estado);
             const plegado = plegados.has(pedido.id);
             const quitado = pedido.oculto_cliente;
-            const puedeQuitar = pedido.estado !== "pendiente" && !quitado;
+            const puedeQuitar = !ESTADOS_ABIERTOS.includes(pedido.estado) && !quitado;
 
             return (
               <div key={pedido.id} className={`mp-tarjeta ${quitado ? "quitada" : ""}`}>
@@ -288,6 +353,8 @@ export default function MisPedidos() {
                     </div>
 
                     {pedido.nota && <p className="mp-nota">"{pedido.nota}"</p>}
+
+                    <LineaTiempo pedido={pedido} />
 
                     {pedido.estado === "rechazada" && pedido.motivo_rechazo && (
                       <p className="mp-motivo-rechazo">Motivo: {pedido.motivo_rechazo}</p>
