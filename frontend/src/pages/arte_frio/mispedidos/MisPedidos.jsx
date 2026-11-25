@@ -244,15 +244,26 @@ export default function MisPedidos() {
   return (
     <div className="mp-container">
       <header className="mp-header">
-        <h1>
-          Mis pedidos
-          {totalEnProceso > 0 && (
-            <span className="mp-contador-pendientes">
-              {totalEnProceso} en proceso
-            </span>
-          )}
-        </h1>
-        <p>Historial de lo que has pedido a Punto Amarillo</p>
+        <div className="mp-header-texto">
+          <h1>
+            Mis pedidos
+            {totalEnProceso > 0 && (
+              <span className="mp-contador-pendientes">
+                {totalEnProceso} en proceso
+              </span>
+            )}
+          </h1>
+          <p>Historial de lo que has pedido a Punto Amarillo</p>
+        </div>
+
+        <button
+          type="button"
+          className={`mp-toggle-quitados ${verQuitados ? "activo" : ""}`}
+          onClick={() => setVerQuitados((v) => !v)}
+        >
+          {verQuitados ? <EyeOff size={13} /> : <Eye size={13} />}
+          {verQuitados ? "Ocultar quitados" : "Ver quitados"}
+        </button>
       </header>
 
       {/* Rango de fechas */}
@@ -280,26 +291,19 @@ export default function MisPedidos() {
       </div>
 
       {/* Estado */}
-      <div className="mp-chips mp-chips-estado">
+      <div className="mp-segmentado" role="tablist">
         {ESTADOS.map((e) => (
           <button
             key={e.id}
             type="button"
-            className={`mp-chip mp-chip-chico ${filtroEstado === e.id ? "activo" : ""}`}
+            role="tab"
+            aria-selected={filtroEstado === e.id}
+            className={`mp-segmento ${filtroEstado === e.id ? "activo" : ""}`}
             onClick={() => setFiltroEstado(e.id)}
           >
             {e.texto}
           </button>
         ))}
-
-        <button
-          type="button"
-          className={`mp-toggle-quitados ${verQuitados ? "activo" : ""}`}
-          onClick={() => setVerQuitados((v) => !v)}
-        >
-          {verQuitados ? <EyeOff size={12} /> : <Eye size={12} />}
-          {verQuitados ? "Ocultar quitados" : "Ver quitados"}
-        </button>
       </div>
 
       {error && (
